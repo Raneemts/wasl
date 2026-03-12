@@ -12,7 +12,7 @@ At the beginning of the project, our team held a meeting to introduce ourselves 
 | -------------------- | ------------------ | -------------------------------------------------------------------------------- |
 | Ahmed Khaled Alomani | UI/UX Designer     | Designing the interface layout and making sure the application is easy to use    |
 | Amjad Khalid Alomani | Database Engineer  | Designing and managing the database structure                                    |
-| Lamis Fahad Ljabli   | Frontend Developer | Building the user interface and connecting it with the backend                   |
+| Lamis Fahad Aljabli   | Frontend Developer | Building the user interface and connecting it with the backend                   |
 | Raneem Tarik Alsaqat | Backend Developer  | Implementing the application logic and connecting the frontend with the database |
 
 ### Collaboration Strategy
