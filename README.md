@@ -146,3 +146,76 @@ This platform could have several positive impacts:
 # 8. Reason for Selecting This Idea
 
 We selected the Wasal platform because it solves a real problem and has a meaningful social impact. It is also technically possible to build within the timeframe of the project and fits well with the skills of our team members.
+
+# Stage 2: Project Charter
+
+## 1. Project Objectives
+
+### Purpose
+The purpose of this project is to develop a mobile application (Wasl) that connects patients, hospitals, and blood donors efficiently to support emergency blood donation and help save lives.
+
+### SMART Objectives
+- Enable patients or hospitals to submit a blood request.
+- Allow donors to find and respond to matching blood donation cases based on blood type.
+- Notify donors about emergency requests
+
+---
+
+## 2. Stakeholders and Roles
+
+### Stakeholders
+- Patients (request blood)
+- Hospitals (manage and monitor requests)
+- Donors (respond to donation requests)
+- Project Team (developers & designer)
+- Instructor (evaluation and guidance)
+
+### Team Roles
+
+| Name | Role | Responsibilities |
+|----------------------|--------------------|------------------|
+| Ahmed Khaled Alomani | UI/UX Designer | Design user interface and improve user experience |
+| Amjad Khalid Alomani | Database Engineer | Design and manage database |
+| Lamis Fahad Aljabli | Frontend Developer | Build UI and connect to backend |
+| Raneem Tarik Alsaqat | Backend Developer | Implement logic and APIs |
+
+---
+
+## 3. Scope
+
+### In-Scope
+- User registration (Donor / Patient / Hospital)
+- Blood request creation
+- Search by blood type
+- Emergency notifications
+- Basic user profiles
+- Real-time GPS tracking
+### Out-of-Scope
+- Payment systems
+- Integration with real hospital systems???
+- Advanced medical records
+
+
+---
+
+## 4. Risks and Mitigation
+
+| Risk | Mitigation |
+|------|-----------|
+| Lack of experience with tools | Learn early + use tutorials |
+| Time constraints | Divide tasks and set deadlines |
+| Technical bugs | Test frequently |
+| Poor communication | Weekly meetings + Discord |
+
+---
+
+## 5. High-Level Plan
+
+| Stage | Description | Timeline |
+|------|------------|----------|
+| Stage 1 | Idea Development | Completed |
+| Stage 2 | Project Charter | Current |
+| Stage 3 | Technical Documentation | Week 3–4 |
+| Stage 4 | MVP Development | Week 5–8 |
+| Stage 5 | Testing & Final Delivery | Week 9–10 |
+
