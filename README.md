@@ -88,7 +88,7 @@ After discussing these points, we selected the idea that seemed both impactful a
 
 ### Summary
 
-Wasal is a platform that connects blood donors with patients or hospitals that need blood donations. The goal of the platform is to make it easier to find donors when a specific blood type is needed urgently.
+Wasl is a platform that connects blood donors with patients or hospitals that need blood donations. The goal of the platform is to make it easier to find donors when a specific blood type is needed urgently.
 
 Users can register as donors and add their blood type. When there is a request for a certain blood type, the system can identify suitable donors and send them notifications.
 
@@ -98,7 +98,7 @@ Hospitals sometimes urgently need a specific blood type, but it can be difficult
 
 ### Proposed Solution
 
-The Wasal platform helps solve this problem by creating a system where donors can register and store their blood type information. Hospitals or patients can search for donors with matching blood types, and in emergency cases, the platform can notify donors who match the request.
+The Wasl platform helps solve this problem by creating a system where donors can register and store their blood type information. Hospitals or patients can search for donors with matching blood types, and in emergency cases, the platform can notify donors who match the request.
 
 ### Target Users
 
@@ -145,7 +145,7 @@ This platform could have several positive impacts:
 
 # 8. Reason for Selecting This Idea
 
-We selected the Wasal platform because it solves a real problem and has a meaningful social impact. It is also technically possible to build within the timeframe of the project and fits well with the skills of our team members.
+We selected the Wasl platform because it solves a real problem and has a meaningful social impact. It is also technically possible to build within the timeframe of the project and fits well with the skills of our team members.
 
 # Stage 2: Project Charter
 
