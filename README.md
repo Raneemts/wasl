@@ -192,7 +192,7 @@ The purpose of this project is to develop a mobile application (Wasl) that conne
 - Real-time GPS tracking
 ### Out-of-Scope
 - Payment systems
-- Integration with real hospital systems???
+- Integration with real hospital systems
 - Advanced medical records
 
 
@@ -219,3 +219,92 @@ The purpose of this project is to develop a mobile application (Wasl) that conne
 | Stage 4 | MVP Development | Week 5–8 |
 | Stage 5 | Testing & Final Delivery | Week 9–10 |
 
+## Stage 3 — User Stories & Mockups
+ 
+### MoSCoW Priority Key
+ 
+| Label | Meaning |
+|-------|---------|
+| `Must Have` | Core — MVP cannot ship without this |
+| `Should Have` | Important but can be deferred |
+| `Could Have` | Nice-to-have, raises project quality |
+| `Won't Have` | Out of scope for MVP |
+ 
+---
+ 
+### 👤 User 1 — Patient Family (Blood Requester)
+ 
+| Priority | User Story |
+|----------|------------|
+| `Must Have` | As a patient family member, I want to create a blood donation request with blood type, bag count, hospital, and urgency level, so that I can reach matching donors quickly. |
+| `Must Have` | As a patient family member, I want to set the urgency level (normal / urgent), so that critical cases are handled with priority. |
+| `Must Have` | As a patient family member, I want to track my request status in real time, so that I know how many donors have responded and how many bags are still needed. |
+| `Must Have` | As a patient family member, I want to receive a notification when a donor accepts or the request is fulfilled, so that I am immediately informed. |
+| `Should Have` | As a patient family member, I want to edit or cancel an active request, so that I can update the information if the situation changes. |
+| `Could Have` | As a patient family member, I want to share the request via WhatsApp, so that I can reach donors outside the app. |
+| `Could Have` | As a patient family member, I want to view my past requests, so that I can track the patient's donation history. |
+ 
+---
+ 
+### 🏥 User 2 — Hospital
+ 
+| Priority | User Story |
+|----------|------------|
+| `Must Have` | As a hospital, I want to register an official account with name, location, and contact info, so that I can manage blood donation cases reliably. |
+| `Must Have` | As a hospital, I want to view all active blood requests with blood type, status, and donor count, so that I can monitor and coordinate responses. |
+| `Must Have` | As a hospital, I want to confirm a donation was completed, so that the case status updates automatically for all users. |
+| `Must Have` | As a hospital, I want to accept, close, or update cases, so that I have full control over each request's lifecycle. |
+| `Should Have` | As a hospital, I want to view full case details including patient name and donor list, so that I can manage the medical file accurately. |
+| `Could Have` | As a hospital, I want a statistics dashboard showing donation counts and most-requested blood types, so that I can plan proactively. |
+ 
+---
+ 
+### 🩸 User 3 — Donor
+ 
+| Priority | User Story |
+|----------|------------|
+| `Must Have` | As a donor, I want to register with my blood type and city, so that the system can match me to nearby relevant cases. |
+| `Must Have` | As a donor, I want to browse available blood cases with blood type, hospital, and distance, so that I can choose the most suitable case. |
+| `Must Have` | As a donor, I want to press "I want to donate" on a case, so that the hospital is notified of my intent. |
+| `Must Have` | As a donor, I want to receive an instant notification when a case matching my blood type is posted, so that I can respond quickly. |
+| `Should Have` | As a donor, I want to filter cases by blood type or city, so that I only see relevant cases. |
+| `Should Have` | As a donor, I want to view my donation history, so that I can track my contributions over time. |
+| `Could Have` | As a donor, I want to earn points for every donation, so that I feel appreciated and stay motivated. |
+| `Won't Have` | As a donor, I want to receive payment for donating — *out of scope (fully voluntary platform)*. |
+ 
+---
+ 
+### Priority Summary
+ 
+| Priority | Feature | User |
+|----------|---------|------|
+| `Must Have` | Create blood request + set urgency | Patient Family |
+| `Must Have` | Track request progress in real time | Patient Family |
+| `Must Have` | Notifications (donor accepted / case complete) | Patient Family + Donor |
+| `Must Have` | Hospital account registration | Hospital |
+| `Must Have` | View & manage cases + confirm donation | Hospital |
+| `Must Have` | Donor registration with blood type | Donor |
+| `Must Have` | Browse cases + donate button | Donor |
+| `Must Have` | Real-time notifications for matching cases | Donor |
+| `Should Have` | Edit / cancel request | Patient Family |
+| `Should Have` | Full case details | Hospital |
+| `Should Have` | Filter cases + donation history | Donor |
+| `Could Have` | Share request via WhatsApp | Patient Family |
+| `Could Have` | Statistics dashboard | Hospital |
+| `Could Have` | Points system | Donor |
+| `Won't Have` | Payment for donation | All |
+ 
+---
+ 
+### Mockups
+ 
+Three main screens were designed for the MVP:
+ 
+- **Donor Home** — Case cards with blood type badge, progress bar, urgency tag, distance, and donate button
+- **Patient Family — New Request Form** — Blood type grid selector, bag count, hospital name, contact number, urgency toggle
+- **Hospital Dashboard** — Stats grid (active cases, monthly donations, most-requested type, completion rate) + case list with confirm button
+> Interactive prototype available in `/prototype/wasal_app.html`
+ 
+---
+ 
+*Wasl — Connecting donors with those who need them most.*
