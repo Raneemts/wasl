@@ -155,19 +155,23 @@ We selected the Wasl platform because it solves a real problem and has a meaning
 The purpose of this project is to develop a mobile application (Wasl) that connects patients, hospitals, and blood donors efficiently to support emergency blood donation and help save lives.
 
 ### SMART Objectives
-- Enable patients or hospitals to submit a blood request.
+- Enable patients or hospitals to submit a blood request within less than 2 minutes.
 - Allow donors to find and respond to matching blood donation cases based on blood type.
-- Notify donors about emergency requests
+- Notify relevant donors within a short time after an emergency request is created.
 
 ---
 
 ## 2. Stakeholders and Roles
 
 ### Stakeholders
+
+**Internal Stakeholders**
+- Project Team (developers & designer)
+
+**External Stakeholders**
 - Patients (request blood)
 - Hospitals (manage and monitor requests)
 - Donors (respond to donation requests)
-- Project Team (developers & designer)
 - Instructor (evaluation and guidance)
 
 ### Team Roles
@@ -189,12 +193,12 @@ The purpose of this project is to develop a mobile application (Wasl) that conne
 - Search by blood type
 - Emergency notifications
 - Basic user profiles
-- Real-time GPS tracking
+
 ### Out-of-Scope
 - Payment systems
 - Integration with real hospital systems
 - Advanced medical records
-
+- Real-time GPS tracking (for MVP stage)
 
 ---
 
@@ -202,22 +206,31 @@ The purpose of this project is to develop a mobile application (Wasl) that conne
 
 | Risk | Mitigation |
 |------|-----------|
-| Lack of experience with tools | Learn early + use tutorials |
-| Time constraints | Divide tasks and set deadlines |
-| Technical bugs | Test frequently |
-| Poor communication | Weekly meetings + Discord |
+| Lack of experience with tools | Learn early using tutorials and practice |
+| Time constraints | Divide tasks and set clear deadlines |
+| Technical bugs | Test frequently during development |
+| Poor communication | Hold weekly meetings and use Discord |
 
 ---
 
 ## 5. High-Level Plan
 
-| Stage | Description | Timeline |
-|------|------------|----------|
+| Stage | Tasks | Timeline |
+|------|------|----------|
 | Stage 1 | Idea Development | Completed |
-| Stage 2 | Project Charter | Current |
+| Stage 2 | Project Charter | Completed |
 | Stage 3 | Technical Documentation | Week 3–4 |
+|  | - Design ERD (database structure) | |
+|  | - Define system architecture | |
+|  | - Prepare API endpoints | |
 | Stage 4 | MVP Development | Week 5–8 |
+|  | - Backend development (API implementation) | |
+|  | - Frontend development (UI screens) | |
+|  | - Database integration | |
 | Stage 5 | Testing & Final Delivery | Week 9–10 |
+|  | - System testing | |
+|  | - Bug fixing | |
+|  | - Final presentation | |
 
 ## Stage 3 — User Stories & Mockups
  
