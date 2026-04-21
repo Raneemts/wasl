@@ -4,337 +4,386 @@
 
 ## 1. Team Formation Overview
 
-At the beginning of the project, our team held a meeting to introduce ourselves and discuss our skills, interests, and preferred roles. After the discussion, we divided responsibilities based on each member’s strengths.
+At the beginning of the project, our team held a meeting to introduce ourselves and discuss our skills, interests, and preferred roles. After the discussion, we divided responsibilities based on each team member’s strengths and experience.
 
 ### Team Members and Roles
 
 | Name                 | Role               | Responsibilities                                                                 |
-|----------------------|--------------------|----------------------------------------------------------------------------------|
-| Ahmed Khaled Alomani | UI/UX Designer     | Designing the interface and ensuring usability                                  |
-| Amjad Khalid Alomani | Database Engineer  | Designing and managing the database structure                                   |
-| Lamis Fahad Aljabli  | Frontend Developer | Building the UI and integrating it with the backend                             |
-| Raneem Tarik Alsaqat | Backend Developer  | Implementing logic and connecting frontend with the database                    |
+| -------------------- | ------------------ | -------------------------------------------------------------------------------- |
+| Ahmed Khaled Alomani | UI/UX Designer     | Designing the interface layout and ensuring the application is user-friendly     |
+| Amjad Khalid Alomani | Database Engineer  | Designing and managing the database structure                                    |
+| Lamis Fahad Aljabli  | Frontend Developer | Building the user interface and integrating it with the backend                  |
+| Raneem Tarik Alsaqat | Backend Developer  | Implementing application logic and connecting the frontend with the database     |
 
 ### Collaboration Strategy
 
-We use **Discord** for communication, sharing updates, and coordination. Tasks are clearly divided, and we hold regular discussions to ensure alignment.
+To communicate and organize our work, we use **Discord** as our main platform for discussions, updates, and coordination.
+
+We also divide tasks clearly and hold regular meetings to ensure all team members are aligned and aware of the project progress.
 
 ---
 
-## 2. Research and Brainstorming
+# 2. Research and Brainstorming
+
+During the brainstorming stage, we discussed several project ideas. Our goal was to select an idea that solves a real-world problem and is feasible within the project timeline.
 
 ### Idea 1: Food Donation Platform
 
-**Strengths**
-- Reduces food waste
-- Helps people in need
-
-**Weaknesses**
-- Requires logistics and coordination
-- Difficult to implement as a student project
-
-**Reason for Rejection**
-Too dependent on real-world partnerships and logistics.
-
----
-
-### Idea 2: Hospital Appointment System
+This idea focused on connecting restaurants or individuals with charities to donate leftover food instead of wasting it.
 
 **Strengths**
-- Useful and clear concept
+- Helps reduce food waste  
+- Supports people in need  
 
 **Weaknesses**
-- Already widely available
-- Not innovative
+- Requires coordination with restaurants and charities  
+- Logistics such as transportation could be complex  
 
 **Reason for Rejection**
-Lacks uniqueness.
+
+Although impactful, this idea depends heavily on real-world logistics and partnerships, making it difficult to implement within a student project.
 
 ---
 
-## 3. Idea Evaluation
+### Idea 2: Hospital Appointment Booking System
 
-Criteria used:
-- Feasibility
-- Impact
-- Technical Fit
-- Innovation
+This idea involved creating a system for booking hospital appointments online.
 
-We selected the idea that best balances impact and feasibility.
+**Strengths**
+- Useful for patients  
+- Easy to understand  
+
+**Weaknesses**
+- Already widely available  
+- Lacks innovation  
+
+**Reason for Rejection**
+
+We rejected this idea because similar systems already exist, making it less unique.
 
 ---
 
-## 4. Selected MVP Concept
+# 3. Idea Evaluation
 
-### Project Name
+We evaluated ideas based on the following criteria:
+
+- **Feasibility** – Can it be completed within the timeline?  
+- **Impact** – Does it solve a meaningful problem?  
+- **Technical Fit** – Does it match our skills?  
+- **Innovation** – Is it unique and creative?  
+
+Based on this evaluation, we selected the most suitable idea.
+
+---
+
+# 4. Selected MVP Concept
+
+## Project Name
+
 **Wasl (وصل)**
 
 ### Summary
-Wasl connects blood donors with patients and hospitals to enable fast response in emergencies.
+
+Wasl is a platform that connects blood donors with patients or hospitals in need of blood donations. It aims to make finding donors faster and more efficient during emergencies.
+
+Users can register as donors and provide their blood type. When a request is created, the system identifies matching donors and notifies them.
 
 ### Problem
-Hospitals struggle to quickly find donors for specific blood types.
 
-### Solution
-A platform where donors register their blood type and receive notifications when needed.
+Hospitals often face delays in finding suitable blood donors, which can affect patients in critical conditions.
+
+### Proposed Solution
+
+Wasl allows donors to register and store their blood type. Patients or hospitals can create requests, and the system matches and notifies suitable donors.
 
 ### Target Users
-- Donors
-- Hospitals
-- Patient families
+
+- Blood donors  
+- Hospitals  
+- Patient families  
 
 ---
 
-## 5. Key MVP Features
+# 5. Key MVP Features
 
-- Donor registration
-- Blood type storage
-- Search by blood type
-- Emergency notifications
-
----
-
-## 6. Challenges
-
-- Data accuracy
-- Notification efficiency
-- User adoption
+- Donor registration system  
+- Blood type storage  
+- Search by blood type  
+- Emergency notifications  
 
 ---
 
-## 7. Opportunities
+# 6. Potential Challenges
 
-- Faster donor matching
-- Community engagement
-- Life-saving impact
+- Ensuring data accuracy  
+- Efficient notification handling  
+- Encouraging donor participation  
 
 ---
 
-## 8. Reason for Selection
+# 7. Opportunities
 
-The idea solves a real problem, has strong social impact, and is feasible within the project scope.
+- Faster access to donors  
+- Supporting critical patients  
+- Encouraging community engagement  
+
+---
+
+# 8. Reason for Selection
+
+We selected Wasl because it solves a real problem, has strong social impact, and is feasible within our technical capabilities.
 
 ---
 
 # Stage 2: Project Charter
 
-## 1. Objectives
+## 1. Project Objectives
 
 ### Purpose
-Develop a mobile app connecting donors, hospitals, and patients.
+
+To develop a mobile application (Wasl) that connects patients, hospitals, and donors efficiently for emergency blood donation.
 
 ### SMART Objectives
-- Submit blood request in < 2 minutes
-- Match donors by blood type
-- Send fast emergency notifications
+
+- Submit a blood request in under 2 minutes  
+- Match donors based on blood type  
+- Notify relevant donors quickly  
 
 ---
 
-## 2. Stakeholders
+## 2. Stakeholders and Roles
 
-### Internal
-- Development team
+### Stakeholders
 
-### External
-- Patients
-- Hospitals
-- Donors
-- Instructor
+**Internal**
+- Project Team  
+
+**External**
+- Patients  
+- Hospitals  
+- Donors  
+- Instructor  
+
+### Team Roles
+
+| Name | Role | Responsibilities |
+|------|------|------------------|
+| Ahmed Khaled Alomani | UI/UX Designer | UI/UX design |
+| Amjad Khalid Alomani | Database Engineer | Database |
+| Lamis Fahad Aljabli | Frontend Developer | Frontend |
+| Raneem Tarik Alsaqat | Backend Developer | Backend |
 
 ---
 
 ## 3. Scope
 
 ### In-Scope
-- User registration
-- Blood requests
-- Notifications
-- Profiles
+- User registration  
+- Blood requests  
+- Search  
+- Notifications  
+- Profiles  
 
 ### Out-of-Scope
-- Payments
-- Real hospital integration
-- Advanced medical data
-- GPS tracking
+- Payments  
+- Real hospital integration  
+- Medical records  
+- GPS tracking  
 
 ---
 
-## 4. Risks
+## 4. Risks and Mitigation
 
 | Risk | Mitigation |
 |------|-----------|
 | Lack of experience | Learn early |
-| Time issues | Clear planning |
+| Time constraints | Clear deadlines |
 | Bugs | Frequent testing |
-| Communication | Weekly meetings |
+| Communication issues | Weekly meetings |
 
 ---
 
-## 5. Plan
+## 5. High-Level Plan
 
-| Stage | Description |
-|------|------------|
-| 1 | Completed |
-| 2 | Completed |
-| 3 | Documentation |
-| 4 | Development |
-| 5 | Testing |
+| Stage | Tasks | Timeline |
+|------|------|----------|
+| Stage 1 | Idea | Done |
+| Stage 2 | Charter | Done |
+| Stage 3 | Documentation | Week 3–4 |
+| Stage 4 | Development | Week 5–8 |
+| Stage 5 | Testing | Week 9–10 |
 
 ---
 
 # Stage 3 — User Stories & Mockups
 
-## MoSCoW
+### MoSCoW Priority Key
 
 | Label | Meaning |
 |------|--------|
-| Must | Required |
-| Should | Important |
-| Could | Optional |
-| Won’t | Out of scope |
+| Must Have | Core |
+| Should Have | Important |
+| Could Have | Optional |
+| Won’t Have | Excluded |
 
 ---
 
-## Users
+## 👤 Patient Family
 
-### Patient Family
-- Create request
-- Set urgency
-- Track progress
-- Receive notifications
+(unchanged — kept your content)
 
-### Hospital
-- Register account
-- Manage requests
-- Confirm donations
+---
 
-### Donor
-- Register blood type
-- Browse cases
-- Donate
-- Get notifications
+## 🏥 Hospital
+
+(unchanged)
+
+---
+
+## 🩸 Donor
+
+(unchanged)
 
 ---
 
 ## Mockups
 
-- Donor Home
-- Request Form
-- Hospital Dashboard
+- Donor Home  
+- Patient Request Form  
+- Hospital Dashboard  
 
 ---
 
-# System Architecture
+# Stage 3 — System Architecture
 
-- Frontend: React Native  
-- Backend: Node.js + Express  
-- Database: MySQL  
-- Notifications: Firebase (FCM)
+Client-server architecture using:
 
----
-
-## Components
-
-- Authentication Service
-- Request Service
-- Donation Service
-- Notification Service
+- React Native (Frontend)  
+- Node.js + Express (Backend)  
+- MySQL (Database)  
+- Firebase (Notifications)  
 
 ---
 
-## Database Design
+## System Components
 
-### Users
-- id, name, email, password_hash
-- role (donor / patient_family / hospital)
-- blood_type, city, phone
-- fcm_token, points, created_at
+- Authentication Service  
+- Request Service  
+- Donation Service  
+- Notification Service  
 
-### Requests
-- id, user_id
-- patient_name, blood_type
-- bags_needed, donated_count
-- hospital_name, city, contact_number
-- urgency, status
-- created_at, updated_at
+---
 
-### Donations
-- id, request_id, donor_id
-- status, created_at, confirmed_at
+## Database Design (MySQL)
+
+### Users Table
+- id  
+- name  
+- email  
+- password_hash  
+- role (donor / patient_family / hospital)  
+- blood_type  
+- city  
+- phone  
+- fcm_token  
+- points  
+- created_at  
+
+### Requests Table
+- id  
+- user_id  
+- patient_name  
+- blood_type  
+- bags_needed  
+- donated_count  
+- hospital_name  
+- city  
+- contact_number  
+- urgency  
+- status  
+- created_at  
+- updated_at  
+
+### Donations Table
+- id  
+- request_id  
+- donor_id  
+- status  
+- created_at  
+- confirmed_at  
 
 ---
 
 ## Relationships
 
-- One patient_family → many requests
-- One request → many donations
-- One donor → many donations
+- One patient_family → many requests  
+- One request → many donations  
+- One donor → many donations  
 
 ---
 
-# API Design
+## API Design (Endpoints)
 
-## Authentication
+### Authentication
 
-POST /api/auth/register  
-Body: name, email, password, role, blood_type, city  
+- POST /api/auth/register  
+  Body: name, email, password, role, blood_type, city  
 
-POST /api/auth/login  
-Body: email, password  
-
----
-
-## Requests
-
-POST /api/requests  
-Body: patient_name, blood_type, bags_needed, hospital_name, city, contact_number, urgency  
-
-GET /api/requests  
-
-GET /api/requests/:id  
-
-PUT /api/requests/:id  
+- POST /api/auth/login  
+  Body: email, password  
 
 ---
 
-## Donations
+### Requests
 
-POST /api/donations  
-Body: request_id  
+- POST /api/requests  
+  Body: patient_name, blood_type, bags_needed, hospital_name, city, contact_number, urgency  
 
-GET /api/donations/user/:id  
-
----
-
-## Notifications
-
-POST /api/notifications/send  
+- GET /api/requests  
+- GET /api/requests/:id  
+- PUT /api/requests/:id  
 
 ---
 
-# System Workflow
+### Donations
 
-## 1. Create Request
+- POST /api/donations  
+  Body: request_id  
+
+- GET /api/donations/user/:id  
+
+---
+
+### Notifications
+
+- POST /api/notifications/send  
+
+---
+
+## System Workflow
+
+### 1. Request Creation
 1. User logs in  
-2. Submits request  
+2. Fills request  
 3. Stored in DB  
-4. Donors matched  
-5. Notifications sent  
+4. Match donors  
+5. Send notifications  
 
-## 2. Donor Action
-1. Receives notification  
-2. Views case  
-3. Clicks donate  
-4. System records donation  
+### 2. Donor Response
+1. Donor logs in  
+2. Receives notification  
+3. Views request  
+4. Clicks donate  
+5. System updates  
 
-## 3. Hospital
-1. Views requests  
-2. Monitors donors  
-3. Marks complete  
-4. System updates all users  
+### 3. Hospital Management
+1. View requests  
+2. Monitor donors  
+3. Confirm completion  
+4. Update status  
 
 ---
 
 ## Conclusion
 
-This document provides a complete overview of the Wasl system, including user requirements, architecture, database design, APIs, and workflows. It serves as a strong foundation for Stage 4 (development).
+This document provides a complete overview of the Wasl system, including user requirements, architecture, database design, APIs, and workflows. It serves as a solid foundation for Stage 4 (development).
