@@ -321,3 +321,101 @@ Three main screens were designed for the MVP:
 ---
  
 *Wasl — Connecting donors with those who need them most.*
+---
+
+## Stage 3 — System Architecture
+
+The Wasl system follows a client-server architecture designed for real-time interaction between users (donors, patient families, and hospitals).
+
+The mobile application (front-end) is developed using React Native and serves as the interface for all users. It communicates with the back-end through RESTful API requests.
+
+The back-end is built using Node.js and Express, which handles business logic such as creating blood requests, matching donors, managing case status, and sending notifications.
+
+A centralized database (MySQL) stores all system data, including users, blood requests, and donations.
+
+Firebase Cloud Messaging (FCM) is used as an external service to deliver real-time notifications to donors when a matching case is created and to update patients on request progress.
+
+Data flows as follows:  
+Users interact with the mobile app → requests are sent to the back-end → data is processed and stored in the database → notifications are triggered via Firebase → updates are reflected back in the app in real time.
+
+The architecture ensures scalability, fast response time, and reliable communication between all system components.
+
+### System Components
+
+The Wasl system backend is divided into several main components, each responsible for a specific part of the application logic:
+
+- **Authentication Service**
+  - Handles user registration and login
+  - Verifies user identity and manages roles (donor, hospital, patient family)
+
+- **Request Service**
+  - Manages blood donation requests (create, update, delete)
+  - Stores details such as blood type, urgency level, hospital, and required number of bags
+  - Matches requests with suitable donors
+
+- **Donation Service**
+  - Handles donor responses to requests
+  - Tracks accepted donations and updates donation progress
+
+- **Notification Service**
+  - Sends real-time notifications using Firebase Cloud Messaging (FCM)
+  - Notifies donors about matching requests and updates users about request status
+
+---
+
+### Database Design (MySQL)
+
+The system uses a relational database to store structured data. The main tables are:
+
+#### 1. Users Table
+- `id` (Primary Key)
+- `name`
+- `email`
+- `password`
+- `role` (donor / hospital / patient)
+- `blood_type` (for donors)
+- `city`
+- `phone`
+
+---
+
+#### 2. Hospitals Table
+- `id` (Primary Key)
+- `name`
+- `location`
+- `contact_number`
+- `user_id` (Foreign Key → Users)
+
+---
+
+#### 3. Blood_Requests Table
+- `id` (Primary Key)
+- `patient_name`
+- `blood_type`
+- `bags_needed`
+- `urgency` (normal / urgent)
+- `status` (active / completed)
+- `hospital_id` (Foreign Key → Hospitals)
+- `created_at`
+
+---
+
+#### 4. Donations Table
+- `id` (Primary Key)
+- `request_id` (Foreign Key → Blood_Requests)
+- `donor_id` (Foreign Key → Users)
+- `status` (pending / confirmed)
+- `donated_at`
+
+---
+
+### Relationships
+
+- One **hospital** can have many **blood requests**
+- One **blood request** can have multiple **donors**
+- One **donor** can donate to multiple **requests**
+- Each **donation** links a donor to a specific request
+
+---
+
+This design ensures organized data storage, supports efficient querying, and allows the system to track donation progress and user activity accurately.
