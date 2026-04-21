@@ -340,82 +340,85 @@ Users interact with the mobile app → requests are sent to the back-end → dat
 
 The architecture ensures scalability, fast response time, and reliable communication between all system components.
 
+---
+
 ### System Components
 
-The Wasl system backend is divided into several main components, each responsible for a specific part of the application logic:
+The Wasl system backend is divided into several main components:
 
 - **Authentication Service**
   - Handles user registration and login
-  - Verifies user identity and manages roles (donor, hospital, patient family)
+  - Manages roles (donor, patient family, hospital)
 
 - **Request Service**
-  - Manages blood donation requests (create, update, delete)
-  - Stores details such as blood type, urgency level, hospital, and required number of bags
-  - Matches requests with suitable donors
+  - Create, update, and manage blood requests
+  - Match requests with suitable donors
 
 - **Donation Service**
-  - Handles donor responses to requests
-  - Tracks accepted donations and updates donation progress
+  - Handles donor responses
+  - Tracks donation progress
 
 - **Notification Service**
-  - Sends real-time notifications using Firebase Cloud Messaging (FCM)
-  - Notifies donors about matching requests and updates users about request status
+  - Sends real-time notifications using Firebase (FCM)
 
 ---
 
-### Database Design (MySQL)
+## Database Design (MySQL)
 
-The system uses a relational database to store structured data. The main tables are:
+The system uses a relational database with the following tables:
 
-#### 1. Users Table
+### 1. Users Table
+
 - `id` (Primary Key)
 - `name`
 - `email`
-- `password`
-- `role` (donor / hospital / patient)
-- `blood_type` (for donors)
+- `password_hash`
+- `role` (donor / family / hospital)
+- `blood_type`
 - `city`
 - `phone`
-
----
-
-#### 2. Hospitals Table
-- `id` (Primary Key)
-- `name`
-- `location`
-- `contact_number`
-- `user_id` (Foreign Key → Users)
-
----
-
-#### 3. Blood_Requests Table
-- `id` (Primary Key)
-- `patient_name`
-- `blood_type`
-- `bags_needed`
-- `urgency` (normal / urgent)
-- `status` (active / completed)
-- `hospital_id` (Foreign Key → Hospitals)
+- `fcm_token`
+- `points`
 - `created_at`
 
 ---
 
-#### 4. Donations Table
+### 2. Requests Table
+
 - `id` (Primary Key)
-- `request_id` (Foreign Key → Blood_Requests)
-- `donor_id` (Foreign Key → Users)
-- `status` (pending / confirmed)
-- `donated_at`
+- `user_id` (Foreign Key → users)
+- `patient_name`
+- `blood_type`
+- `bags_needed`
+- `donated_count`
+- `hospital_name`
+- `city`
+- `contact_number`
+- `urgency` (normal / urgent)
+- `status` (active / completed / closed)
+- `created_at`
+- `updated_at`
 
 ---
 
-### Relationships
+### 3. Donations Table
 
-- One **hospital** can have many **blood requests**
-- One **blood request** can have multiple **donors**
-- One **donor** can donate to multiple **requests**
+- `id` (Primary Key)
+- `request_id` (Foreign Key → requests)
+- `donor_id` (Foreign Key → users)
+- `status` (pending / confirmed)
+- `created_at`
+- `confirmed_at`
+
+---
+
+## Relationships
+
+- One **user (patient family)** can create many **requests**
+- One **request** can have multiple **donations**
+- One **user (donor)** can donate to multiple **requests**
 - Each **donation** links a donor to a specific request
 
 ---
 
-This design ensures organized data storage, supports efficient querying, and allows the system to track donation progress and user activity accurately.
+This database design ensures organized data storage, supports efficient queries, and allows accurate tracking of donation progress and user activity.
