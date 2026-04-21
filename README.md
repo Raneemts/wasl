@@ -373,7 +373,7 @@ The system uses a relational database with the following tables:
 - `name`
 - `email`
 - `password_hash`
-- `role` (donor / family / hospital)
+- `role` (donor / patient_family / hospital)
 - `blood_type`
 - `city`
 - `phone`
