@@ -213,9 +213,156 @@ To develop a mobile application (Wasl) that connects patients, hospitals, and do
 | Stage 4 | Development | Week 5–8 |
 | Stage 5 | Testing | Week 9–10 |
 
----
+
 
 # Stage 3 — User Stories & Mockups
+
+## MoSCoW Priority Key
+
+| Label       | Meaning                              |
+| ----------- | ------------------------------------ |
+| Must Have   | Core — MVP cannot ship without this  |
+| Should Have | Important but can be deferred        |
+| Could Have  | Nice-to-have, raises project quality |
+| Won't Have  | Out of scope for MVP                 |
+
+---
+
+## 👤 User 1 — Patient Family (Blood Requester)
+
+| Priority    | User Story                                                                                                        |
+| ----------- | ----------------------------------------------------------------------------------------------------------------- |
+| Must Have   | Create a blood donation request (blood type, bag count, hospital, urgency level) to reach matching donors quickly |
+| Must Have   | Set urgency level (normal / urgent) to prioritize critical cases                                                  |
+| Must Have   | Track request status in real time (donors responded / bags remaining)                                             |
+| Must Have   | Receive notifications when a donor accepts or request is fulfilled                                                |
+| Should Have | Edit or cancel an active request                                                                                  |
+| Could Have  | Share request via WhatsApp                                                                                        |
+| Could Have  | View past requests (donation history)                                                                             |
+
+---
+
+## 🏥 User 2 — Hospital
+
+| Priority    | User Story                                                       |
+| ----------- | ---------------------------------------------------------------- |
+| Must Have   | Register official account (name, location, contact info)         |
+| Must Have   | View all active blood requests (blood type, status, donor count) |
+| Must Have   | Confirm completed donations                                      |
+| Must Have   | Accept, close, or update cases                                   |
+| Should Have | View full case details (patient + donor list)                    |
+| Could Have  | Statistics dashboard (donations, demand trends)                  |
+
+---
+
+## 🩸 User 3 — Donor
+
+| Priority    | User Story                                                 |
+| ----------- | ---------------------------------------------------------- |
+| Must Have   | Register with blood type and city                          |
+| Must Have   | Browse blood cases (type, hospital, distance)              |
+| Must Have   | Click “I want to donate” to notify hospital                |
+| Must Have   | Receive real-time notifications for matching cases         |
+| Should Have | Filter cases (blood type, city)                            |
+| Should Have | View donation history                                      |
+| Could Have  | Earn points for donations                                  |
+| Won't Have  | Payment for donation *(out of scope — voluntary platform)* |
+
+---
+
+## Priority Summary
+
+| Priority    | Feature                           | User                   |
+| ----------- | --------------------------------- | ---------------------- |
+| Must Have   | Create request + urgency          | Patient Family         |
+| Must Have   | Track request progress            | Patient Family         |
+| Must Have   | Notifications (accept / complete) | Patient Family + Donor |
+| Must Have   | Hospital registration             | Hospital               |
+| Must Have   | Case management + confirmation    | Hospital               |
+| Must Have   | Donor registration                | Donor                  |
+| Must Have   | Browse cases + donate action      | Donor                  |
+| Must Have   | Matching notifications            | Donor                  |
+| Should Have | Edit / cancel request             | Patient Family         |
+| Should Have | Full case details                 | Hospital               |
+| Should Have | Filters + history                 | Donor                  |
+| Could Have  | WhatsApp sharing                  | Patient Family         |
+| Could Have  | Analytics dashboard               | Hospital               |
+| Could Have  | Points system                     | Donor                  |
+| Won't Have  | Payment for donation              | All                    |
+
+---
+
+## Mockups
+
+Three main MVP screens:
+
+* **Donor Home**
+
+  * Case cards (blood type, progress bar, urgency tag, distance, donate button)
+
+* **Patient Family — New Request Form**
+
+  * Blood type selector
+  * Bag count
+  * Hospital name
+  * Contact number
+  * Urgency toggle
+
+* **Hospital Dashboard**
+
+  * Stats (active cases, monthly donations, demand trends, completion rate)
+  * Case list with confirmation controls
+
+> Interactive prototype: `/prototype/wasal_app.html`
+
+---
+
+## Stage 3 — System Architecture
+
+The **Wasl system** follows a **client-server architecture** designed for real-time interaction between:
+
+* Donors
+* Patient families
+* Hospitals
+
+### Tech Stack
+
+* **Frontend:** React Native (mobile app)
+* **Backend:** Node.js + Express (REST API)
+* **Database:** MySQL
+* **Notifications:** Firebase Cloud Messaging (FCM)
+
+### Data Flow
+
+```
+User (Mobile App)
+        ↓
+   REST API (Backend)
+        ↓
+     Database
+        ↓
+ Firebase (Notifications)
+        ↓
+   Real-time updates in app
+```
+
+### Overview
+
+* The mobile app handles all user interactions
+* Backend processes logic (requests, matching, status updates)
+* Database stores users, cases, and donations
+* Firebase delivers real-time notifications
+
+This architecture ensures:
+
+* Scalability
+* Fast response times
+* Reliable communication
+
+---
+
+**Wasl — Connecting donors with those who need them most.**
+
 
 ### MoSCoW Priority Key
 
@@ -225,6 +372,7 @@ To develop a mobile application (Wasl) that connects patients, hospitals, and do
 | Should Have | Important |
 | Could Have | Optional |
 | Won’t Have | Excluded |
+
 
 ---
 
