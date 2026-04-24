@@ -339,3 +339,43 @@ Data flows as follows:
 Users interact with the mobile app → requests are sent to the back-end → data is processed and stored in the database → notifications are triggered via Firebase → updates are reflected back in the app in real time.
 
 The architecture ensures scalability, fast response time, and reliable communication between all system components.
+---
+
+## SCM and QA Plans
+
+### Source Control Management (SCM)
+
+The project uses Git and GitHub for version control and collaboration.
+
+- Each team member works on a separate branch to avoid conflicts
+- Changes are merged into the main branch using pull requests
+- Code is reviewed before merging to ensure quality
+- Clear and meaningful commit messages are used to track progress
+
+This approach helps maintain organized development and prevents code conflicts.
+
+---
+
+### Quality Assurance (QA)
+
+To ensure system reliability and correctness, several testing methods are applied:
+
+- Unit Testing: Testing individual functions and components
+- Integration Testing: Ensuring the frontend, backend, and database work together correctly
+- Manual Testing: Verifying complete user flows such as creating requests and responding as a donor
+- Bug Tracking: Identifying and fixing issues during development
+
+Regular testing ensures the system works as expected and improves overall quality.
+
+---
+
+## Technical Justifications
+
+The following technologies were selected based on project requirements:
+
+- React Native: Allows building a cross-platform mobile application efficiently
+- Node.js with Express: Provides a fast and scalable backend for handling requests and business logic
+- MySQL: Suitable for structured relational data such as users, requests, and donations
+- Firebase Cloud Messaging (FCM): Enables real-time push notifications for emergency cases
+
+These technologies were chosen because they are reliable, widely used, and suitable for building scalable real-time applications like Wasl.
