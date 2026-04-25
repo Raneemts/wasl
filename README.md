@@ -341,6 +341,147 @@ Users interact with the mobile app → requests are sent to the back-end → dat
 The architecture ensures scalability, fast response time, and reliable communication between all system components.
 ---
 
+
+## Stage 3 — API Specifications
+
+The Wasl system exposes a set of RESTful API endpoints to handle user actions such as creating requests, donating, and managing cases.
+
+---
+
+### 🔐 Auth Endpoints
+
+#### POST /api/auth/register
+
+Registers a new user (donor, patient family, or hospital)
+
+**Request Body:**
+
+```json
+{
+  "name": "Lamis",
+  "email": "Lamis@email.com",
+  "password": "123456",
+  "role": "donor",
+  "blood_type": "A+",
+  "city": "Riyadh"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "User registered successfully"
+}
+```
+
+---
+
+#### POST /api/auth/login
+
+**Request Body:**
+
+```json
+{
+  "email": "Lamis@email.com",
+  "password": "123456"
+}
+```
+
+**Response:**
+
+```json
+{
+  "token": "JWT_TOKEN"
+}
+```
+
+---
+
+### 🩸 Request Endpoints
+
+#### POST /api/requests
+
+Create a new blood request
+
+**Request Body:**
+
+```json
+{
+  "patient_name": "Ahmed",
+  "blood_type": "O+",
+  "bags_needed": 3,
+  "city": "Riyadh",
+  "urgency": "urgent"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Request created",
+  "request_id": 101
+}
+```
+
+---
+
+#### GET /api/requests
+
+Get all active requests
+
+**Response:**
+
+```json
+[
+  {
+    "id": 101,
+    "blood_type": "O+",
+    "bags_needed": 3,
+    "donated_count": 1,
+    "status": "active"
+  }
+]
+```
+
+---
+
+### 🤝 Donation Endpoints
+
+#### POST /api/donations
+
+Donor volunteers to donate
+
+**Request Body:**
+
+```json
+{
+  "request_id": 101
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Donation registered"
+}
+```
+
+---
+
+#### PATCH /api/donations/:id/confirm
+
+Hospital confirms donation
+
+**Response:**
+
+```json
+{
+  "message": "Donation confirmed, case updated"
+}
+```
 ## SCM and QA Plans
 
 ### Source Control Management (SCM)
