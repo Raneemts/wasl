@@ -123,8 +123,8 @@ Registers a new user (donor, patient family, or hospital)
 
 ```json
 {
-  "name": "Ali",
-  "email": "ali@email.com",
+  "name": "Lamis",
+  "email": "Lamis@email.com",
   "password": "123456",
   "role": "donor",
   "blood_type": "A+",
@@ -148,7 +148,7 @@ Registers a new user (donor, patient family, or hospital)
 
 ```json
 {
-  "email": "ali@email.com",
+  "email": "Lamis@email.com",
   "password": "123456"
 }
 ```
