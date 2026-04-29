@@ -281,7 +281,7 @@ Regular testing ensures the system works as expected and improves overall qualit
 The following technologies were selected based on project requirements:
 
 - React Native: Allows building a cross-platform mobile application efficiently
-- Node.js with Express: Provides a fast and scalable backend for handling requests and business logic
+- Python (Flask or Django): Provides a reliable and scalable backend for handling APIs, business logic, authentication, and request management.
 - MySQL: Suitable for structured relational data such as users, requests, and donations
 - Firebase Cloud Messaging (FCM): Enables real-time push notifications for emergency cases
 
