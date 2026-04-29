@@ -5,7 +5,8 @@
 To manage development effectively, the team divided the MVP work into two main sprints.
 
 ### Sprint Duration
-- Each sprint duration: **2 weeks**
+
+* Each sprint duration: **2 weeks**
 
 ---
 
@@ -13,13 +14,13 @@ To manage development effectively, the team divided the MVP work into two main s
 
 **Goal:** Prepare backend structure and database design
 
-| Task | Priority | Assigned To |
-|------|----------|--------------|
-| Design database schema (ERD) | Must Have | Database Engineer |
-| Setup backend project (Python Flask/Django) | Must Have | Backend Developer |
-| Implement authentication APIs | Must Have | Backend Developer |
-| Define API endpoints (requests & donations) | Must Have | Backend Developer |
-| Test APIs using Postman (basic) | Should Have | QA / Backend |
+| Task                                        | Priority    | Assigned To       |
+| ------------------------------------------- | ----------- | ----------------- |
+| Design database schema (ERD)                | Must Have   | Database Engineer |
+| Setup backend project (Python Flask/Django) | Must Have   | Backend Developer |
+| Implement authentication APIs               | Must Have   | Backend Developer |
+| Define API endpoints (requests & donations) | Must Have   | Backend Developer |
+| Test APIs using Postman (basic)             | Should Have | QA / Backend      |
 
 ---
 
@@ -27,13 +28,13 @@ To manage development effectively, the team divided the MVP work into two main s
 
 **Goal:** Prepare UI and system integration
 
-| Task | Priority | Assigned To |
-|------|----------|--------------|
-| Design UI screens (mockups) | Must Have | UI/UX Designer |
-| Build frontend structure (React Native) | Must Have | Frontend Developer |
-| Connect frontend with APIs | Should Have | Frontend + Backend |
-| Prepare notification logic (Firebase) | Should Have | Backend Developer |
-| Integration testing (basic flows) | Should Have | QA |
+| Task                                  | Priority    | Assigned To        |
+| ------------------------------------- | ----------- | ------------------ |
+| Design UI screens (mockups)           | Must Have   | UI/UX Designer     |
+| Build frontend structure (React)      | Must Have   | Frontend Developer |
+| Connect frontend with APIs            | Should Have | Frontend + Backend |
+| Prepare notification logic (Firebase) | Should Have | Backend Developer  |
+| Integration testing (basic flows)     | Should Have | QA                 |
 
 ---
 
@@ -41,9 +42,9 @@ To manage development effectively, the team divided the MVP work into two main s
 
 The team used the **MoSCoW method**:
 
-- **Must Have:** Core features (registration, requests, donations)
-- **Should Have:** Enhancements (filters, notifications)
-- **Could Have:** Extra features (points system, sharing)
+* **Must Have:** Core features (registration, requests, donations)
+* **Should Have:** Enhancements (filters, notifications)
+* **Could Have:** Extra features (points system, sharing)
 
 ---
 
@@ -53,27 +54,31 @@ During this stage, the team focused on preparing and partially executing develop
 
 ### Development Work
 
-- Backend structure and API design were prepared using Python
-- Database schema was designed and finalized
-- Frontend screens were designed (mockups)
-- API requests were tested conceptually using Postman
+* Backend Flask project initialized
+* React frontend project initialized
+* MySQL database schema designed and partially tested
+* Authentication module structure started
+* Initial API routes created
+* Frontend screens were designed (mockups)
+* API requests were tested conceptually using Postman
 
 ---
 
 ### Source Control Management (SCM)
 
-- GitHub was used for version control
-- Feature branches were planned for each team member
-- Pull requests and code reviews were defined as the collaboration workflow
+* GitHub repository was created and configured
+* Feature branches were planned for each team member
+* Pull requests and code reviews were defined as the collaboration workflow
+* Repository structure was organized for frontend, backend, and database components
 
 ---
 
 ### Quality Assurance (QA)
 
-- Manual testing strategy was prepared
-- API testing was planned using Postman
-- Integration testing process was outlined
-- Bug tracking strategy was prepared
+* Manual testing strategy was prepared
+* API testing was planned using Postman
+* Integration testing process was outlined
+* Bug tracking strategy was prepared
 
 ---
 
@@ -81,8 +86,8 @@ During this stage, the team focused on preparing and partially executing develop
 
 Due to time constraints:
 
-- Full implementation was not completed
-- However, project setup, architecture, sprint planning, and development preparation were successfully completed
+* Full implementation was not completed
+* However, project setup, architecture, sprint planning, and development preparation were successfully completed
 
 ---
 
@@ -90,31 +95,33 @@ Due to time constraints:
 
 ### Project Setup Completed
 
-- GitHub repository created
-- Branching strategy established
-- Initial project structure prepared
-- Team communication through Discord organized
+* GitHub repository created
+* Branching strategy established
+* Initial project structure prepared
+* Team communication through Discord organized
+* Backend Flask project initialized
+* React frontend project initialized
 
 ---
 
 ### Individual Task Progress
 
-| Team Member | Assigned Task | Current Progress |
-|-------------|----------------|------------------|
-| UI/UX Designer | Design screens and prototype | Completed mockups |
-| Database Engineer | ERD and schema design | Completed |
-| Frontend Developer | React Native project structure | Initial planning completed |
-| Backend Developer | Python backend structure and API planning | API planning completed |
+| Team Member        | Assigned Task                             | Current Progress                       |
+| ------------------ | ----------------------------------------- | -------------------------------------- |
+| UI/UX Designer     | Design screens and prototype              | Completed mockups                      |
+| Database Engineer  | ERD and schema design                     | Completed                              |
+| Frontend Developer | React project structure                   | Initial setup completed                |
+| Backend Developer  | Python backend structure and API planning | Flask setup and API planning completed |
 
 ---
 
 ### Estimated Tasks for This Week
 
-- Finalize Python backend project structure
-- Prepare React Native frontend base project
-- Setup MySQL database
-- Test API endpoints conceptually
-- Organize repository branches
+* Finalize Python backend project structure
+* Prepare React frontend base project
+* Setup MySQL database
+* Test API endpoints conceptually
+* Organize repository branches
 
 ---
 
@@ -122,20 +129,20 @@ Due to time constraints:
 
 The following implementation tasks were not completed:
 
-- Frontend development using React Native
-- Backend API implementation and deployment using Python
-- Database setup and integration (MySQL)
-- Firebase Cloud Messaging (FCM) integration
-- Full system integration
+* Full frontend development using React
+* Full backend API implementation and deployment using Python Flask
+* Complete database integration (MySQL)
+* Firebase Cloud Messaging (FCM) integration
+* Full system integration
 
 ---
 
 ## 5. Challenges Faced
 
-- Limited time for full-stack implementation
-- Lack of prior experience with some technologies
-- Coordination between frontend and backend development
-- Complexity of integrating multiple system components
+* Limited time for full-stack implementation
+* Lack of prior experience with some technologies
+* Coordination between frontend and backend development
+* Complexity of integrating multiple system components
 
 ---
 
@@ -143,11 +150,11 @@ The following implementation tasks were not completed:
 
 If development continues, the following steps will be taken:
 
-- Implement backend APIs using Python (Flask or Django)
-- Connect and test MySQL database
-- Develop frontend screens using React Native
-- Integrate Firebase notifications for real-time alerts
-- Perform full system integration and testing
+* Implement backend APIs using Python Flask
+* Connect and test MySQL database
+* Develop frontend screens using React
+* Integrate Firebase notifications for real-time alerts
+* Perform full system integration and testing
 
 ---
 
@@ -155,97 +162,14 @@ If development continues, the following steps will be taken:
 
 While the MVP was not fully implemented, the team successfully established:
 
-- Complete sprint planning
-- GitHub and project setup
-- Task assignments
-- UI/UX mockups
-- Database architecture
-- API design
-- SCM workflow
-- QA strategy
+* Complete sprint planning
+* GitHub and project setup
+* Task assignments
+* UI/UX mockups
+* Database architecture
+* Initial backend and frontend project setup
+* API design
+* SCM workflow
+* QA strategy
 
 This stage demonstrates clear project organization, proper Agile planning, and strong technical preparation for future implementation.
-During this stage, the team focused on preparing and partially executing development tasks.
-
-### Development Work
-
-- Backend structure and API design were prepared
-- Database schema was designed and finalized
-- Frontend screens were designed (mockups)
-- API requests were tested conceptually using Postman
-
----
-
-### Source Control (SCM)
-
-- GitHub was used for version control
-- Planned use of feature branches for each task
-- Code reviews through pull requests (conceptual workflow)
-
----
-
-### Quality Assurance (QA)
-
-- Manual testing approach defined
-- API testing planned using Postman
-- Integration testing strategy prepared
-- Bug tracking planned during development
-
----
-
-### Execution Status
-
-Due to time constraints:
-- Full implementation was not completed
-- However, all components were clearly defined and ready for development
-
----
-
-## 3. Summary
-
-The team successfully:
-- Planned development using structured sprints
-- Assigned tasks based on roles
-- Defined development workflow (SCM + QA)
-
-Although implementation was partial, the project has a complete and ready-to-build development plan.
----
-
-## 4. Work Not Completed
-
-The following implementation tasks were not completed:
-
-- Frontend development using React Native
-- Backend API implementation and deployment
-- Database setup and integration (MySQL)
-- Firebase Cloud Messaging (FCM) integration
-- Full system integration
-
----
-
-## 5. Challenges Faced
-
-- Limited time for full-stack implementation
-- Lack of prior experience with some technologies
-- Coordination between frontend and backend development
-- Complexity of integrating multiple system components
-
----
-
-## 6. Next Steps
-
-If development continues, the following steps will be taken:
-
-- Implement backend APIs using Node.js and Express
-- Connect and test MySQL database
-- Develop frontend screens using React Native
-- Integrate Firebase notifications for real-time alerts
-- Perform full system integration and testing
-
----
-
-## 7. Summary
-
-While the MVP was not fully implemented, the team successfully established a complete technical foundation, including system design, API structure, and user interface planning.
-
-This foundation allows the project to be developed and completed in future stages.
