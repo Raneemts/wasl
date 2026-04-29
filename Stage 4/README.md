@@ -108,10 +108,10 @@ Due to time constraints:
 
 | Team Member        | Assigned Task                             | Current Progress                       |
 | ------------------ | ----------------------------------------- | -------------------------------------- |
-| UI/UX Designer     | Design screens and prototype              | Completed mockups                      |
+| UI/UX Designer     | Design screens and prototype              | Not Completed                          |
 | Database Engineer  | ERD and schema design                     | Completed                              |
-| Frontend Developer | React project structure                   | Initial setup completed                |
-| Backend Developer  | Python backend structure and API planning | Flask setup and API planning completed |
+| Frontend Developer | React project structure                   | Not completed                          |
+| Backend Developer  | Python backend structure and API planning | Not completed                          |
 
 ---
 
