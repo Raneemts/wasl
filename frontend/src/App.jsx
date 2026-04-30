@@ -2,493 +2,636 @@ import { useEffect, useState } from "react";
 import "./App.css";
 
 const API = "http://127.0.0.1:5000/api";
-const bloodTypes = ["الكل", "+O", "-O", "+A", "-A", "+B", "-B", "+AB", "-AB"];
 
+// ─────────────────────────────
+// APP ROOT
+// ─────────────────────────────
 function App() {
-  const [role, setRole] = useState(null);
-  const [page, setPage] = useState("home");
-  const [requests, setRequests] = useState([]);
-  const [dashboard, setDashboard] = useState({});
-  const [filter, setFilter] = useState("الكل");
-  const [showAlert, setShowAlert] = useState(false);
+  const [token, setToken] = useState(localStorage.getItem("wasl_token"));
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem("wasl_user") || "null"));
+  const [screen, setScreen] = useState("landing"); // landing | login | register | home
+  const [selectedRole, setSelectedRole] = useState(null);
 
-  const loadData = async () => {
-    try {
-      const dash = await fetch(`${API}/dashboard`).then((r) => r.json());
-      const reqs = await fetch(`${API}/requests?blood_type=${filter}`).then((r) =>
-        r.json()
-      );
-
-      setDashboard(dash);
-      setRequests(reqs);
-    } catch (error) {
-      console.error("Backend error:", error);
-    }
+  const handleRoleSelect = (role) => {
+    setSelectedRole(role);
+    setScreen("login");
   };
 
-  useEffect(() => {
-    if (role) loadData();
-  }, [filter, role]);
-
-  const donate = async (id) => {
-    await fetch(`${API}/requests/${id}/donate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        donor_name: "أحمد العتيبي",
-        donor_blood_type: "+O",
-      }),
-    });
-
-    loadData();
+  const handleLogin = (tok, userData) => {
+    localStorage.setItem("wasl_token", tok);
+    localStorage.setItem("wasl_user", JSON.stringify(userData));
+    setToken(tok);
+    setUser(userData);
+    setScreen("home");
   };
 
-  const completeRequest = async (id) => {
-    await fetch(`${API}/requests/${id}/complete`, {
-      method: "POST",
-    });
-
-    loadData();
+  const handleLogout = () => {
+    localStorage.removeItem("wasl_token");
+    localStorage.removeItem("wasl_user");
+    setToken(null);
+    setUser(null);
+    setScreen("landing");
+    setSelectedRole(null);
   };
 
-  const reopenRequest = async (id) => {
-    await fetch(`${API}/requests/${id}/reopen`, {
-      method: "POST",
-    });
+  if (token && user && screen === "home") {
+    return <HomePage user={user} token={token} onLogout={handleLogout} />;
+  }
 
-    loadData();
-  };
+  if (screen === "landing") {
+    return <LandingPage onSelect={handleRoleSelect} />;
+  }
 
-  if (!role) {
-    return <Welcome setRole={setRole} setPage={setPage} />;
+  if (screen === "register") {
+    return (
+      <RegisterPage
+        role={selectedRole}
+        onSwitch={() => setScreen("login")}
+        onLogin={handleLogin}
+        onBack={() => setScreen("landing")}
+      />
+    );
   }
 
   return (
-    <div className="site" dir="rtl">
-      <nav className="topNav">
-        <div className="navBrand" onClick={() => setRole(null)}>
-          <div className="miniDrop"></div>
-          <strong>وصل</strong>
+    <LoginPage
+      role={selectedRole}
+      onSwitch={() => setScreen("register")}
+      onLogin={handleLogin}
+      onBack={() => setScreen("landing")}
+    />
+  );
+}
+
+// ─────────────────────────────
+// LANDING PAGE
+// ─────────────────────────────
+const ROLES = [
+  {
+    key: "donor",
+    icon: "🩸",
+    title: "متبرع",
+    desc: "ساعد في إنقاذ حياة بالتبرع بدمك للحالات المحتاجة قريباً منك",
+    color: "#a0001c",
+    bg: "#fff0f3",
+    border: "#ffb3c1",
+  },
+  {
+    key: "patient",
+    icon: "👨‍👩‍👧",
+    title: "قريب المريض",
+    desc: "أنشئ طلب دم لذويك واحصل على متبرعين في أسرع وقت",
+    color: "#7b0014",
+    bg: "#fff5f0",
+    border: "#ffd4b3",
+  },
+  {
+    key: "hospital",
+    icon: "🏥",
+    title: "مستشفى",
+    desc: "أدر طلبات الدم وتابع التبرعات لمرضاك من لوحة تحكم متكاملة",
+    color: "#003f7b",
+    bg: "#f0f5ff",
+    border: "#b3ccff",
+  },
+];
+
+function LandingPage({ onSelect }) {
+  return (
+    <div className="landingPage" dir="rtl">
+      {/* خلفية ديكورية */}
+      <div className="landingBg">
+        <div className="bgCircle c1"></div>
+        <div className="bgCircle c2"></div>
+        <div className="bgCircle c3"></div>
+      </div>
+
+      <div className="landingContent">
+        {/* شعار */}
+        <div className="landingLogo">
+          <div className="logoDrop"></div>
+          <span>وصل</span>
         </div>
 
-        <div className="navLinks">
-          <button
-            onClick={() => setPage("home")}
-            className={page === "home" ? "active" : ""}
-          >
-            الرئيسية 🏠
-          </button>
+        {/* عنوان */}
+        <h1 className="landingTitle">
+          كل قطرة دم <br />
+          <span>تفرق</span>
+        </h1>
+        <p className="landingSubtitle">
+          منصة تربط المتبرعين بالمحتاجين في لحظات الطوارئ
+        </p>
 
-          {role === "patient" && (
+        {/* البطاقات */}
+        <p className="landingQuestion">من أنت؟</p>
+        <div className="roleCards">
+          {ROLES.map((r, i) => (
             <button
-              onClick={() => setPage("newRequest")}
-              className={page === "newRequest" ? "active" : ""}
+              key={r.key}
+              className="roleCard"
+              style={{
+                "--card-color": r.color,
+                "--card-bg": r.bg,
+                "--card-border": r.border,
+                animationDelay: `${i * 0.1}s`,
+              }}
+              onClick={() => onSelect(r.key)}
             >
-              طلب جديد ➕
+              <span className="roleIcon">{r.icon}</span>
+              <strong className="roleTitle">{r.title}</strong>
+              <p className="roleDesc">{r.desc}</p>
+              <span className="roleArrow">←</span>
             </button>
-          )}
-
-          <button
-            onClick={() => setPage("requests")}
-            className={page === "requests" ? "active" : ""}
-          >
-            الطلبات 📋
-          </button>
-
-          <button
-            onClick={() => setPage("profile")}
-            className={page === "profile" ? "active" : ""}
-          >
-            حسابي 👤
-          </button>
+          ))}
         </div>
-      </nav>
+      </div>
+    </div>
+  );
+}
 
+// ─────────────────────────────
+// LOGIN
+// ─────────────────────────────
+const ROLE_LABELS = { donor: "متبرع", patient: "قريب المريض", hospital: "مستشفى" };
+
+function LoginPage({ role, onSwitch, onLogin, onBack }) {
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    setLoading(true); setError("");
+    try {
+      const res = await fetch(`${API}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) return setError(data.error);
+      onLogin(data.token, data.user);
+    } catch {
+      setError("خطأ في الاتصال بالخادم");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="authPage" dir="rtl">
+      <div className="authCard">
+        <button className="backBtn" onClick={onBack}>→ رجوع</button>
+        <div className="authLogo">
+          <div className="miniDrop"></div>
+          <h1>وصل</h1>
+        </div>
+        <p className="authRole">{ROLE_LABELS[role]}</p>
+        <p className="authSub">سجّل دخولك للمتابعة</p>
+
+        {error && <div className="errorMsg">{error}</div>}
+
+        <input className="authInput" type="email" placeholder="البريد الإلكتروني"
+          value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+        <input className="authInput" type="password" placeholder="كلمة المرور"
+          value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+
+        <button className="authBtn" onClick={handleSubmit} disabled={loading}>
+          {loading ? "جاري التحميل..." : "تسجيل الدخول"}
+        </button>
+        <p className="authSwitch">
+          ما عندك حساب؟ <span onClick={onSwitch}>سجّل الآن</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────
+// REGISTER
+// ─────────────────────────────
+function RegisterPage({ role, onSwitch, onLogin, onBack }) {
+  const [form, setForm] = useState({
+    name: "", email: "", password: "",
+    phone: "", role: role || "donor", blood_type: "+O", city: "",
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    setLoading(true); setError("");
+    try {
+      const res = await fetch(`${API}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) return setError(data.error);
+      onLogin(data.token, { id: data.user_id, ...form });
+    } catch {
+      setError("خطأ في الاتصال بالخادم");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="authPage" dir="rtl">
+      <div className="authCard">
+        <button className="backBtn" onClick={onBack}>→ رجوع</button>
+        <div className="authLogo">
+          <div className="miniDrop"></div>
+          <h1>وصل</h1>
+        </div>
+        <p className="authRole">{ROLE_LABELS[role]}</p>
+        <p className="authSub">إنشاء حساب جديد</p>
+
+        {error && <div className="errorMsg">{error}</div>}
+
+        <input className="authInput" placeholder="الاسم الكامل"
+          value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+        <input className="authInput" type="email" placeholder="البريد الإلكتروني"
+          value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+        <input className="authInput" type="password" placeholder="كلمة المرور"
+          value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+        <input className="authInput" placeholder="رقم الهاتف"
+          value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+        <input className="authInput" placeholder="المدينة"
+          value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} />
+
+        {role === "donor" && (
+          <select className="authInput" value={form.blood_type}
+            onChange={e => setForm({ ...form, blood_type: e.target.value })}>
+            {["+O","-O","+A","-A","+B","-B","+AB","-AB"].map(b => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
+        )}
+
+        <button className="authBtn" onClick={handleSubmit} disabled={loading}>
+          {loading ? "جاري التسجيل..." : "إنشاء الحساب"}
+        </button>
+        <p className="authSwitch">
+          عندك حساب؟ <span onClick={onSwitch}>سجّل دخولك</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────
+// HOME — يتغير حسب الدور
+// ─────────────────────────────
+function HomePage({ user, token, onLogout }) {
+  const role = user?.role;
+  if (role === "hospital") return <HospitalHome user={user} token={token} onLogout={onLogout} />;
+  if (role === "patient")  return <PatientHome  user={user} token={token} onLogout={onLogout} />;
+  return                          <DonorHome    user={user} token={token} onLogout={onLogout} />;
+}
+
+// ─────────────────────────────
+// DONOR HOME
+// ─────────────────────────────
+function DonorHome({ user, token, onLogout }) {
+  const [showAlert, setShowAlert] = useState(true);
+  const [selectedBlood, setSelectedBlood] = useState(null);
+  const [requests, setRequests] = useState([]);
+  const [stats, setStats] = useState({ active_requests: 0, donations: 0, points: 0 });
+  const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const authHeaders = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+
+  const fetchRequests = async () => {
+    setLoading(true);
+    try {
+      const url = selectedBlood
+        ? `${API}/requests?blood_type=${selectedBlood}`
+        : `${API}/requests`;
+      const res = await fetch(url);
+      setRequests(await res.json());
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(`${API}/dashboard`, { headers: authHeaders });
+      setStats(await res.json());
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => { fetchRequests(); }, [selectedBlood]);
+  useEffect(() => { fetchStats(); }, []);
+
+  const handleDonate = async (reqId) => {
+    try {
+      const res = await fetch(`${API}/requests/${reqId}/donate`, {
+        method: "POST", headers: authHeaders,
+      });
+      const data = await res.json();
+      setSuccessMsg(data.message || data.error);
+      setTimeout(() => setSuccessMsg(""), 3000);
+      fetchRequests(); fetchStats();
+    } catch (e) { console.error(e); }
+  };
+
+  return (
+    <div className="site" dir="rtl">
+      {successMsg && <div className="successBanner">{successMsg}</div>}
+      {showAlert && (
+        <div className="emergencyAlert">
+          <span>🔔</span>
+          <p>حالة طارئة: مطلوب دم +O في مستشفى الملك فهد الآن</p>
+          <button onClick={() => setShowAlert(false)}>إغلاق</button>
+        </div>
+      )}
+      <Nav user={user} onLogout={onLogout} label="🩸 متبرع" />
       <main className="main">
-        {showAlert && (
-          <div className="emergencyAlert">
-            <span>🔔</span>
-            <p>حالة طارئة: مطلوب دم +O في مستشفى الملك فهد الآن</p>
-            <button onClick={() => setFilter("+O")}>عرض الحالة</button>
-          </div>
-        )}
-
-        <header className="topbar">
+        <section className="hero" style={{ background: "linear-gradient(135deg, #ff2d55, #a0001c)" }}>
           <div>
-            <h2>
-              {role === "donor" && "مرحباً، أحمد 👋"}
-              {role === "patient" && "مرحباً، قريب المريض"}
-              {role === "hospital" && "مستشفى الملك فهد 🏥"}
-            </h2>
-            <p>
-              {role === "donor" && "تابع الحالات القريبة وتبرع بسهولة"}
-              {role === "patient" && "أدخل بيانات المريض وتابع الطلب"}
-              {role === "hospital" && "راجع الحالات وأكد اكتمال التبرعات"}
-            </p>
+            <h1>أنقذ حياة اليوم 💗</h1>
+            <p>فصيلة دمك مطلوبة في حالات قريبة منك</p>
           </div>
+          <div className="heroStats">
+            <Stat value={stats.donations} label="تبرعاتك" />
+            <Stat value={stats.points} label="نقطة" />
+            <Stat value={stats.active_requests} label="حالات نشطة" />
+          </div>
+        </section>
 
-          <button className="bell" onClick={() => setShowAlert(!showAlert)}>
-            🔔
-          </button>
-        </header>
-
-        {page === "home" && role === "donor" && (
-          <DonorHome
-            dashboard={dashboard}
-            requests={requests}
-            filter={filter}
-            setFilter={setFilter}
-            donate={donate}
-          />
-        )}
-
-        {page === "home" && role === "patient" && (
-          <PatientHome setPage={setPage} requests={requests} />
-        )}
-
-        {page === "home" && role === "hospital" && (
-          <HospitalHome
-            dashboard={dashboard}
-            requests={requests}
-            completeRequest={completeRequest}
-            reopenRequest={reopenRequest}
-          />
-        )}
-
-        {page === "newRequest" && <NewRequest onDone={loadData} setPage={setPage} />}
-
-        {page === "requests" && (
-          <section className="panel">
-            <h2>الطلبات الحالية</h2>
-
-            <div className="cardsGrid">
-              {requests.map((req) => (
-                <RequestCard
-                  key={req.id}
-                  req={req}
-                  donate={role === "donor" ? donate : null}
-                  hospital={role === "hospital"}
-                  completeRequest={completeRequest}
-                  reopenRequest={reopenRequest}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {page === "profile" && <Profile role={role} />}
+        <section className="panel">
+          <div className="panelHead">
+            <h2>الحالات المتاحة</h2>
+            <span>{requests.length} حالة</span>
+          </div>
+          <div className="chips">
+            <button className={!selectedBlood ? "active" : ""} onClick={() => setSelectedBlood(null)}>الكل</button>
+            {["+O","-O","+A","-A","+B","-B","+AB","-AB"].map(b => (
+              <button key={b} className={selectedBlood === b ? "active" : ""}
+                onClick={() => setSelectedBlood(b === selectedBlood ? null : b)}>{b}</button>
+            ))}
+          </div>
+          {loading ? <p className="centerMsg">جاري التحميل...</p>
+            : requests.length === 0 ? <p className="centerMsg">لا توجد حالات متاحة</p>
+            : (
+              <div className="requestsList">
+                {requests.map(req => (
+                  <RequestCard key={req.id} req={req}
+                    onDonate={() => handleDonate(req.id)} showDonate />
+                ))}
+              </div>
+            )}
+        </section>
       </main>
     </div>
   );
 }
 
-function Welcome({ setRole, setPage }) {
-  const choose = (selectedRole) => {
-    setRole(selectedRole);
-    setPage("home");
+// ─────────────────────────────
+// PATIENT HOME
+// ─────────────────────────────
+function PatientHome({ user, token, onLogout }) {
+  const [requests, setRequests] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    patient_name: "", hospital_id: 1, blood_type: "+O", bags_needed: 1, urgency: "عادي"
+  });
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const authHeaders = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+
+  const fetchMyRequests = async () => {
+    try {
+      const res = await fetch(`${API}/requests`, { headers: authHeaders });
+      setRequests(await res.json());
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => { fetchMyRequests(); }, []);
+
+  const handleCreate = async () => {
+    try {
+      const res = await fetch(`${API}/requests`, {
+        method: "POST", headers: authHeaders,
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      setSuccessMsg(data.message);
+      setTimeout(() => setSuccessMsg(""), 3000);
+      setShowForm(false);
+      fetchMyRequests();
+    } catch (e) { console.error(e); }
   };
 
   return (
-    <div className="welcomePage" dir="rtl">
-      <div className="welcomeCard">
-        <div className="bigDrop"></div>
-        <h1>وصل</h1>
-        <p>منصة التبرع بالدم الذكية</p>
+    <div className="site" dir="rtl">
+      {successMsg && <div className="successBanner">{successMsg}</div>}
+      <Nav user={user} onLogout={onLogout} label="👨‍👩‍👧 عائلة مريض" />
+      <main className="main">
+        <section className="hero" style={{ background: "linear-gradient(135deg, #e05a00, #7b2d00)" }}>
+          <div>
+            <h1>طلبات الدم 🏥</h1>
+            <p>أنشئ طلب وسنوصلك بمتبرع قريب منك</p>
+          </div>
+          <div className="heroStats">
+            <Stat value={requests.length} label="طلباتك" />
+          </div>
+        </section>
 
-        <div className="roleCards">
-          <button onClick={() => choose("donor")}>
-            <span>💧</span>
-            <div>
-              <b>متبرع بالدم</b>
-              <small>شاهد الحالات وتبرع الآن</small>
-            </div>
-          </button>
+        <section className="panel">
+          <div className="panelHead">
+            <h2>طلباتي</h2>
+            <button className="newRequestBtn" onClick={() => setShowForm(!showForm)}>
+              {showForm ? "إلغاء" : "+ طلب جديد"}
+            </button>
+          </div>
 
-          <button onClick={() => choose("patient")}>
-            <span>👤</span>
-            <div>
-              <b>قريب المريض</b>
-              <small>أدخل بيانات المريض واطلب تبرع</small>
+          {showForm && (
+            <div className="requestForm">
+              <input className="authInput" placeholder="اسم المريض"
+                value={form.patient_name} onChange={e => setForm({ ...form, patient_name: e.target.value })} />
+              <select className="authInput" value={form.blood_type}
+                onChange={e => setForm({ ...form, blood_type: e.target.value })}>
+                {["+O","-O","+A","-A","+B","-B","+AB","-AB"].map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+              <input className="authInput" type="number" placeholder="عدد الأكياس" min="1"
+                value={form.bags_needed} onChange={e => setForm({ ...form, bags_needed: +e.target.value })} />
+              <select className="authInput" value={form.urgency}
+                onChange={e => setForm({ ...form, urgency: e.target.value })}>
+                <option value="عادي">عادي</option>
+                <option value="عاجل">عاجل 🚨</option>
+              </select>
+              <button className="authBtn" onClick={handleCreate}>إرسال الطلب</button>
             </div>
-          </button>
+          )}
 
-          <button onClick={() => choose("hospital")}>
-            <span>🏥</span>
-            <div>
-              <b>مستشفى</b>
-              <small>إدارة الحالات وتأكيد الاكتمال</small>
-            </div>
-          </button>
-        </div>
-      </div>
+          {requests.length === 0
+            ? <p className="centerMsg">لا توجد طلبات بعد</p>
+            : (
+              <div className="requestsList">
+                {requests.map(req => <RequestCard key={req.id} req={req} />)}
+              </div>
+            )}
+        </section>
+      </main>
     </div>
   );
 }
 
-function DonorHome({ dashboard, requests, filter, setFilter, donate }) {
-  return (
-    <>
-      <section className="hero">
-        <div>
-          <h1>أنقذ حياة اليوم 💗</h1>
-          <p>فصيلة دمك مطلوبة في حالات قريبة منك</p>
-        </div>
+// ─────────────────────────────
+// HOSPITAL HOME
+// ─────────────────────────────
+function HospitalHome({ user, token, onLogout }) {
+  const [requests, setRequests] = useState([]);
+  const [stats, setStats] = useState({ active_requests: 0, completed_requests: 0, donations: 0 });
+  const [successMsg, setSuccessMsg] = useState("");
 
-        <div className="heroStats">
-          <Stat value={dashboard.donations || 0} label="تبرعاتك" />
-          <Stat value={dashboard.points || 0} label="نقطة" />
-          <Stat value={dashboard.active_requests || 0} label="حالات نشطة" />
-        </div>
-      </section>
+  const authHeaders = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
 
-      <section className="panel">
-        <div className="panelHead">
-          <h2>الحالات المتاحة</h2>
-          <span>{requests.length} حالة</span>
-        </div>
+  const fetchAll = async () => {
+    try {
+      const [rRes, sRes] = await Promise.all([
+        fetch(`${API}/requests`),
+        fetch(`${API}/dashboard`, { headers: authHeaders }),
+      ]);
+      setRequests(await rRes.json());
+      setStats(await sRes.json());
+    } catch (e) { console.error(e); }
+  };
 
-        <div className="chips">
-          {bloodTypes.map((type) => (
-            <button
-              key={type}
-              onClick={() => setFilter(type)}
-              className={filter === type ? "active" : ""}
-            >
-              {type}
-            </button>
-          ))}
-        </div>
+  useEffect(() => { fetchAll(); }, []);
 
-        <div className="cardsGrid">
-          {requests.map((req) => (
-            <RequestCard key={req.id} req={req} donate={donate} />
-          ))}
-        </div>
-      </section>
-    </>
-  );
-}
-
-function PatientHome({ setPage, requests }) {
-  return (
-    <section className="panel">
-      <div className="patientHero">
-        <h1>طلب تبرع جديد 📋</h1>
-        <p>أدخل بيانات المريض وفصيلة الدم، وسيظهر الطلب للمتبرعين.</p>
-        <button onClick={() => setPage("newRequest")}>إنشاء طلب الآن</button>
-      </div>
-
-      <h2>طلباتك</h2>
-
-      <div className="cardsGrid">
-        {requests.map((req) => (
-          <RequestCard key={req.id} req={req} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function HospitalHome({ dashboard, requests, completeRequest, reopenRequest }) {
-  return (
-    <section className="panel">
-      <h2>لوحة تحكم المستشفى 🏥</h2>
-
-      <div className="statsGrid">
-        <StatBox value={dashboard.active_requests || 0} label="حالات نشطة" />
-        <StatBox value={dashboard.completed_requests || 0} label="حالات مكتملة" />
-        <StatBox value="95%" label="نسبة الاكتمال" />
-        <StatBox value="+A" label="الأكثر طلباً" />
-      </div>
-
-      <div className="cardsGrid">
-        {requests.map((req) => (
-          <RequestCard
-            key={req.id}
-            req={req}
-            hospital
-            completeRequest={completeRequest}
-            reopenRequest={reopenRequest}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function NewRequest({ onDone, setPage }) {
-  const [form, setForm] = useState({
-    patient_name: "",
-    hospital_id: 1,
-    blood_type: "+A",
-    bags_needed: 4,
-    urgency: "عاجل",
-  });
-
-  const submit = async (e) => {
-    e.preventDefault();
-
-    await fetch(`${API}/requests`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    });
-
-    onDone();
-    setPage("home");
+  const handleAction = async (id, action) => {
+    try {
+      await fetch(`${API}/requests/${id}/${action}`, {
+        method: "POST", headers: authHeaders,
+      });
+      setSuccessMsg(action === "complete" ? "تم إغلاق الحالة ✅" : "تم إعادة فتح الحالة ✅");
+      setTimeout(() => setSuccessMsg(""), 3000);
+      fetchAll();
+    } catch (e) { console.error(e); }
   };
 
   return (
-    <section className="panel">
-      <h2>بيانات المريض</h2>
+    <div className="site" dir="rtl">
+      {successMsg && <div className="successBanner">{successMsg}</div>}
+      <Nav user={user} onLogout={onLogout} label="🏥 مستشفى" />
+      <main className="main">
+        <section className="hero" style={{ background: "linear-gradient(135deg, #0055a0, #003f7b)" }}>
+          <div>
+            <h1>لوحة التحكم 🏥</h1>
+            <p>إدارة طلبات الدم والتبرعات</p>
+          </div>
+          <div className="heroStats">
+            <Stat value={stats.active_requests} label="نشطة" />
+            <Stat value={stats.completed_requests} label="مكتملة" />
+            <Stat value={stats.donations} label="تبرع" />
+          </div>
+        </section>
 
-      <form className="form bigForm" onSubmit={submit}>
-        <input
-          placeholder="اسم المريض"
-          value={form.patient_name}
-          onChange={(e) => setForm({ ...form, patient_name: e.target.value })}
-          required
-        />
-
-        <select
-          value={form.blood_type}
-          onChange={(e) => setForm({ ...form, blood_type: e.target.value })}
-        >
-          {bloodTypes
-            .filter((type) => type !== "الكل")
-            .map((type) => (
-              <option key={type}>{type}</option>
-            ))}
-        </select>
-
-        <select
-          value={form.hospital_id}
-          onChange={(e) => setForm({ ...form, hospital_id: Number(e.target.value) })}
-        >
-          <option value={1}>مستشفى الملك فهد</option>
-          <option value={2}>مستشفى سلمان</option>
-          <option value={3}>مستشفى الرياض</option>
-        </select>
-
-        <input
-          type="number"
-          min="1"
-          value={form.bags_needed}
-          onChange={(e) =>
-            setForm({ ...form, bags_needed: Number(e.target.value) })
-          }
-        />
-
-        <select
-          value={form.urgency}
-          onChange={(e) => setForm({ ...form, urgency: e.target.value })}
-        >
-          <option value="عاجل">عاجل</option>
-          <option value="عادي">عادي</option>
-        </select>
-
-        <button>إرسال الطلب</button>
-      </form>
-    </section>
+        <section className="panel">
+          <div className="panelHead">
+            <h2>جميع الطلبات</h2>
+            <span>{requests.length} طلب</span>
+          </div>
+          {requests.length === 0
+            ? <p className="centerMsg">لا توجد طلبات</p>
+            : (
+              <div className="requestsList">
+                {requests.map(req => (
+                  <div key={req.id} className={`requestCard ${req.urgency === "عاجل" ? "urgent" : ""}`}>
+                    <div className="cardRight">
+                      <span className="bloodBadge">{req.blood_type}</span>
+                      <div>
+                        <b>{req.hospital_name}</b>
+                        <p>{req.patient_name} • {req.city}</p>
+                        {req.urgency === "عاجل" && <span className="urgentTag">🚨 عاجل</span>}
+                      </div>
+                    </div>
+                    <div className="cardLeft">
+                      <div className="progressBar">
+                        <div className="progressFill"
+                          style={{ width: `${Math.round((req.bags_received / req.bags_needed) * 100)}%` }} />
+                      </div>
+                      <small>{req.bags_received}/{req.bags_needed} أكياس</small>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button className="actionBtn green"
+                          onClick={() => handleAction(req.id, "complete")}>إغلاق</button>
+                        <button className="actionBtn blue"
+                          onClick={() => handleAction(req.id, "reopen")}>إعادة فتح</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+        </section>
+      </main>
+    </div>
   );
 }
 
-function RequestCard({ req, donate, hospital, completeRequest, reopenRequest }) {
-  const percent = Math.min((req.bags_received / req.bags_needed) * 100, 100);
-
+// ─────────────────────────────
+// SHARED COMPONENTS
+// ─────────────────────────────
+function Nav({ user, onLogout, label }) {
   return (
-    <div className="requestCard">
-      <div className="bloodBadge">{req.blood_type}</div>
-
-      <span className={req.status === "مكتمل" ? "status done" : "status"}>
-        {req.status === "مكتمل"
-          ? "✓ مكتمل"
-          : req.urgency === "عاجل"
-          ? "🚨 عاجل"
-          : "نشط"}
-      </span>
-
-      <h3>{req.hospital_name}</h3>
-
-      <p>
-        📍 {req.city} — المريض: {req.patient_name}
-      </p>
-
-      <div className="progressInfo">
-        <b>
-          {req.bags_received} / {req.bags_needed} أكياس
-        </b>
-        <small>الأكياس المتبرع بها</small>
+    <nav className="topNav">
+      <div className="navBrand">
+        <div className="miniDrop"></div>
+        <strong>وصل</strong>
       </div>
-
-      <div className="progress">
-        <div style={{ width: `${percent}%` }} />
+      <div className="navUser">
+        <span className="navRoleTag">{label}</span>
+        <span>👤 {user?.name}</span>
+        <button className="logoutBtn" onClick={onLogout}>خروج</button>
       </div>
+    </nav>
+  );
+}
 
-      <div className={hospital ? "actions threeActions" : "actions"}>
-        <button className="light">التفاصيل</button>
-
-        {hospital ? (
-          <>
-            <button onClick={() => completeRequest(req.id)} className="green">
-              اكتملت ✓
-            </button>
-            <button onClick={() => reopenRequest(req.id)} className="dark">
-              لم تكتمل
-            </button>
-          </>
-        ) : donate ? (
-          <button onClick={() => donate(req.id)} className="red">
-            💧 تبرع الآن
-          </button>
-        ) : (
-          <button className="red">متابعة الطلب</button>
+function RequestCard({ req, onDonate, showDonate }) {
+  const progress = Math.round((req.bags_received / req.bags_needed) * 100);
+  return (
+    <div className={`requestCard ${req.urgency === "عاجل" ? "urgent" : ""}`}>
+      <div className="cardRight">
+        <span className="bloodBadge">{req.blood_type}</span>
+        <div>
+          <b>{req.hospital_name}</b>
+          <p>{req.city} • {req.patient_name}</p>
+          {req.urgency === "عاجل" && <span className="urgentTag">🚨 عاجل</span>}
+        </div>
+      </div>
+      <div className="cardLeft">
+        <div className="progressBar">
+          <div className="progressFill" style={{ width: `${progress}%` }} />
+        </div>
+        <small>{req.bags_received}/{req.bags_needed} أكياس</small>
+        {showDonate && (
+          <button className="volunteerBtn" onClick={onDonate}>تطوع 🩸</button>
         )}
       </div>
     </div>
   );
 }
 
-function Profile({ role }) {
-  return (
-    <section className="panel profile">
-      <div className="profileHero">
-        <div className="avatar">
-          {role === "hospital" ? "🏥" : role === "patient" ? "👤" : "💧"}
-        </div>
-
-        <h1>
-          {role === "hospital"
-            ? "مستشفى الملك فهد"
-            : role === "patient"
-            ? "قريب المريض"
-            : "أحمد العتيبي"}
-        </h1>
-
-        <p>{role === "donor" ? "فصيلة الدم: +O" : "حساب مستخدم في منصة وصل"}</p>
-
-        <button>⭐ 240 نقطة</button>
-      </div>
-    </section>
-  );
-}
-
 function Stat({ value, label }) {
   return (
-    <div>
+    <div className="stat">
       <b>{value}</b>
       <span>{label}</span>
-    </div>
-  );
-}
-
-function StatBox({ value, label }) {
-  return (
-    <div className="statBox">
-      <b>{value}</b>
-      <p>{label}</p>
     </div>
   );
 }
