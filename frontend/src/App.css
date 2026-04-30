@@ -1,0 +1,327 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Tahoma, Arial, sans-serif;
+  background: #f6efe8;
+  direction: rtl;
+}
+
+/* ================= WELCOME ================= */
+
+.welcomePage {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at center, #7d0014 0%, #280711 75%);
+  color: white;
+  padding: 30px;
+}
+
+.welcomeCard {
+  width: min(520px, 100%);
+  text-align: center;
+}
+
+.bigDrop {
+  width: 105px;
+  height: 130px;
+  background: #e30035;
+  border-radius: 70px 70px 70px 0;
+  transform: rotate(-45deg);
+  margin: 0 auto 20px;
+}
+
+.welcomeCard h1 {
+  font-size: 64px;
+  margin: 0;
+}
+
+.welcomeCard p {
+  color: #ead1d6;
+  margin-bottom: 40px;
+}
+
+.roleCards {
+  display: grid;
+  gap: 18px;
+}
+
+.roleCards button {
+  background: rgba(255,255,255,.12);
+  color: white;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.roleCards button:hover {
+  background: rgba(255,255,255,.2);
+}
+
+.roleCards span {
+  font-size: 32px;
+}
+
+.roleCards b {
+  display: block;
+  font-size: 20px;
+}
+
+.roleCards small {
+  color: #f0dada;
+}
+
+/* ================= NAV ================= */
+
+.topNav {
+  background: linear-gradient(90deg, #7b0014, #a0001c);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 30px;
+  align-items: center;
+}
+
+.navBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.miniDrop {
+  width: 25px;
+  height: 30px;
+  background: #ff2d55;
+  border-radius: 50px 50px 50px 0;
+  transform: rotate(-45deg);
+}
+
+.navLinks button {
+  margin-left: 10px;
+  border: none;
+  background: transparent;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.navLinks .active {
+  background: rgba(255,255,255,.2);
+}
+
+/* ================= MAIN ================= */
+
+.main {
+  padding: 25px;
+  max-width: 1100px;
+  margin: auto;
+}
+
+/* ================= ALERT ================= */
+
+.emergencyAlert {
+  background: #2b0008;
+  color: white;
+  padding: 15px 20px;
+  border-radius: 18px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.emergencyAlert button {
+  background: #ff2d55;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* ================= HEADER ================= */
+
+.topbar {
+  background: white;
+  padding: 18px;
+  border-radius: 18px;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.bell {
+  background: #ffe5ea;
+  border: none;
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+}
+
+/* ================= HERO ================= */
+
+.hero {
+  background: linear-gradient(135deg, #ff2d55, #a0001c);
+  color: white;
+  border-radius: 20px;
+  padding: 25px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.heroStats {
+  display: flex;
+  gap: 20px;
+}
+
+/* ================= PANELS ================= */
+
+.panel {
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px;
+}
+
+.panelHead {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+/* ================= FILTER ================= */
+
+.chips {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+  flex-wrap: wrap;
+}
+
+.chips button {
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  cursor: pointer;
+}
+
+.chips .active {
+  background: #ff2d55;
+  color: white;
+}
+
+/* ================= CARDS ================= */
+
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.requestCard {
+  background: #fff;
+  border-radius: 18px;
+  padding: 18px;
+  border-right: 4px solid #ff2d55;
+  position: relative;
+}
+
+.bloodBadge {
+  position: absolute;
+  left: 15px;
+  top: 15px;
+  background: #ff2d55;
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.status {
+  background: #ffe6ea;
+  color: #d4002a;
+  padding: 6px 12px;
+  border-radius: 20px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.status.done {
+  background: #e5fff0;
+  color: green;
+}
+
+.progress {
+  height: 8px;
+  background: #eee;
+  border-radius: 10px;
+  margin: 10px 0;
+}
+
+.progress div {
+  height: 100%;
+  background: #ff2d55;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.actions button {
+  flex: 1;
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.red { background: #ff2d55; color: white; }
+.green { background: #28a745; color: white; }
+.dark { background: #555; color: white; }
+.light { background: #eee; }
+
+/* ================= PROFILE ================= */
+
+.profileHero {
+  background: #2b0008;
+  color: white;
+  padding: 30px;
+  border-radius: 18px;
+  text-align: center;
+}
+
+.avatar {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+/* ================= FORM ================= */
+
+.form {
+  display: grid;
+  gap: 10px;
+}
+
+.form input,
+.form select {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+}
+
+.form button {
+  background: #ff2d55;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+}
