@@ -1,190 +1,158 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import mysql.connector
+from flask_jwt_extended import (
+    JWTManager, create_access_token,
+    jwt_required, get_jwt_identity
+)
+from datetime import timedelta
 
 app = Flask(__name__)
 CORS(app)
 
-def db():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="YOUR_PASSWORD",
-        database="wasl_db"
-    )
+app.config["JWT_SECRET_KEY"] = "wasl-secret-key"
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
+jwt = JWTManager(app)
 
+# ── Fake users ──
+FAKE_USERS = {
+    "donor@test.com":    {"id": "1", "name": "أحمد المتبرع",   "role": "donor",    "blood_type": "+O", "city": "الرياض", "points": 240},
+    "patient@test.com":  {"id": "2", "name": "عائلة المريض",   "role": "patient",  "blood_type": None, "city": "الرياض", "points": 0},
+    "hospital@test.com": {"id": "3", "name": "مستشفى الملك فهد","role": "hospital", "blood_type": None, "city": "الرياض", "points": 0},
+}
+
+# ── Fake requests ──
+FAKE_REQUESTS = [
+    {"id": 1, "patient_name": "محمد العتيبي",  "blood_type": "+A", "bags_needed": 4, "bags_received": 2, "urgency": "عاجل", "status": "نشط",   "hospital_name": "مستشفى الملك فهد", "city": "الرياض"},
+    {"id": 2, "patient_name": "سارة الزهراني", "blood_type": "-O", "bags_needed": 5, "bags_received": 1, "urgency": "عادي", "status": "نشط",   "hospital_name": "مستشفى سلمان",     "city": "الرياض"},
+    {"id": 3, "patient_name": "خالد الشمري",   "blood_type": "+B", "bags_needed": 3, "bags_received": 3, "urgency": "عادي", "status": "مكتمل", "hospital_name": "مستشفى الرياض",    "city": "الرياض"},
+    {"id": 4, "patient_name": "نورة القحطاني", "blood_type": "+AB","bags_needed": 2, "bags_received": 0, "urgency": "عاجل", "status": "نشط",   "hospital_name": "مستشفى الملك فهد", "city": "جدة"},
+]
+
+# ─────────────────────────────
+# REGISTER — just return a token, no DB
+# ─────────────────────────────
+@app.post("/api/register")
+def register():
+    data = request.json
+    name = data.get("name", "مستخدم جديد")
+    role = data.get("role", "donor")
+
+    fake_user = {
+        "id": "99",
+        "name": name,
+        "role": role,
+        "blood_type": data.get("blood_type"),
+        "city": data.get("city", ""),
+        "points": 0
+    }
+
+    token = create_access_token(identity="99")
+    return jsonify({"message": "تم التسجيل", "token": token, "user_id": "99", "user": fake_user}), 201
+
+# ─────────────────────────────
+# LOGIN — any email works, no password check
+# ─────────────────────────────
+@app.post("/api/login")
+def login():
+    data = request.json
+    email = data.get("email", "")
+
+    # check if it's one of our fake users
+    user = FAKE_USERS.get(email)
+
+    if not user:
+        # create a generic user for any email
+        user = {
+            "id": "99",
+            "name": email.split("@")[0],
+            "role": "donor",
+            "blood_type": "+O",
+            "city": "الرياض",
+            "points": 0
+        }
+
+    token = create_access_token(identity=str(user["id"]))
+    return jsonify({"token": token, "user": user})
+
+# ─────────────────────────────
+# DASHBOARD
+# ─────────────────────────────
 @app.get("/api/dashboard")
+@jwt_required()
 def dashboard():
-    conn = db()
-    cur = conn.cursor(dictionary=True)
-
-    cur.execute("SELECT COUNT(*) AS active FROM blood_requests WHERE status='نشط'")
-    active = cur.fetchone()["active"]
-
-    cur.execute("SELECT COUNT(*) AS completed FROM blood_requests WHERE status='مكتمل'")
-    completed = cur.fetchone()["completed"]
-
-    cur.execute("SELECT points FROM users WHERE role='donor' LIMIT 1")
-    donor = cur.fetchone()
-    points = donor["points"] if donor else 0
-
-    cur.execute("SELECT COUNT(*) AS donations FROM donations")
-    donations = cur.fetchone()["donations"]
-
-    cur.close()
-    conn.close()
-
     return jsonify({
-        "active_requests": active,
-        "completed_requests": completed,
-        "points": points,
-        "donations": donations
+        "active_requests": 3,
+        "completed_requests": 1,
+        "donations": 2,
+        "points": 240
     })
 
+# ─────────────────────────────
+# GET REQUESTS
+# ─────────────────────────────
 @app.get("/api/requests")
 def get_requests():
     blood_type = request.args.get("blood_type")
-
-    conn = db()
-    cur = conn.cursor(dictionary=True)
-
-    sql = """
-        SELECT 
-          br.id,
-          br.patient_name,
-          br.blood_type,
-          br.bags_needed,
-          br.bags_received,
-          br.urgency,
-          br.status,
-          br.created_at,
-          h.name AS hospital_name,
-          h.city
-        FROM blood_requests br
-        JOIN hospitals h ON br.hospital_id = h.id
-        WHERE 1=1
-    """
-    values = []
+    results = [r for r in FAKE_REQUESTS if r["status"] == "نشط"]
 
     if blood_type and blood_type != "الكل":
-        sql += " AND br.blood_type = %s"
-        values.append(blood_type)
+        results = [r for r in results if r["blood_type"] == blood_type]
 
-    sql += " ORDER BY br.created_at DESC"
+    return jsonify(results)
 
-    cur.execute(sql, values)
-    rows = cur.fetchall()
-
-    cur.close()
-    conn.close()
-
-    return jsonify(rows)
-
+# ─────────────────────────────
+# CREATE REQUEST
+# ─────────────────────────────
 @app.post("/api/requests")
+@jwt_required()
 def create_request():
     data = request.json
+    new_req = {
+        "id": len(FAKE_REQUESTS) + 1,
+        "patient_name": data.get("patient_name", "مريض جديد"),
+        "blood_type": data.get("blood_type", "+O"),
+        "bags_needed": data.get("bags_needed", 1),
+        "bags_received": 0,
+        "urgency": data.get("urgency", "عادي"),
+        "status": "نشط",
+        "hospital_name": "مستشفى الملك فهد",
+        "city": "الرياض"
+    }
+    FAKE_REQUESTS.append(new_req)
+    return jsonify({"message": "تم إنشاء الطلب", "id": new_req["id"]}), 201
 
-    conn = db()
-    cur = conn.cursor()
-
-    cur.execute(
-        """
-        INSERT INTO blood_requests 
-        (patient_name, hospital_id, blood_type, bags_needed, urgency)
-        VALUES (%s, %s, %s, %s, %s)
-        """,
-        (
-            data["patient_name"],
-            data["hospital_id"],
-            data["blood_type"],
-            data["bags_needed"],
-            data.get("urgency", "عادي")
-        )
-    )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"message": "تم إنشاء الطلب بنجاح"})
-
+# ─────────────────────────────
+# DONATE
+# ─────────────────────────────
 @app.post("/api/requests/<int:req_id>/donate")
+@jwt_required()
 def donate(req_id):
-    data = request.json or {}
+    for r in FAKE_REQUESTS:
+        if r["id"] == req_id and r["status"] == "نشط":
+            r["bags_received"] = min(r["bags_received"] + 1, r["bags_needed"])
+            if r["bags_received"] >= r["bags_needed"]:
+                r["status"] = "مكتمل"
+            return jsonify({"message": "تم تسجيل التبرع ✅ +20 نقطة"})
+    return jsonify({"error": "الطلب غير متاح"}), 400
 
-    conn = db()
-    cur = conn.cursor()
-
-    cur.execute("""
-        UPDATE blood_requests
-        SET bags_received = bags_received + 1
-        WHERE id = %s 
-        AND status = 'نشط'
-        AND bags_received < bags_needed
-    """, (req_id,))
-
-    if cur.rowcount > 0:
-        cur.execute("""
-            INSERT INTO donations (request_id, donor_name, donor_blood_type)
-            VALUES (%s, %s, %s)
-        """, (
-            req_id,
-            data.get("donor_name", "أحمد العتيبي"),
-            data.get("donor_blood_type", "+O")
-        ))
-
-        cur.execute("""
-            UPDATE users
-            SET points = points + 20
-            WHERE role = 'donor'
-            LIMIT 1
-        """)
-
-    cur.execute("""
-        UPDATE blood_requests
-        SET status = 'مكتمل'
-        WHERE id = %s AND bags_received >= bags_needed
-    """, (req_id,))
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"message": "تم تسجيل التبرع"})
-
+# ─────────────────────────────
+# COMPLETE / REOPEN
+# ─────────────────────────────
 @app.post("/api/requests/<int:req_id>/complete")
+@jwt_required()
 def complete_request(req_id):
-    conn = db()
-    cur = conn.cursor()
-
-    cur.execute("""
-        UPDATE blood_requests
-        SET status = 'مكتمل', bags_received = bags_needed
-        WHERE id = %s
-    """, (req_id,))
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"message": "تم تأكيد اكتمال الحالة"})
+    for r in FAKE_REQUESTS:
+        if r["id"] == req_id:
+            r["status"] = "مكتمل"
+    return jsonify({"message": "تم الإغلاق ✅"})
 
 @app.post("/api/requests/<int:req_id>/reopen")
+@jwt_required()
 def reopen_request(req_id):
-    conn = db()
-    cur = conn.cursor()
-
-    cur.execute("""
-        UPDATE blood_requests
-        SET status = 'نشط'
-        WHERE id = %s
-    """, (req_id,))
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({"message": "تم إبقاء الحالة نشطة"})
+    for r in FAKE_REQUESTS:
+        if r["id"] == req_id:
+            r["status"] = "نشط"
+    return jsonify({"message": "تم إعادة الفتح ✅"})
 
 if __name__ == "__main__":
     app.run(debug=True)
