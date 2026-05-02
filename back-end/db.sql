@@ -1,69 +1,58 @@
-DROP DATABASE IF EXISTS wasl_db;
-CREATE DATABASE wasl_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE wasl_db;
+-- wasl — SQLite schema
+-- يتم إنشاء قاعدة البيانات تلقائياً من app.py (wasl.db)
+-- هذا الملف للمرجعية فقط
 
-CREATE TABLE users (
-  id            INT AUTO_INCREMENT PRIMARY KEY,
-  name          VARCHAR(100) NOT NULL,
-  phone         VARCHAR(20) UNIQUE,
-  email         VARCHAR(150) UNIQUE,
-  password_hash VARCHAR(255),
-  role          ENUM('donor','patient','hospital') NOT NULL,
-  blood_type    VARCHAR(5),
-  city          VARCHAR(100),
-  fcm_token     VARCHAR(255),
-  points        INT DEFAULT 0,
-  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS users (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    name          TEXT NOT NULL,
+    phone         TEXT,
+    email         TEXT UNIQUE NOT NULL,
+    password_hash TEXT,
+    role          TEXT NOT NULL CHECK(role IN ('donor','patient','hospital')),
+    blood_type    TEXT,
+    city          TEXT,
+    points        INTEGER DEFAULT 0,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE hospitals (
-  id    INT AUTO_INCREMENT PRIMARY KEY,
-  name  VARCHAR(150) NOT NULL,
-  city  VARCHAR(100) NOT NULL
+CREATE TABLE IF NOT EXISTS hospitals (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    name    TEXT NOT NULL,
+    city    TEXT NOT NULL,
+    user_id INTEGER REFERENCES users(id)
 );
 
-CREATE TABLE blood_requests (
-  id             INT AUTO_INCREMENT PRIMARY KEY,
-  patient_name   VARCHAR(100) NOT NULL,
-  user_id        INT,
-  hospital_id    INT NOT NULL,
-  blood_type     VARCHAR(5) NOT NULL,
-  bags_needed    INT NOT NULL,
-  bags_received  INT DEFAULT 0,
-  urgency        ENUM('عاجل','عادي') DEFAULT 'عادي',
-  status         ENUM('نشط','مكتمل','ملغي') DEFAULT 'نشط',
-  created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (hospital_id) REFERENCES hospitals(id),
-  FOREIGN KEY (user_id) REFERENCES users(id)
+-- status: 'بانتظار الموافقة' → يرسله قريب المريض، لا يظهر للمتبرعين بعد
+--         'نشط'               → وافقت عليه المستشفى، يظهر للمتبرعين
+--         'مكتمل'             → أغلقته المستشفى
+--         'ملغي'              → ملغي
+CREATE TABLE IF NOT EXISTS blood_requests (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_name  TEXT NOT NULL,
+    user_id       INTEGER REFERENCES users(id),
+    hospital_id   INTEGER NOT NULL REFERENCES hospitals(id),
+    blood_type    TEXT NOT NULL,
+    bags_needed   INTEGER NOT NULL DEFAULT 1,
+    bags_received INTEGER DEFAULT 0,
+    urgency       TEXT DEFAULT 'عادي',  -- 'عادي' | 'عاجل'
+    status        TEXT DEFAULT 'بانتظار الموافقة',
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE donations (
-  id               INT AUTO_INCREMENT PRIMARY KEY,
-  request_id       INT NOT NULL,
-  donor_id         INT,
-  donor_name       VARCHAR(100),
-  donor_blood_type VARCHAR(5),
-  status           ENUM('معلق','مؤكد','ملغي') DEFAULT 'معلق',
-  donated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (request_id) REFERENCES blood_requests(id),
-  FOREIGN KEY (donor_id) REFERENCES users(id)
+CREATE TABLE IF NOT EXISTS donations (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_id       INTEGER NOT NULL REFERENCES blood_requests(id),
+    donor_id         INTEGER REFERENCES users(id),
+    donor_name       TEXT,
+    donor_blood_type TEXT,
+    appointment_time TEXT,   -- datetime-local يختاره المتبرع
+    status           TEXT DEFAULT 'مؤكد',
+    donated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO hospitals (name, city) VALUES
-('مستشفى الملك فهد', 'الرياض'),
-('مستشفى سلمان', 'الرياض'),
-('مستشفى الرياض', 'الرياض');
-
-INSERT INTO users (name, phone, email, password_hash, role, blood_type, city, points) VALUES
-('أحمد العتيبي',     '0500000000', 'ahmed@test.com',  '$2b$12$placeholder', 'donor',    '+O', 'الرياض', 240),
-('قريب المريض',      '0555555555', 'family@test.com', '$2b$12$placeholder', 'patient',  NULL, 'الرياض', 0),
-('مستشفى الملك فهد', '0110000000', 'hosp@test.com',   '$2b$12$placeholder', 'hospital', NULL, 'الرياض', 0);
-
-INSERT INTO blood_requests (patient_name, user_id, hospital_id, blood_type, bags_needed, bags_received, urgency, status) VALUES
-('محمد العتيبي',  2, 1, '+A', 4, 2, 'عاجل', 'نشط'),
-('فهد العتيبي',   2, 2, '+O', 3, 3, 'عادي', 'مكتمل'),
-('سارة الزهراني', 2, 3, '-O', 5, 1, 'عادي', 'نشط');
-
-INSERT INTO donations (request_id, donor_id, donor_name, donor_blood_type, status) VALUES
-(1, 1, 'أحمد العتيبي', '+O', 'مؤكد'),
-(2, 1, 'أحمد العتيبي', '+O', 'مؤكد');
+-- حسابات تجريبية (كلمة المرور لكلها: test1234)
+-- donor@test.com    → متبرع  (+O، الرياض، 240 نقطة)
+-- patient@test.com  → قريب مريض
+-- hosp1@test.com    → مستشفى الملك فهد (الرياض)
+-- hosp2@test.com    → مستشفى سلمان (الرياض)
+-- hosp3@test.com    → مستشفى الرياض (جدة)
