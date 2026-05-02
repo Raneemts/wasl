@@ -19,7 +19,7 @@ def db():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="1234",      # ← غير هذا لكلمة مرورك
+        password="NewStrongPass123!",      # ← غير هذا لكلمة مرورك
         database="wasl_db"
     )
 
