@@ -341,7 +341,6 @@ Users interact with the mobile app → requests are sent to the back-end → dat
 The architecture ensures scalability, fast response time, and reliable communication between all system components.
 ---
 
-
 ## Stage 3 — API Specifications
 
 The Wasl system exposes a set of RESTful API endpoints to handle user actions such as creating requests, donating, and managing cases.
@@ -482,6 +481,7 @@ Hospital confirms donation
   "message": "Donation confirmed, case updated"
 }
 ```
+
 ## SCM and QA Plans
 
 ### Source Control Management (SCM)
@@ -515,11 +515,27 @@ Regular testing ensures the system works as expected and improves overall qualit
 The following technologies were selected based on project requirements:
 
 - React Native: Allows building a cross-platform mobile application efficiently
-- Node.js with Express: Provides a fast and scalable backend for handling requests and business logic
+- Python (Flask or Django): Provides a reliable and scalable backend for handling APIs, business logic, authentication, and request management.
 - MySQL: Suitable for structured relational data such as users, requests, and donations
 - Firebase Cloud Messaging (FCM): Enables real-time push notifications for emergency cases
 
 These technologies were chosen because they are reliable, widely used, and suitable for building scalable real-time applications like Wasl.
+
+---
+
+## Attached Diagrams and Supporting Files
+
+For easier navigation and evaluation, all required technical diagrams and supporting files are included in the project repository root directory:
+
+- **System Architecture Diagram:** [arch_diagram.JPG](./arch_diagram.JPG)
+- **Data Flow Diagram:** [dataflow_diagram.png](./dataflow_diagram.png)
+- **UML / Class Diagram:** [wasal_uml_1.png](./wasal_uml_1.png)
+- **Entity Relationship Diagram (ERD):** [wasl_erd.jpeg](./wasl_erd.jpeg)
+- **Sequence Diagram 1 — Patient Family Posts Request:** [seq1_post_request_3.PNG](./seq1_post_request_3.PNG)
+- **Sequence Diagram 2 — Donor Responds to Request:** [seq2_donor_donates_3.jpeg](./seq2_donor_donates_3.jpeg)
+- **Sequence Diagram 3 — Hospital Confirms Donation:** [sequence diagram3.jpeg](./sequence diagram3.jpeg)
+
+These files provide complete visual documentation for system structure, workflow, and database design as required for Stage 3.
 
 
 # Stage 4 — Sprint Planning & Development Execution
