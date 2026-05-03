@@ -530,10 +530,10 @@ For easier navigation and evaluation, all required technical diagrams and suppor
 - **System Architecture Diagram:** [arch_diagram.JPG](./arch_diagram.JPG)
 - **Data Flow Diagram:** [dataflow_diagram.png](./dataflow_diagram.png)
 - **UML / Class Diagram:** [wasal_uml_1.png](./wasal_uml_1.png)
-- **Entity Relationship Diagram (ERD):** [wasl_erd.jpeg](./wasl_erd.jpeg)
+- **Entity Relationship Diagram (ERD):** [wasl_erd.jpeg](./wasal_erd.png)
 - **Sequence Diagram 1 — Patient Family Posts Request:** [seq1_post_request_3.PNG](./seq1_post_request_3.PNG)
 - **Sequence Diagram 2 — Donor Responds to Request:** [seq2_donor_donates_3.jpeg](./seq2_donor_donates_3.jpeg)
-- **Sequence Diagram 3 — Hospital Confirms Donation:** [sequence diagram3.jpeg](./sequence diagram3.jpeg)
+- **Sequence Diagram 3 — Hospital Confirms Donation:** [sequence diagram3.jpeg](./sequence_diagram3.jpeg)
 
 These files provide complete visual documentation for system structure, workflow, and database design as required for Stage 3.
 
