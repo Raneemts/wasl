@@ -5,7 +5,6 @@ const API = "http://127.0.0.1:5000/api";
 
 // ══════════════════════════════
 //  ROOT
-// ══════════════════════════════
 export default function App() {
   const [token, setToken]   = useState(localStorage.getItem("wasl_token"));
   const [user,  setUser]    = useState(JSON.parse(localStorage.getItem("wasl_user") || "null"));
