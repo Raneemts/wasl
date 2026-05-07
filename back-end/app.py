@@ -38,10 +38,10 @@ def register():
     conn = db(); cur = conn.cursor()
     try:
         cur.execute("""
-            INSERT INTO users (name,email,password_hash,role,blood_type,city)
-            VALUES (%s,%s,%s,%s,%s,%s)
+            INSERT INTO users (name,email,password_hash,role,blood_type,city,region)
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
         """, (d["name"], d["email"], hashed, d["role"],
-              d.get("blood_type"), d.get("city")))
+              d.get("blood_type"), d.get("city"), d.get("region")))
         conn.commit()
         uid = cur.lastrowid
     except mysql.connector.IntegrityError:
@@ -98,8 +98,12 @@ def profile():
 
 @app.get("/api/hospitals")
 def get_hospitals():
+    region = request.args.get("region")
     conn = db(); cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT * FROM hospitals")
+    if region:
+        cur.execute("SELECT * FROM hospitals WHERE region=%s", (region,))
+    else:
+        cur.execute("SELECT * FROM hospitals")
     rows = cur.fetchall()
     cur.close(); conn.close()
     return jsonify(rows)

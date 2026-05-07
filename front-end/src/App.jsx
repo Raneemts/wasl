@@ -3,6 +3,12 @@ import "./App.css";
 
 const API = "http://127.0.0.1:5000/api";
 
+const REGIONS = [
+  "الرياض", "مكة المكرمة", "المدينة المنورة", "الشرقية",
+  "القصيم", "عسير", "تبوك", "حائل",
+  "الحدود الشمالية", "جازان", "نجران", "الباحة", "الجوف"
+];
+
 // ══════════════════════════════
 //  ROOT
 export default function App() {
@@ -83,7 +89,7 @@ function Landing({ onSelect }) {
 function AuthPage({ mode, onLogin, onSwitch, onBack }) {
   const isLogin = mode === "login";
   const [form, setForm] = useState({
-    name:"", email:"", password:"", role:"donor", blood_type:"+O", city:""
+    name:"", email:"", password:"", role:"donor", blood_type:"+O", city:"", region:""
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -128,6 +134,10 @@ function AuthPage({ mode, onLogin, onSwitch, onBack }) {
             <option value="donor">متبرع</option>
             <option value="patient">قريب المريض</option>
             <option value="hospital">مستشفى</option>
+          </select>
+          <select className="inp" value={form.region} onChange={e => set("region", e.target.value)}>
+            <option value="">— اختر المنطقة —</option>
+            {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
           <input className="inp" placeholder="المدينة"
             value={form.city} onChange={e => set("city", e.target.value)} />
@@ -285,23 +295,30 @@ function PatientApp({ user, token, onLogout }) {
   const [requests, setRequests] = useState([]);
   const [hospitals, setHospitals] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState("");
   const [form, setForm] = useState({
-    patient_name:"", hospital_id:"1", blood_type:"+O", bags_needed:1, urgency:"عادي"
+    patient_name:"", hospital_id:"", blood_type:"+O", bags_needed:1, urgency:"عادي"
   });
   const [msg, setMsg] = useState("");
 
   const H = { "Content-Type":"application/json", Authorization:`Bearer ${token}` };
 
-  const fetchAll = async () => {
-    const [rRes, hRes] = await Promise.all([
-      fetch(`${API}/requests`),
-      fetch(`${API}/hospitals`)
-    ]);
-    setRequests(await rRes.json());
-    setHospitals(await hRes.json());
+  const fetchRequests = async () => {
+    const r = await fetch(`${API}/requests`);
+    setRequests(await r.json());
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  const fetchHospitals = async (region) => {
+    const url = region ? `${API}/hospitals?region=${encodeURIComponent(region)}` : `${API}/hospitals`;
+    const r = await fetch(url);
+    const list = await r.json();
+    setHospitals(list);
+    setForm(f => ({ ...f, hospital_id: list.length ? String(list[0].id) : "" }));
+  };
+
+  useEffect(() => { fetchRequests(); fetchHospitals(""); }, []);
+
+  useEffect(() => { fetchHospitals(selectedRegion); }, [selectedRegion]);
 
   const submit = async () => {
     const r = await fetch(`${API}/requests`, {
@@ -310,7 +327,7 @@ function PatientApp({ user, token, onLogout }) {
     const d = await r.json();
     setMsg(d.message || d.error);
     setShowForm(false);
-    fetchAll();
+    fetchRequests();
     setTimeout(() => setMsg(""), 3000);
   };
 
@@ -330,9 +347,17 @@ function PatientApp({ user, token, onLogout }) {
           <div className="formBox">
             <input className="inp" placeholder="اسم المريض"
               value={form.patient_name} onChange={e=>setForm({...form,patient_name:e.target.value})} />
+            <select className="inp" value={selectedRegion}
+              onChange={e=>setSelectedRegion(e.target.value)}>
+              <option value="">— كل المناطق —</option>
+              {REGIONS.map(r=><option key={r} value={r}>{r}</option>)}
+            </select>
             <select className="inp" value={form.hospital_id}
               onChange={e=>setForm({...form,hospital_id:e.target.value})}>
-              {hospitals.map(h=><option key={h.id} value={h.id}>{h.name} — {h.city}</option>)}
+              {hospitals.length === 0
+                ? <option value="">لا توجد مستشفيات</option>
+                : hospitals.map(h=><option key={h.id} value={h.id}>{h.name} — {h.city}</option>)
+              }
             </select>
             <select className="inp" value={form.blood_type}
               onChange={e=>setForm({...form,blood_type:e.target.value})}>

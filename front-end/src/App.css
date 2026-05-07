@@ -1,5 +1,5 @@
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Tahoma,Arial,sans-serif;background:#f6efe8;direction:rtl}
+body{font-family:'Cairo',Tahoma,Arial,sans-serif;background:#faf7f4;direction:rtl;color:#3a3040}
 
 /* ── LANDING ── */
 .landing{min-height:100vh;background:#0f0008;display:flex;align-items:center;justify-content:center;padding:30px 20px;position:relative;overflow:hidden}
@@ -22,32 +22,33 @@ body{font-family:Tahoma,Arial,sans-serif;background:#f6efe8;direction:rtl}
 /* ── AUTH ── */
 .authPage{min-height:100vh;background:linear-gradient(135deg,#7b0014,#a0001c);display:flex;align-items:center;justify-content:center;padding:20px}
 .authCard{background:white;border-radius:24px;padding:32px 28px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.backBtn{background:none;border:none;color:#a0001c;cursor:pointer;font-size:14px;margin-bottom:16px;padding:0;font-family:inherit}
+.backBtn{background:none;border:none;color:#a0001c;cursor:pointer;font-size:14px;margin-bottom:16px;padding:0;font-family:'Cairo',Tahoma,Arial,sans-serif}
 .authLogo{display:flex;align-items:center;gap:8px;margin-bottom:4px}
 .authLogo h2{font-size:24px;color:#a0001c}
-.authCard h3{font-size:18px;color:#222;margin-bottom:20px}
+.authCard h3{font-size:18px;color:#3a3040;margin-bottom:20px}
 .errBox{background:#fff0f3;border:1px solid #ff2d55;color:#a0001c;padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:13px}
-.inp{width:100%;padding:12px 14px;border:1.5px solid #eee;border-radius:12px;font-size:14px;font-family:inherit;margin-bottom:10px;text-align:right;direction:rtl;transition:.2s;background:white;color:#222}
-.inp:focus{outline:none;border-color:#ff2d55}
-.authBtn{width:100%;background:linear-gradient(135deg,#ff2d55,#a0001c);color:white;border:none;padding:14px;border-radius:14px;font-size:16px;font-weight:bold;cursor:pointer;font-family:inherit;transition:.2s}
+.inp{width:100%;padding:13px 16px;border:1.5px solid #e0d8d0;border-radius:12px;font-size:15px;font-family:'Cairo',Tahoma,Arial,sans-serif;margin-bottom:10px;text-align:right;direction:rtl;transition:.2s;background:#fffcfa;color:#3a3040;letter-spacing:.2px;line-height:1.5}
+.inp:focus{outline:none;border-color:#e8758a;box-shadow:0 0 0 3px rgba(255,45,85,.1)}
+.inp::placeholder{color:#b0a8a0}
+.authBtn{width:100%;background:linear-gradient(135deg,#ff2d55,#a0001c);color:white;border:none;padding:14px;border-radius:14px;font-size:16px;font-weight:bold;cursor:pointer;font-family:'Cairo',Tahoma,Arial,sans-serif;transition:.2s}
 .authBtn:hover:not(:disabled){opacity:.9}
 .authBtn:disabled{opacity:.6;cursor:not-allowed}
-.switchTxt{text-align:center;margin-top:14px;font-size:14px;color:#666}
+.switchTxt{text-align:center;margin-top:14px;font-size:14px;color:#7a7080}
 .switchTxt span{color:#a0001c;font-weight:bold;cursor:pointer;text-decoration:underline}
 
 /* ── APP SHELL ── */
-.app{min-height:100vh;background:#f6efe8}
+.app{min-height:100vh;background:#faf7f4}
 .nav{background:linear-gradient(90deg,#7b0014,#a0001c);padding:14px 20px;color:white;display:flex;justify-content:space-between;align-items:center}
 .navBrand{display:flex;align-items:center;gap:8px;font-size:20px}
 .navRight{display:flex;align-items:center;gap:10px;font-size:13px}
 .roleTag{background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px;font-size:12px}
 .userName{opacity:.85}
-.logoutBtn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:white;padding:5px 12px;border-radius:20px;cursor:pointer;font-size:12px;font-family:inherit}
+.logoutBtn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:white;padding:5px 12px;border-radius:20px;cursor:pointer;font-size:12px;font-family:'Cairo',Tahoma,Arial,sans-serif}
 
 .successBar{background:#1a7a4a;color:white;text-align:center;padding:12px;font-weight:bold}
 
 .tabs{display:flex;background:white;border-bottom:2px solid #f0e8e0}
-.tabs button{flex:1;padding:14px;border:none;background:none;font-size:15px;cursor:pointer;font-family:inherit;color:#888;transition:.2s}
+.tabs button{flex:1;padding:14px;border:none;background:none;font-size:15px;cursor:pointer;font-family:'Cairo',Tahoma,Arial,sans-serif;color:#8a8090;transition:.2s}
 .tabs button.active{color:#a0001c;border-bottom:2px solid #a0001c;font-weight:bold}
 
 .main{padding:16px;max-width:680px;margin:0 auto}
@@ -63,11 +64,11 @@ body{font-family:Tahoma,Arial,sans-serif;background:#f6efe8;direction:rtl}
 .stat{text-align:center}
 .stat b{display:block;font-size:24px}
 .stat span{font-size:11px;opacity:.8}
-.newBtn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:white;padding:8px 16px;border-radius:12px;cursor:pointer;font-family:inherit;font-size:13px;white-space:nowrap}
+.newBtn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:white;padding:8px 16px;border-radius:12px;cursor:pointer;font-family:'Cairo',Tahoma,Arial,sans-serif;font-size:13px;white-space:nowrap}
 
 /* ── CHIPS ── */
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
-.chips button{background:#eee;border:none;padding:7px 13px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:bold;transition:.2s;font-family:inherit}
+.chips button{background:#f0e8e0;border:none;padding:7px 13px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:bold;transition:.2s;font-family:'Cairo',Tahoma,Arial,sans-serif}
 .chips button:hover{background:#ffd0d8}
 .chips button.act{background:#a0001c;color:white}
 
@@ -80,18 +81,18 @@ body{font-family:Tahoma,Arial,sans-serif;background:#f6efe8;direction:rtl}
 .cardTop{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .badge{background:#a0001c;color:white;padding:7px 11px;border-radius:10px;font-weight:bold;font-size:14px;flex-shrink:0}
 .cardTop b{display:block;font-size:15px}
-.cardTop p{font-size:12px;color:#666;margin-top:2px}
+.cardTop p{font-size:12px;color:#7a7080;margin-top:2px}
 .urgTag{display:inline-block;background:#ff2d55;color:white;font-size:11px;padding:2px 8px;border-radius:8px;margin-top:4px}
 .cardBot{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .prog{flex:1;height:6px;background:#eee;border-radius:10px;overflow:hidden;min-width:60px}
 .progFill{height:100%;background:#ff2d55;border-radius:10px;transition:width .4s}
-.cardBot small{color:#999;font-size:12px}
-.donateBtn{background:#ff2d55;color:white;border:none;padding:8px 16px;border-radius:10px;cursor:pointer;font-weight:bold;font-size:13px;font-family:inherit;margin-right:auto}
+.cardBot small{color:#9a9098;font-size:12px}
+.donateBtn{background:#ff2d55;color:white;border:none;padding:8px 16px;border-radius:10px;cursor:pointer;font-weight:bold;font-size:13px;font-family:'Cairo',Tahoma,Arial,sans-serif;margin-right:auto}
 .donateBtn:hover{background:#a0001c}
 
 /* ── ACTION BTNS ── */
 .actionBtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
-.actBtn{border:none;padding:7px 12px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:bold;font-family:inherit;transition:.2s}
+.actBtn{border:none;padding:7px 12px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:bold;font-family:'Cairo',Tahoma,Arial,sans-serif;transition:.2s}
 .actBtn.green{background:#e8f5e9;color:#2e7d32}
 .actBtn.green:hover{background:#2e7d32;color:white}
 .actBtn.red{background:#fff0f3;color:#a0001c}
@@ -101,9 +102,9 @@ body{font-family:Tahoma,Arial,sans-serif;background:#f6efe8;direction:rtl}
 
 /* ── PROFILE ── */
 .profileCard{background:white;border-radius:18px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
-.profileRow{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #f5ebe4}
+.profileRow{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #f0e8e0}
 .profileRow:last-child{border-bottom:none}
-.profileRow span{color:#888;font-size:14px}
+.profileRow span{color:#8a8090;font-size:14px}
 .profileRow b{font-size:15px}
 .pts{color:#e6a817;font-size:16px}
 
@@ -111,18 +112,18 @@ body{font-family:Tahoma,Arial,sans-serif;background:#f6efe8;direction:rtl}
 .formBox{background:white;border:1.5px solid #ffd0d8;border-radius:16px;padding:16px;margin-bottom:16px;display:flex;flex-direction:column;gap:8px}
 
 /* ── SECTION TITLE ── */
-.sectionTitle{font-size:16px;color:#333;margin:16px 0 10px;padding-right:4px}
+.sectionTitle{font-size:16px;color:#3a3040;margin:16px 0 10px;padding-right:4px}
 
 /* ── MODAL ── */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
 .modalBox{background:white;border-radius:20px;padding:28px;width:100%;max-width:380px}
 .modalBox h3{font-size:18px;margin-bottom:6px}
-.modalBox p{color:#666;font-size:14px;margin-bottom:16px}
+.modalBox p{color:#7a7080;font-size:14px;margin-bottom:16px}
 .modalBtns{display:flex;gap:10px;margin-top:6px}
-.cancelBtn{flex:1;background:#f5f5f5;color:#333;border:none;padding:12px;border-radius:12px;cursor:pointer;font-family:inherit;font-size:15px}
+.cancelBtn{flex:1;background:#f5f0ed;color:#3a3040;border:none;padding:12px;border-radius:12px;cursor:pointer;font-family:'Cairo',Tahoma,Arial,sans-serif;font-size:15px}
 
 /* ── EMPTY ── */
-.empty{text-align:center;color:#aaa;padding:30px 0;font-size:14px}
+.empty{text-align:center;color:#b0a8a0;padding:30px 0;font-size:14px}
 
 /* ── DROP ── */
 .drop{width:24px;height:30px;background:#ff2d55;border-radius:50% 50% 50% 0;transform:rotate(-45deg);flex-shrink:0}
