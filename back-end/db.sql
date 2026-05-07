@@ -10,14 +10,16 @@ CREATE TABLE users (
   role          ENUM('donor','patient','hospital') NOT NULL,
   blood_type    VARCHAR(5),
   city          VARCHAR(100),
+  region        VARCHAR(100),
   points        INT DEFAULT 0,
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE hospitals (
-  id   INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(150) NOT NULL,
-  city VARCHAR(100) NOT NULL
+  id     INT AUTO_INCREMENT PRIMARY KEY,
+  name   VARCHAR(150) NOT NULL,
+  city   VARCHAR(100) NOT NULL,
+  region VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE blood_requests (
@@ -47,9 +49,22 @@ CREATE TABLE donations (
   FOREIGN KEY (donor_id)   REFERENCES users(id)
 );
 
-INSERT INTO hospitals (name, city) VALUES
-('مستشفى الملك فهد',   'الرياض'),
-('مستشفى سلمان',       'الرياض'),
-('مستشفى الملك خالد',  'الرياض'),
-('مستشفى المملكة',     'جدة'),
-('مستشفى الأمل',       'جدة');
+INSERT INTO hospitals (name, city, region) VALUES
+('مستشفى الملك فهد',           'الرياض',   'الرياض'),
+('مستشفى سلمان',               'الرياض',   'الرياض'),
+('مستشفى الملك خالد',          'الرياض',   'الرياض'),
+('مستشفى المملكة',             'جدة',      'مكة المكرمة'),
+('مستشفى الأمل',               'جدة',      'مكة المكرمة'),
+('مستشفى الملك فهد الجامعي',   'الخبر',    'الشرقية'),
+('مستشفى الدمام المركزي',      'الدمام',   'الشرقية'),
+('مستشفى المدينة العام',       'المدينة',  'المدينة المنورة'),
+('مستشفى أحد',                 'المدينة',  'المدينة المنورة'),
+('مستشفى القصيم العام',        'بريدة',    'القصيم'),
+('مستشفى عسير المركزي',        'أبها',     'عسير'),
+('مستشفى الملك فهد بتبوك',     'تبوك',     'تبوك'),
+('مستشفى حائل العام',          'حائل',     'حائل'),
+('مستشفى الأمير عبدالعزيز',    'عرعر',     'الحدود الشمالية'),
+('مستشفى الأمير محمد',         'جازان',    'جازان'),
+('مستشفى نجران العام',         'نجران',    'نجران'),
+('مستشفى الباحة العام',        'الباحة',   'الباحة'),
+('مستشفى الجوف العام',         'سكاكا',    'الجوف');
