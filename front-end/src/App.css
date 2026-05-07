@@ -10,6 +10,10 @@ body{font-family:'Cairo',Tahoma,Arial,sans-serif;background:#faf7f4;direction:rt
 .landing h1{font-size:42px;font-weight:900;color:white;line-height:1.2;margin-bottom:12px}
 .landing h1 em{color:#ff2d55;font-style:normal}
 .landingSub{color:rgba(255,255,255,.55);font-size:15px;margin-bottom:36px}
+.landingStats{display:flex;justify-content:center;gap:28px;margin-bottom:28px}
+.landingStat{text-align:center}
+.landingStat b{display:block;font-size:32px;font-weight:900;color:#ff2d55}
+.landingStat span{font-size:13px;color:rgba(255,255,255,.5)}
 .whoAreYou{color:rgba(255,255,255,.4);font-size:13px;margin-bottom:14px;letter-spacing:1px}
 .roleCards{display:flex;flex-direction:column;gap:12px}
 .roleCard{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:18px;padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:.2s;text-align:right;color:white}
@@ -124,6 +128,25 @@ body{font-family:'Cairo',Tahoma,Arial,sans-serif;background:#faf7f4;direction:rt
 
 /* ── EMPTY ── */
 .empty{text-align:center;color:#b0a8a0;padding:30px 0;font-size:14px}
+
+/* ── DROP ── */
+/* ── SEARCH ── */
+.searchBox{margin-bottom:12px}
+
+/* ── BELL / NOTIFICATIONS ── */
+.bellBtn{background:none;border:none;font-size:18px;cursor:pointer;position:relative;padding:2px 6px}
+.bellBadge{position:absolute;top:-4px;right:-4px;background:#ff2d55;color:white;font-size:10px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold}
+.notifDrop{background:white;border-bottom:2px solid #f0e8e0;padding:14px 16px;max-height:280px;overflow-y:auto}
+.notifDrop h4{font-size:15px;color:#3a3040;margin-bottom:10px}
+.notifItem{padding:10px 12px;border-radius:10px;margin-bottom:6px;background:#faf7f4;transition:.2s}
+.notifItem.unread{background:#fff0f3;border-right:3px solid #ff2d55}
+.notifItem p{font-size:14px;color:#3a3040;margin-bottom:2px}
+.notifItem small{font-size:11px;color:#b0a8a0}
+
+/* ── HISTORY ── */
+.historyMeta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:#7a7080}
+.histStatus{background:#f0e8e0;padding:3px 10px;border-radius:8px;font-weight:bold;font-size:12px}
+.histStatus.confirmed{background:#e8f5e9;color:#2e7d32}
 
 /* ── DROP ── */
 .drop{width:24px;height:30px;background:#ff2d55;border-radius:50% 50% 50% 0;transform:rotate(-45deg);flex-shrink:0}

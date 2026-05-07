@@ -49,6 +49,15 @@ CREATE TABLE donations (
   FOREIGN KEY (donor_id)   REFERENCES users(id)
 );
 
+CREATE TABLE notifications (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  user_id    INT NOT NULL,
+  message    TEXT NOT NULL,
+  is_read    BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 INSERT INTO hospitals (name, city, region) VALUES
 ('مستشفى الملك فهد',           'الرياض',   'الرياض'),
 ('مستشفى سلمان',               'الرياض',   'الرياض'),
