@@ -11,7 +11,7 @@ At the beginning of the project, our team held a meeting to introduce ourselves 
 | Name                 | Role               | Responsibilities                                                                 |
 | -------------------- | ------------------ | -------------------------------------------------------------------------------- |
 | Ahmed Khaled AlOmani | UI/UX Designer     | Designing the interface layout and making sure the application is easy to use    |
-| Amjad Khalid Alomani | Database Engineer  | Designing and managing the database structure                                    |
+| Amjad Khalid AlOmani | Database Engineer  | Designing and managing the database structure                                    |
 | Lamis Fahad Aljabli   | Frontend Developer | Building the user interface and connecting it with the backend                   |
 | Raneem Tarik Alsaqat | Backend Developer  | Implementing the application logic and connecting the frontend with the database |
 
@@ -178,8 +178,8 @@ The purpose of this project is to develop a mobile application (Wasl) that conne
 
 | Name | Role | Responsibilities |
 |----------------------|--------------------|------------------|
-| Ahmed Khaled Alomani | UI/UX Designer | Design user interface and improve user experience |
-| Amjad Khalid Alomani | Database Engineer | Design and manage database |
+| Ahmed Khaled Al-Omani | UI/UX Designer | Design user interface and improve user experience |
+| Amjad Khalid Al-Omani | Database Engineer | Design and manage database |
 | Lamis Fahad Aljabli | Frontend Developer | Build UI and connect to backend |
 | Raneem Tarik Alsaqat | Backend Developer | Implement logic and APIs |
 
