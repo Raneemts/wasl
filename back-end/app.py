@@ -93,6 +93,22 @@ def profile():
     return jsonify(user)
 
 # ══════════════════════════════
+#  STATS
+# ══════════════════════════════
+
+@app.get("/api/stats")
+def get_stats():
+    conn = db(); cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT COUNT(*) AS c FROM users WHERE role='donor'")
+    donors = cur.fetchone()["c"]
+    cur.execute("SELECT COUNT(*) AS c FROM donations")
+    donations = cur.fetchone()["c"]
+    cur.execute("SELECT COUNT(*) AS c FROM hospitals")
+    hospitals = cur.fetchone()["c"]
+    cur.close(); conn.close()
+    return jsonify({"donors": donors, "donations": donations, "hospitals": hospitals})
+
+# ══════════════════════════════
 #  HOSPITALS
 # ══════════════════════════════
 
@@ -115,6 +131,7 @@ def get_hospitals():
 @app.get("/api/requests")
 def get_requests():
     blood_type = request.args.get("blood_type")
+    search = request.args.get("search")
     conn = db(); cur = conn.cursor(dictionary=True)
     sql = """
         SELECT br.*, h.name AS hospital_name, h.city
@@ -126,6 +143,10 @@ def get_requests():
     if blood_type and blood_type != "الكل":
         sql += " AND br.blood_type = %s"
         vals.append(blood_type)
+    if search:
+        sql += " AND (h.name LIKE %s OR h.city LIKE %s OR br.patient_name LIKE %s)"
+        q = f"%{search}%"
+        vals.extend([q, q, q])
     sql += " ORDER BY br.urgency DESC, br.created_at DESC"
     cur.execute(sql, vals)
     rows = cur.fetchall()
@@ -183,10 +204,18 @@ def hospital_requests():
 @jwt_required()
 def confirm_request(rid):
     urgency = request.json.get("urgency", "عادي")
-    conn = db(); cur = conn.cursor()
+    conn = db(); cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT user_id FROM blood_requests WHERE id=%s", (rid,))
+    req = cur.fetchone()
     cur.execute("""
         UPDATE blood_requests SET status='نشط', urgency=%s WHERE id=%s
     """, (urgency, rid))
+    if req:
+        label = "عاجل 🚨" if urgency == "عاجل" else "عادي"
+        cur.execute("""
+            INSERT INTO notifications (user_id, message)
+            VALUES (%s, %s)
+        """, (req["user_id"], f"✅ تم تأكيد طلبك كحالة {label}"))
     conn.commit(); cur.close(); conn.close()
     return jsonify({"message": "تم تأكيد الحالة ✅"})
 
@@ -194,8 +223,15 @@ def confirm_request(rid):
 @app.post("/api/requests/<int:rid>/complete")
 @jwt_required()
 def complete_request(rid):
-    conn = db(); cur = conn.cursor()
+    conn = db(); cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT user_id FROM blood_requests WHERE id=%s", (rid,))
+    req = cur.fetchone()
     cur.execute("UPDATE blood_requests SET status='مكتمل' WHERE id=%s", (rid,))
+    if req:
+        cur.execute("""
+            INSERT INTO notifications (user_id, message)
+            VALUES (%s, %s)
+        """, (req["user_id"], "🎉 تم اكتمال طلبك — شكراً لثقتك بوصل"))
     conn.commit(); cur.close(); conn.close()
     return jsonify({"message": "تم إغلاق الحالة ✅"})
 
@@ -208,11 +244,12 @@ def complete_request(rid):
 def donate(rid):
     uid = get_jwt_identity()
     d = request.json or {}
-    conn = db(); cur = conn.cursor()
+    conn = db(); cur = conn.cursor(dictionary=True)
 
-    # تحقق إن الطلب نشط
     cur.execute("SELECT * FROM blood_requests WHERE id=%s AND status='نشط'", (rid,))
-    if not cur.fetchone():
+    req = cur.fetchone()
+    if not req:
+        cur.close(); conn.close()
         return jsonify({"error": "الطلب غير متاح"}), 400
 
     cur.execute("""
@@ -223,6 +260,13 @@ def donate(rid):
     cur.execute("UPDATE blood_requests SET bags_received = bags_received+1 WHERE id=%s", (rid,))
     cur.execute("UPDATE users SET points = points+20 WHERE id=%s", (uid,))
 
+    cur.execute("SELECT name FROM users WHERE id=%s", (uid,))
+    donor_name = cur.fetchone()["name"]
+    cur.execute("""
+        INSERT INTO notifications (user_id, message)
+        VALUES (%s, %s)
+    """, (req["user_id"], f"🩸 {donor_name} تبرع لطلبك — فصيلة {req['blood_type']}"))
+
     cur.execute("""
         UPDATE blood_requests SET status='مكتمل'
         WHERE id=%s AND bags_received >= bags_needed
@@ -230,6 +274,61 @@ def donate(rid):
 
     conn.commit(); cur.close(); conn.close()
     return jsonify({"message": "تم حجز موعد التبرع ✅ +20 نقطة"})
+
+# ══════════════════════════════
+#  DONOR HISTORY
+# ══════════════════════════════
+
+@app.get("/api/donations/history")
+@jwt_required()
+def donation_history():
+    uid = get_jwt_identity()
+    conn = db(); cur = conn.cursor(dictionary=True)
+    cur.execute("""
+        SELECT d.id, d.appointment_date, d.appointment_time, d.status,
+               d.created_at, br.blood_type, br.patient_name,
+               h.name AS hospital_name, h.city
+        FROM donations d
+        JOIN blood_requests br ON d.request_id = br.id
+        JOIN hospitals h ON br.hospital_id = h.id
+        WHERE d.donor_id = %s
+        ORDER BY d.created_at DESC
+    """, (uid,))
+    rows = cur.fetchall()
+    for r in rows:
+        r["created_at"] = str(r["created_at"])
+        if r.get("appointment_date"):
+            r["appointment_date"] = str(r["appointment_date"])
+    cur.close(); conn.close()
+    return jsonify(rows)
+
+# ══════════════════════════════
+#  NOTIFICATIONS
+# ══════════════════════════════
+
+@app.get("/api/notifications")
+@jwt_required()
+def get_notifications():
+    uid = get_jwt_identity()
+    conn = db(); cur = conn.cursor(dictionary=True)
+    cur.execute("""
+        SELECT * FROM notifications WHERE user_id=%s
+        ORDER BY created_at DESC LIMIT 20
+    """, (uid,))
+    rows = cur.fetchall()
+    for r in rows:
+        r["created_at"] = str(r["created_at"])
+    cur.close(); conn.close()
+    return jsonify(rows)
+
+@app.post("/api/notifications/read")
+@jwt_required()
+def mark_notifications_read():
+    uid = get_jwt_identity()
+    conn = db(); cur = conn.cursor()
+    cur.execute("UPDATE notifications SET is_read=TRUE WHERE user_id=%s", (uid,))
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({"message": "تم"})
 
 
 if __name__ == "__main__":

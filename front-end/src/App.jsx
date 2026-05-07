@@ -51,6 +51,12 @@ export default function App() {
 //  LANDING
 // ══════════════════════════════
 function Landing({ onSelect }) {
+  const [stats, setStats] = useState({ donors: 0, donations: 0, hospitals: 0 });
+
+  useEffect(() => {
+    fetch(`${API}/stats`).then(r => r.json()).then(setStats).catch(() => {});
+  }, []);
+
   const roles = [
     { icon: "🩸", title: "متبرع",         desc: "ساعد في إنقاذ حياة بالتبرع بدمك",           color: "#a0001c" },
     { icon: "👨‍👩‍👧", title: "قريب المريض", desc: "أنشئ طلب دم لذويك واحصل على متبرع سريع",   color: "#7b2d00" },
@@ -64,6 +70,19 @@ function Landing({ onSelect }) {
         <div className="landingLogo"><div className="drop" /><span>وصل</span></div>
         <h1>كل قطرة دم <em>تفرق</em></h1>
         <p className="landingSub">منصة تربط المتبرعين بالمحتاجين في لحظات الطوارئ</p>
+
+        <div className="landingStats">
+          <div className="landingStat">
+            <b>{stats.donors}</b><span>متبرع</span>
+          </div>
+          <div className="landingStat">
+            <b>{stats.donations}</b><span>عملية تبرع</span>
+          </div>
+          <div className="landingStat">
+            <b>{stats.hospitals}</b><span>مستشفى</span>
+          </div>
+        </div>
+
         <p className="whoAreYou">من أنت؟</p>
         <div className="roleCards">
           {roles.map(r => (
@@ -170,15 +189,21 @@ function DonorApp({ user, token, onLogout }) {
   const [tab, setTab]           = useState("home");
   const [requests, setRequests] = useState([]);
   const [filter, setFilter]     = useState(null);
+  const [search, setSearch]     = useState("");
   const [profile, setProfile]   = useState(null);
-  const [selected, setSelected] = useState(null); // request for booking
+  const [history, setHistory]   = useState([]);
+  const [selected, setSelected] = useState(null);
   const [booking, setBooking]   = useState({ date:"", time:"" });
   const [msg, setMsg]           = useState("");
+  const [notifs, setNotifs]     = useState([]);
+  const [showNotif, setShowNotif] = useState(false);
 
   const H = { "Content-Type":"application/json", Authorization:`Bearer ${token}` };
 
   const fetchRequests = async () => {
-    const url = filter ? `${API}/requests?blood_type=${filter}` : `${API}/requests`;
+    let url = `${API}/requests?`;
+    if (filter) url += `blood_type=${filter}&`;
+    if (search) url += `search=${encodeURIComponent(search)}&`;
     const r = await fetch(url);
     setRequests(await r.json());
   };
@@ -188,8 +213,25 @@ function DonorApp({ user, token, onLogout }) {
     setProfile(await r.json());
   };
 
-  useEffect(() => { fetchRequests(); }, [filter]);
+  const fetchHistory = async () => {
+    const r = await fetch(`${API}/donations/history`, { headers: H });
+    setHistory(await r.json());
+  };
+
+  const fetchNotifs = async () => {
+    const r = await fetch(`${API}/notifications`, { headers: H });
+    setNotifs(await r.json());
+  };
+
+  const markRead = async () => {
+    await fetch(`${API}/notifications/read`, { method:"POST", headers: H });
+    setNotifs(ns => ns.map(n => ({ ...n, is_read: true })));
+  };
+
+  useEffect(() => { fetchRequests(); }, [filter, search]);
   useEffect(() => { if (tab === "profile") fetchProfile(); }, [tab]);
+  useEffect(() => { if (tab === "history") fetchHistory(); }, [tab]);
+  useEffect(() => { fetchNotifs(); }, []);
 
   const handleDonate = async () => {
     const r = await fetch(`${API}/requests/${selected.id}/donate`, {
@@ -203,13 +245,32 @@ function DonorApp({ user, token, onLogout }) {
     setTimeout(() => setMsg(""), 3000);
   };
 
+  const unread = notifs.filter(n => !n.is_read).length;
+
   return (
     <div className="app" dir="rtl">
       {msg && <div className="successBar">{msg}</div>}
-      <Navbar user={user} onLogout={onLogout} label="🩸 متبرع" />
+      <Navbar user={user} onLogout={onLogout} label="🩸 متبرع"
+        notifCount={unread} onBell={() => { setShowNotif(!showNotif); if (!showNotif) markRead(); }} />
+
+      {showNotif && (
+        <div className="notifDrop">
+          <h4>الإشعارات</h4>
+          {notifs.length === 0
+            ? <p className="empty">لا توجد إشعارات</p>
+            : notifs.map(n => (
+              <div key={n.id} className={`notifItem ${n.is_read ? "" : "unread"}`}>
+                <p>{n.message}</p>
+                <small>{n.created_at}</small>
+              </div>
+            ))
+          }
+        </div>
+      )}
 
       <div className="tabs">
         <button className={tab==="home"?"active":""} onClick={()=>setTab("home")}>الرئيسية</button>
+        <button className={tab==="history"?"active":""} onClick={()=>setTab("history")}>سجلاتي</button>
         <button className={tab==="profile"?"active":""} onClick={()=>setTab("profile")}>حسابي</button>
       </div>
 
@@ -218,6 +279,9 @@ function DonorApp({ user, token, onLogout }) {
           <div className="hero red">
             <div><h2>الحالات المتاحة 🩸</h2><p>اختر حالة وساعد في إنقاذ حياة</p></div>
           </div>
+
+          <input className="inp searchBox" placeholder="🔍 ابحث عن مستشفى أو مدينة أو مريض..."
+            value={search} onChange={e=>setSearch(e.target.value)} />
 
           <div className="chips">
             <button className={!filter?"act":""} onClick={()=>setFilter(null)}>الكل</button>
@@ -253,6 +317,35 @@ function DonorApp({ user, token, onLogout }) {
         </main>
       )}
 
+      {tab === "history" && (
+        <main className="main">
+          <div className="hero red"><h2>سجل التبرعات 📋</h2></div>
+          <div className="cards">
+            {history.length === 0
+              ? <p className="empty">لا توجد تبرعات سابقة</p>
+              : history.map(h => (
+                <div key={h.id} className="card">
+                  <div className="cardTop">
+                    <span className="badge">{h.blood_type}</span>
+                    <div>
+                      <b>{h.hospital_name}</b>
+                      <p>{h.city} • {h.patient_name}</p>
+                    </div>
+                  </div>
+                  <div className="historyMeta">
+                    <span className={`histStatus ${h.status === "مؤكد" ? "confirmed" : ""}`}>
+                      {h.status}
+                    </span>
+                    {h.appointment_date && <span>📅 {h.appointment_date}</span>}
+                    {h.appointment_time && <span>🕐 {h.appointment_time}</span>}
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </main>
+      )}
+
       {tab === "profile" && profile && (
         <main className="main">
           <div className="hero red"><h2>حسابي 👤</h2></div>
@@ -267,7 +360,6 @@ function DonorApp({ user, token, onLogout }) {
         </main>
       )}
 
-      {/* BOOKING MODAL */}
       {selected && (
         <div className="modal" dir="rtl">
           <div className="modalBox">
@@ -300,12 +392,24 @@ function PatientApp({ user, token, onLogout }) {
     patient_name:"", hospital_id:"", blood_type:"+O", bags_needed:1, urgency:"عادي"
   });
   const [msg, setMsg] = useState("");
+  const [notifs, setNotifs] = useState([]);
+  const [showNotif, setShowNotif] = useState(false);
 
   const H = { "Content-Type":"application/json", Authorization:`Bearer ${token}` };
 
   const fetchRequests = async () => {
     const r = await fetch(`${API}/requests`);
     setRequests(await r.json());
+  };
+
+  const fetchNotifs = async () => {
+    const r = await fetch(`${API}/notifications`, { headers: H });
+    setNotifs(await r.json());
+  };
+
+  const markRead = async () => {
+    await fetch(`${API}/notifications/read`, { method:"POST", headers: H });
+    setNotifs(ns => ns.map(n => ({ ...n, is_read: true })));
   };
 
   const fetchHospitals = async (region) => {
@@ -316,9 +420,11 @@ function PatientApp({ user, token, onLogout }) {
     setForm(f => ({ ...f, hospital_id: list.length ? String(list[0].id) : "" }));
   };
 
-  useEffect(() => { fetchRequests(); fetchHospitals(""); }, []);
+  useEffect(() => { fetchRequests(); fetchHospitals(""); fetchNotifs(); }, []);
 
   useEffect(() => { fetchHospitals(selectedRegion); }, [selectedRegion]);
+
+  const unread = notifs.filter(n => !n.is_read).length;
 
   const submit = async () => {
     const r = await fetch(`${API}/requests`, {
@@ -334,7 +440,24 @@ function PatientApp({ user, token, onLogout }) {
   return (
     <div className="app" dir="rtl">
       {msg && <div className="successBar">{msg}</div>}
-      <Navbar user={user} onLogout={onLogout} label="👨‍👩‍👧 عائلة مريض" />
+      <Navbar user={user} onLogout={onLogout} label="👨‍👩‍👧 عائلة مريض"
+        notifCount={unread} onBell={() => { setShowNotif(!showNotif); if (!showNotif) markRead(); }} />
+
+      {showNotif && (
+        <div className="notifDrop">
+          <h4>الإشعارات</h4>
+          {notifs.length === 0
+            ? <p className="empty">لا توجد إشعارات</p>
+            : notifs.map(n => (
+              <div key={n.id} className={`notifItem ${n.is_read ? "" : "unread"}`}>
+                <p>{n.message}</p>
+                <small>{n.created_at}</small>
+              </div>
+            ))
+          }
+        </div>
+      )}
+
       <main className="main">
         <div className="hero orange">
           <div><h2>طلبات الدم 🏥</h2><p>أنشئ طلب وسنوصلك بمتبرع</p></div>
@@ -503,12 +626,17 @@ function HospitalApp({ user, token, onLogout }) {
 // ══════════════════════════════
 //  SHARED
 // ══════════════════════════════
-function Navbar({ user, onLogout, label }) {
+function Navbar({ user, onLogout, label, notifCount = 0, onBell }) {
   return (
     <nav className="nav">
       <div className="navBrand"><div className="drop sm"/><strong>وصل</strong></div>
       <div className="navRight">
         <span className="roleTag">{label}</span>
+        {onBell && (
+          <button className="bellBtn" onClick={onBell}>
+            🔔{notifCount > 0 && <span className="bellBadge">{notifCount}</span>}
+          </button>
+        )}
         <span className="userName">{user?.name}</span>
         <button className="logoutBtn" onClick={onLogout}>خروج</button>
       </div>
