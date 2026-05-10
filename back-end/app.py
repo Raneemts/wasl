@@ -246,12 +246,49 @@ def donate(rid):
     d = request.json or {}
     conn = db(); cur = conn.cursor(dictionary=True)
 
+    # جيبي بيانات المتبرع
+    cur.execute("SELECT * FROM users WHERE id=%s", (uid,))
+    donor = cur.fetchone()
+
+    # جيبي بيانات الطلب
     cur.execute("SELECT * FROM blood_requests WHERE id=%s AND status='نشط'", (rid,))
     req = cur.fetchone()
     if not req:
         cur.close(); conn.close()
         return jsonify({"error": "الطلب غير متاح"}), 400
 
+    # ══ التحقق من توافق فصيلة الدم ══
+    COMPATIBLE = {
+        "+O":  ["+O", "+A", "+B", "+AB"],
+        "-O":  ["+O", "-O", "+A", "-A", "+B", "-B", "+AB", "-AB"],
+        "+A":  ["+A", "+AB"],
+        "-A":  ["+A", "-A", "+AB", "-AB"],
+        "+B":  ["+B", "+AB"],
+        "-B":  ["+B", "-B", "+AB", "-AB"],
+        "+AB": ["+AB"],
+        "-AB": ["+AB", "-AB"],
+    }
+
+    donor_blood  = donor.get("blood_type")
+    request_blood = req.get("blood_type")
+    compatible_with = COMPATIBLE.get(donor_blood, [])
+
+    if request_blood not in compatible_with:
+        cur.close(); conn.close()
+        return jsonify({
+            "error": f"فصيلة دمك ({donor_blood}) غير متوافقة مع فصيلة الطلب ({request_blood})"
+        }), 400
+
+    # ══ تحقق إذا المتبرع حجز مسبقاً لنفس الطلب ══
+    cur.execute("""
+        SELECT id FROM donations 
+        WHERE request_id=%s AND donor_id=%s
+    """, (rid, uid))
+    if cur.fetchone():
+        cur.close(); conn.close()
+        return jsonify({"error": "لقد حجزت موعداً لهذا الطلب مسبقاً"}), 400
+
+    # ══ أضف التبرع ══
     cur.execute("""
         INSERT INTO donations (request_id, donor_id, appointment_date, appointment_time)
         VALUES (%s,%s,%s,%s)
@@ -260,8 +297,7 @@ def donate(rid):
     cur.execute("UPDATE blood_requests SET bags_received = bags_received+1 WHERE id=%s", (rid,))
     cur.execute("UPDATE users SET points = points+20 WHERE id=%s", (uid,))
 
-    cur.execute("SELECT name FROM users WHERE id=%s", (uid,))
-    donor_name = cur.fetchone()["name"]
+    donor_name = donor["name"]
     cur.execute("""
         INSERT INTO notifications (user_id, message)
         VALUES (%s, %s)
@@ -273,7 +309,7 @@ def donate(rid):
     """, (rid,))
 
     conn.commit(); cur.close(); conn.close()
-    return jsonify({"message": "تم حجز موعد التبرع ✅ +20 نقطة"})
+    return jsonify({"message": f"تم حجز موعد التبرع ✅ +20 نقطة"})
 
 # ══════════════════════════════
 #  DONOR HISTORY
