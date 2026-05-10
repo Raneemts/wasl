@@ -97,6 +97,12 @@ function AuthPage({ mode, onLogin, onSwitch, onBack }) {
 
   const submit = async () => {
     setLoading(true); setError("");
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      setError("يرجى إدخال بريد إلكتروني صحيح (مثال: name@gmail.com)");
+      setLoading(false);
+      return;
+    }
     try {
       const res  = await fetch(`${API}/${isLogin ? "login" : "register"}`, {
         method: "POST",
@@ -131,12 +137,13 @@ function AuthPage({ mode, onLogin, onSwitch, onBack }) {
             <option value="patient">قريب المريض</option>
             <option value="hospital">مستشفى</option>
           </select>
-          <select className="inp" value={form.region} onChange={e => set("region", e.target.value)}>
-            <option value="">— اختر المنطقة —</option>
-            {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+          <select className="inp" value={form.region} onChange={e => { 
+              set("region", e.target.value); 
+              set("city", e.target.value); 
+          }}>
+              <option value="">— اختر المنطقة —</option>
+              {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
-          <input className="inp" placeholder="المدينة"
-            value={form.city} onChange={e => set("city", e.target.value)} />
           {form.role === "donor" && (
             <select className="inp" value={form.blood_type} onChange={e => set("blood_type", e.target.value)}>
               {["+O","-O","+A","-A","+B","-B","+AB","-AB"].map(b =>
@@ -206,15 +213,30 @@ function DonorApp({ user, token, onLogout }) {
   useEffect(() => { fetchNotifs(); }, []);
 
   const handleDonate = async () => {
+  try {
     const r = await fetch(`${API}/requests/${selected.id}/donate`, {
-      method:"POST", headers:H, body: JSON.stringify(booking)
+      method: "POST",
+      headers: H,
+      body: JSON.stringify({
+        date: booking.date,
+        time: booking.time
+      })
     });
     const d = await r.json();
-    setMsg(d.message || d.error);
+    if (!r.ok) {
+      alert(d.error || "حدث خطأ");
+      return;
+    }
+    setMsg(d.message || "تم الحجز بنجاح ✅");
     setSelected(null);
+    setBooking({ date: "", time: "" });
     fetchRequests();
     setTimeout(() => setMsg(""), 3000);
-  };
+  } catch (err) {
+    alert("خطأ في الاتصال بالخادم");
+    console.error(err);
+  }
+};
 
   const unread = notifs.filter(n => !n.is_read).length;
 
@@ -381,15 +403,17 @@ function DonorApp({ user, token, onLogout }) {
             </select>
 
             <div className="modalBtns">
-              <button className="authBtn" onClick={()=>{
-                if(!booking.date || !booking.time){
-                  alert("يرجى اختيار التاريخ والوقت");
-                  return;
-                }
-                handleDonate();
-              }}>تأكيد الحجز</button>
+             <button className="authBtn" onClick={async () => {
+                if (!booking.date || !booking.time) {
+                    alert("يرجى اختيار التاريخ والوقت");
+                    return;
+              }
+              await handleDonate();
+         }}>
+          تأكيد الحجز
+             </button>
               <button className="cancelBtn" onClick={()=>setSelected(null)}>إلغاء</button>
-            </div>
+              </div>
           </div>
         </div>
       )}
