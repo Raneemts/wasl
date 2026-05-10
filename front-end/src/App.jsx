@@ -9,8 +9,6 @@ const REGIONS = [
   "الحدود الشمالية", "جازان", "نجران", "الباحة", "الجوف"
 ];
 
-// ══════════════════════════════
-//  ROOT
 export default function App() {
   const [token, setToken]   = useState(localStorage.getItem("wasl_token"));
   const [user,  setUser]    = useState(JSON.parse(localStorage.getItem("wasl_user") || "null"));
@@ -47,9 +45,6 @@ export default function App() {
   return <Landing onSelect={() => setScreen("login")} />;
 }
 
-// ══════════════════════════════
-//  LANDING
-// ══════════════════════════════
 function Landing({ onSelect }) {
   const [stats, setStats] = useState({ donors: 0, donations: 0, hospitals: 0 });
 
@@ -70,29 +65,17 @@ function Landing({ onSelect }) {
         <div className="landingLogo"><div className="drop" /><span>وصل</span></div>
         <h1>كل قطرة دم <em>تفرق</em></h1>
         <p className="landingSub">منصة تربط المتبرعين بالمحتاجين في لحظات الطوارئ</p>
-
         <div className="landingStats">
-          <div className="landingStat">
-            <b>{stats.donors}</b><span>متبرع</span>
-          </div>
-          <div className="landingStat">
-            <b>{stats.donations}</b><span>عملية تبرع</span>
-          </div>
-          <div className="landingStat">
-            <b>{stats.hospitals}</b><span>مستشفى</span>
-          </div>
+          <div className="landingStat"><b>{stats.donors}</b><span>متبرع</span></div>
+          <div className="landingStat"><b>{stats.donations}</b><span>عملية تبرع</span></div>
+          <div className="landingStat"><b>{stats.hospitals}</b><span>مستشفى</span></div>
         </div>
-
         <p className="whoAreYou">من أنت؟</p>
         <div className="roleCards">
           {roles.map(r => (
-            <button key={r.title} className="roleCard" onClick={onSelect}
-              style={{ "--c": r.color }}>
+            <button key={r.title} className="roleCard" onClick={onSelect} style={{ "--c": r.color }}>
               <span className="rIcon">{r.icon}</span>
-              <div>
-                <strong>{r.title}</strong>
-                <p>{r.desc}</p>
-              </div>
+              <div><strong>{r.title}</strong><p>{r.desc}</p></div>
               <span className="rArrow">←</span>
             </button>
           ))}
@@ -102,9 +85,6 @@ function Landing({ onSelect }) {
   );
 }
 
-// ══════════════════════════════
-//  AUTH
-// ══════════════════════════════
 function AuthPage({ mode, onLogin, onSwitch, onBack }) {
   const isLogin = mode === "login";
   const [form, setForm] = useState({
@@ -136,9 +116,7 @@ function AuthPage({ mode, onLogin, onSwitch, onBack }) {
         <button className="backBtn" onClick={onBack}>→ رجوع</button>
         <div className="authLogo"><div className="drop sm" /><h2>وصل</h2></div>
         <h3>{isLogin ? "تسجيل الدخول" : "إنشاء حساب"}</h3>
-
         {error && <div className="errBox">{error}</div>}
-
         {!isLogin && (
           <input className="inp" placeholder="الاسم الكامل"
             value={form.name} onChange={e => set("name", e.target.value)} />
@@ -147,7 +125,6 @@ function AuthPage({ mode, onLogin, onSwitch, onBack }) {
           value={form.email} onChange={e => set("email", e.target.value)} />
         <input className="inp" type="password" placeholder="كلمة المرور"
           value={form.password} onChange={e => set("password", e.target.value)} />
-
         {!isLogin && <>
           <select className="inp" value={form.role} onChange={e => set("role", e.target.value)}>
             <option value="donor">متبرع</option>
@@ -161,15 +138,13 @@ function AuthPage({ mode, onLogin, onSwitch, onBack }) {
           <input className="inp" placeholder="المدينة"
             value={form.city} onChange={e => set("city", e.target.value)} />
           {form.role === "donor" && (
-            <select className="inp" value={form.blood_type}
-              onChange={e => set("blood_type", e.target.value)}>
+            <select className="inp" value={form.blood_type} onChange={e => set("blood_type", e.target.value)}>
               {["+O","-O","+A","-A","+B","-B","+AB","-AB"].map(b =>
                 <option key={b} value={b}>{b}</option>
               )}
             </select>
           )}
         </>}
-
         <button className="authBtn" onClick={submit} disabled={loading}>
           {loading ? "..." : isLogin ? "دخول" : "إنشاء الحساب"}
         </button>
@@ -182,9 +157,6 @@ function AuthPage({ mode, onLogin, onSwitch, onBack }) {
   );
 }
 
-// ══════════════════════════════
-//  DONOR APP
-// ══════════════════════════════
 function DonorApp({ user, token, onLogout }) {
   const [tab, setTab]           = useState("home");
   const [requests, setRequests] = useState([]);
@@ -235,8 +207,7 @@ function DonorApp({ user, token, onLogout }) {
 
   const handleDonate = async () => {
     const r = await fetch(`${API}/requests/${selected.id}/donate`, {
-      method:"POST", headers:H,
-      body: JSON.stringify(booking)
+      method:"POST", headers:H, body: JSON.stringify(booking)
     });
     const d = await r.json();
     setMsg(d.message || d.error);
@@ -279,17 +250,14 @@ function DonorApp({ user, token, onLogout }) {
           <div className="hero red">
             <div><h2>الحالات المتاحة 🩸</h2><p>اختر حالة وساعد في إنقاذ حياة</p></div>
           </div>
-
           <input className="inp searchBox" placeholder="🔍 ابحث عن مستشفى أو مدينة أو مريض..."
             value={search} onChange={e=>setSearch(e.target.value)} />
-
           <div className="chips">
             <button className={!filter?"act":""} onClick={()=>setFilter(null)}>الكل</button>
             {["+O","-O","+A","-A","+B","-B","+AB","-AB"].map(b=>(
               <button key={b} className={filter===b?"act":""} onClick={()=>setFilter(b===filter?null:b)}>{b}</button>
             ))}
           </div>
-
           <div className="cards">
             {requests.length === 0
               ? <p className="empty">لا توجد حالات متاحة</p>
@@ -307,8 +275,11 @@ function DonorApp({ user, token, onLogout }) {
                     <div className="prog">
                       <div className="progFill" style={{width:`${Math.round(r.bags_received/r.bags_needed*100)}%`}}/>
                     </div>
-                    <small>{r.bags_received}/{r.bags_needed} أكياس</small>
-                    <button className="donateBtn" onClick={()=>setSelected(r)}>تبرع 🩸</button>
+                    <small>{r.bags_received}/{r.bags_needed} أكياس 🩸</small>
+                    <button className="donateBtn" onClick={()=>{ setSelected(r); setBooking({date:"",time:""}); }}>
+                      <span className="donateBtnIcon">🩸</span>
+                      <span>تبرع الآن</span>
+                    </button>
                   </div>
                 </div>
               ))
@@ -333,9 +304,7 @@ function DonorApp({ user, token, onLogout }) {
                     </div>
                   </div>
                   <div className="historyMeta">
-                    <span className={`histStatus ${h.status === "مؤكد" ? "confirmed" : ""}`}>
-                      {h.status}
-                    </span>
+                    <span className={`histStatus ${h.status === "مؤكد" ? "confirmed" : ""}`}>{h.status}</span>
                     {h.appointment_date && <span>📅 {h.appointment_date}</span>}
                     {h.appointment_time && <span>🕐 {h.appointment_time}</span>}
                   </div>
@@ -350,27 +319,75 @@ function DonorApp({ user, token, onLogout }) {
         <main className="main">
           <div className="hero red"><h2>حسابي 👤</h2></div>
           <div className="profileCard">
-            <div className="profileRow"><span>الاسم</span><b>{profile.name}</b></div>
-            <div className="profileRow"><span>البريد</span><b>{profile.email}</b></div>
-            <div className="profileRow"><span>فصيلة الدم</span><b className="badge">{profile.blood_type}</b></div>
-            <div className="profileRow"><span>المدينة</span><b>{profile.city}</b></div>
-            <div className="profileRow"><span>النقاط</span><b className="pts">⭐ {profile.points} نقطة</b></div>
-            <div className="profileRow"><span>عدد التبرعات</span><b>{profile.donations} تبرع</b></div>
+            <div className="profileAvatar"><span>{profile.name?.charAt(0)}</span></div>
+            <p className="profileName">{profile.name}</p>
+            <p className="profileEmail">{profile.email}</p>
+            <table className="profileTable">
+              <tbody>
+                <tr>
+                  <td className="profileLabel">فصيلة الدم</td>
+                  <td><span className="badge">{profile.blood_type}</span></td>
+                </tr>
+                <tr>
+                  <td className="profileLabel">المدينة</td>
+                  <td>{profile.city}</td>
+                </tr>
+                <tr>
+                  <td className="profileLabel">النقاط</td>
+                  <td><span className="pts">⭐ {profile.points} نقطة</span></td>
+                </tr>
+                <tr>
+                  <td className="profileLabel">عدد التبرعات</td>
+                  <td><span className="donationCount">🩸 {profile.donations} تبرع</span></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </main>
       )}
 
       {selected && (
-        <div className="modal" dir="rtl">
-          <div className="modalBox">
+        <div className="modal" dir="rtl" onClick={()=>setSelected(null)}>
+          <div className="modalBox" onClick={e=>e.stopPropagation()}>
             <h3>حجز موعد تبرع 🩸</h3>
             <p>{selected.hospital_name} — {selected.blood_type}</p>
-            <input className="inp" type="date" value={booking.date}
-              onChange={e=>setBooking({...booking, date:e.target.value})} />
-            <input className="inp" type="time" value={booking.time}
-              onChange={e=>setBooking({...booking, time:e.target.value})} />
+
+            <label className="dateLabel">📅 اختر التاريخ</label>
+            <input
+              className="inp dateInp"
+              type="date"
+              value={booking.date}
+              min={new Date().toISOString().split("T")[0]}
+              onChange={e=>setBooking({...booking, date:e.target.value})}
+            />
+
+            <label className="dateLabel">🕐 اختر الوقت</label>
+            <select
+              className="inp"
+              value={booking.time}
+              onChange={e=>setBooking({...booking, time:e.target.value})}
+            >
+              <option value="">— اختر الوقت —</option>
+              <option value="08:00">8:00 صباحاً</option>
+              <option value="09:00">9:00 صباحاً</option>
+              <option value="10:00">10:00 صباحاً</option>
+              <option value="11:00">11:00 صباحاً</option>
+              <option value="12:00">12:00 ظهراً</option>
+              <option value="13:00">1:00 مساءً</option>
+              <option value="14:00">2:00 مساءً</option>
+              <option value="15:00">3:00 مساءً</option>
+              <option value="16:00">4:00 مساءً</option>
+              <option value="17:00">5:00 مساءً</option>
+            </select>
+
             <div className="modalBtns">
-              <button className="authBtn" onClick={handleDonate}>تأكيد الحجز</button>
+              <button className="authBtn" onClick={()=>{
+                if(!booking.date || !booking.time){
+                  alert("يرجى اختيار التاريخ والوقت");
+                  return;
+                }
+                handleDonate();
+              }}>تأكيد الحجز</button>
               <button className="cancelBtn" onClick={()=>setSelected(null)}>إلغاء</button>
             </div>
           </div>
@@ -380,9 +397,6 @@ function DonorApp({ user, token, onLogout }) {
   );
 }
 
-// ══════════════════════════════
-//  PATIENT APP
-// ══════════════════════════════
 function PatientApp({ user, token, onLogout }) {
   const [requests, setRequests] = useState([]);
   const [hospitals, setHospitals] = useState([]);
@@ -421,7 +435,6 @@ function PatientApp({ user, token, onLogout }) {
   };
 
   useEffect(() => { fetchRequests(); fetchHospitals(""); fetchNotifs(); }, []);
-
   useEffect(() => { fetchHospitals(selectedRegion); }, [selectedRegion]);
 
   const unread = notifs.filter(n => !n.is_read).length;
@@ -465,40 +478,34 @@ function PatientApp({ user, token, onLogout }) {
             {showForm ? "إلغاء" : "+ طلب جديد"}
           </button>
         </div>
-
         {showForm && (
           <div className="formBox">
             <input className="inp" placeholder="اسم المريض"
               value={form.patient_name} onChange={e=>setForm({...form,patient_name:e.target.value})} />
-            <select className="inp" value={selectedRegion}
-              onChange={e=>setSelectedRegion(e.target.value)}>
+            <select className="inp" value={selectedRegion} onChange={e=>setSelectedRegion(e.target.value)}>
               <option value="">— كل المناطق —</option>
               {REGIONS.map(r=><option key={r} value={r}>{r}</option>)}
             </select>
-            <select className="inp" value={form.hospital_id}
-              onChange={e=>setForm({...form,hospital_id:e.target.value})}>
+            <select className="inp" value={form.hospital_id} onChange={e=>setForm({...form,hospital_id:e.target.value})}>
               {hospitals.length === 0
                 ? <option value="">لا توجد مستشفيات</option>
                 : hospitals.map(h=><option key={h.id} value={h.id}>{h.name} — {h.city}</option>)
               }
             </select>
-            <select className="inp" value={form.blood_type}
-              onChange={e=>setForm({...form,blood_type:e.target.value})}>
+            <select className="inp" value={form.blood_type} onChange={e=>setForm({...form,blood_type:e.target.value})}>
               {["+O","-O","+A","-A","+B","-B","+AB","-AB"].map(b=>
                 <option key={b} value={b}>{b}</option>
               )}
             </select>
             <input className="inp" type="number" min="1" placeholder="عدد الأكياس"
               value={form.bags_needed} onChange={e=>setForm({...form,bags_needed:+e.target.value})} />
-            <select className="inp" value={form.urgency}
-              onChange={e=>setForm({...form,urgency:e.target.value})}>
+            <select className="inp" value={form.urgency} onChange={e=>setForm({...form,urgency:e.target.value})}>
               <option value="عادي">عادي</option>
               <option value="عاجل">عاجل 🚨</option>
             </select>
             <button className="authBtn" onClick={submit}>إرسال الطلب</button>
           </div>
         )}
-
         <div className="cards">
           {requests.length === 0
             ? <p className="empty">لا توجد طلبات</p>
@@ -527,9 +534,6 @@ function PatientApp({ user, token, onLogout }) {
   );
 }
 
-// ══════════════════════════════
-//  HOSPITAL APP
-// ══════════════════════════════
 function HospitalApp({ user, token, onLogout }) {
   const [requests, setRequests] = useState([]);
   const [msg, setMsg] = useState("");
@@ -563,11 +567,10 @@ function HospitalApp({ user, token, onLogout }) {
         <div className="hero blue">
           <div><h2>لوحة التحكم 🏥</h2><p>إدارة طلبات الدم والحالات</p></div>
           <div className="heroStats">
-            <Stat v={active.length}    l="نشطة" />
+            <Stat v={active.length} l="نشطة" />
             <Stat v={completed.length} l="مكتملة" />
           </div>
         </div>
-
         <h3 className="sectionTitle">الحالات النشطة</h3>
         <div className="cards">
           {active.length === 0
@@ -588,19 +591,15 @@ function HospitalApp({ user, token, onLogout }) {
                   </div>
                   <small>{r.bags_received}/{r.bags_needed} أكياس</small>
                   <div className="actionBtns">
-                    <button className="actBtn green"
-                      onClick={()=>action(r.id,"confirm",{urgency:"عادي"})}>تأكيد عادي</button>
-                    <button className="actBtn red"
-                      onClick={()=>action(r.id,"confirm",{urgency:"عاجل"})}>تأكيد عاجل 🚨</button>
-                    <button className="actBtn gray"
-                      onClick={()=>action(r.id,"complete")}>إغلاق</button>
+                    <button className="actBtn green" onClick={()=>action(r.id,"confirm",{urgency:"عادي"})}>تأكيد عادي</button>
+                    <button className="actBtn red" onClick={()=>action(r.id,"confirm",{urgency:"عاجل"})}>تأكيد عاجل 🚨</button>
+                    <button className="actBtn gray" onClick={()=>action(r.id,"complete")}>إغلاق</button>
                   </div>
                 </div>
               </div>
             ))
           }
         </div>
-
         <h3 className="sectionTitle">الحالات المكتملة</h3>
         <div className="cards">
           {completed.length === 0
@@ -609,10 +608,7 @@ function HospitalApp({ user, token, onLogout }) {
               <div key={r.id} className="card done">
                 <div className="cardTop">
                   <span className="badge">{r.blood_type}</span>
-                  <div>
-                    <b>{r.patient_name}</b>
-                    <p>✅ مكتمل</p>
-                  </div>
+                  <div><b>{r.patient_name}</b><p>✅ مكتمل</p></div>
                 </div>
               </div>
             ))
@@ -623,9 +619,6 @@ function HospitalApp({ user, token, onLogout }) {
   );
 }
 
-// ══════════════════════════════
-//  SHARED
-// ══════════════════════════════
 function Navbar({ user, onLogout, label, notifCount = 0, onBell }) {
   return (
     <nav className="nav">
