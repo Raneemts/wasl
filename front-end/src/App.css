@@ -443,3 +443,13 @@ html, body, #root{
 .profileTable td:last-child{ color:#1a1a1a; font-weight:700; }
 .pts{ color:#b8860b; font-weight:800; }
 .donationCount{ color:#a0001c; font-weight:800; }
+
+.tabBadge {
+  background: #ff2d55;
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 20px;
+  margin-right: 4px;
+  font-weight: bold;
+}
