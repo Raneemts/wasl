@@ -36,6 +36,15 @@ def register():
 
     hashed = bcrypt.generate_password_hash(d["password"]).decode()
     conn = db(); cur = conn.cursor()
+
+    # ══ إذا المستخدم مستشفى، أضفه لجدول hospitals تلقائياً ══
+    if d["role"] == "hospital":
+        cur.execute("""
+            INSERT INTO hospitals (name, city, region)
+            VALUES (%s, %s, %s)
+        """, (d["name"], d.get("city"), d.get("region")))
+        conn.commit()
+
     try:
         cur.execute("""
             INSERT INTO users (name,email,password_hash,role,blood_type,city,region)
@@ -117,8 +126,11 @@ def get_stats():
 @app.get("/api/hospitals")
 def get_hospitals():
     region = request.args.get("region")
+    city = request.args.get("city")
     conn = db(); cur = conn.cursor(dictionary=True)
-    if region:
+    if city:
+        cur.execute("SELECT * FROM hospitals WHERE city=%s", (city,))
+    elif region:
         cur.execute("SELECT * FROM hospitals WHERE region=%s", (region,))
     else:
         cur.execute("SELECT * FROM hospitals")
@@ -174,14 +186,14 @@ def create_request():
     conn = db(); cur = conn.cursor()
     cur.execute("""
         INSERT INTO blood_requests
-        (user_id,patient_name,hospital_id,blood_type,bags_needed,urgency)
-        VALUES (%s,%s,%s,%s,%s,%s)
+        (user_id,patient_name,hospital_id,blood_type,bags_needed,urgency,status)
+        VALUES (%s,%s,%s,%s,%s,%s,%s)
     """, (uid, d["patient_name"], d["hospital_id"],
-          d["blood_type"], 1, "عادي"))
+          d["blood_type"], 1, "عادي", "معلق"))
     conn.commit()
     rid = cur.lastrowid
     cur.close(); conn.close()
-    return jsonify({"message": "تم إنشاء الطلب", "id": rid}), 201
+    return jsonify({"message": "تم إنشاء الطلب، بانتظار تأكيد المستشفى", "id": rid}), 201
 
 # ══════════════════════════════
 #  HOSPITAL — GET ALL REQUESTS
@@ -222,6 +234,93 @@ def hospital_requests():
     return jsonify(rows)
 
 
+# ══════════════════════════════
+#  HOSPITAL — GET APPOINTMENTS
+# ══════════════════════════════
+
+@app.get("/api/hospital/appointments")
+@jwt_required()
+def hospital_appointments():
+    uid = get_jwt_identity()
+    conn = db(); cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT city FROM users WHERE id=%s", (uid,))
+    user = cur.fetchone()
+    city = user.get("city") if user else None
+
+    if city:
+        cur.execute("""
+            SELECT d.id, d.appointment_date, d.appointment_time, d.status,
+                   u.name AS donor_name, u.blood_type,
+                   br.patient_name, br.id AS request_id,
+                   h.name AS hospital_name
+            FROM donations d
+            JOIN users u ON d.donor_id = u.id
+            JOIN blood_requests br ON d.request_id = br.id
+            JOIN hospitals h ON br.hospital_id = h.id
+            WHERE h.city = %s
+            ORDER BY d.appointment_date ASC, d.appointment_time ASC
+        """, (city,))
+    else:
+        cur.execute("""
+            SELECT d.id, d.appointment_date, d.appointment_time, d.status,
+                   u.name AS donor_name, u.blood_type,
+                   br.patient_name, br.id AS request_id,
+                   h.name AS hospital_name
+            FROM donations d
+            JOIN users u ON d.donor_id = u.id
+            JOIN blood_requests br ON d.request_id = br.id
+            JOIN hospitals h ON br.hospital_id = h.id
+            ORDER BY d.appointment_date ASC, d.appointment_time ASC
+        """)
+    rows = cur.fetchall()
+    for r in rows:
+        if r.get("appointment_date"):
+            r["appointment_date"] = str(r["appointment_date"])
+    cur.close(); conn.close()
+    return jsonify(rows)
+
+
+# ══════════════════════════════
+#  HOSPITAL — CONFIRM DONATION
+# ══════════════════════════════
+
+@app.post("/api/donations/<int:did>/confirm")
+@jwt_required()
+def confirm_donation(did):
+    conn = db(); cur = conn.cursor(dictionary=True)
+
+    cur.execute("SELECT * FROM donations WHERE id=%s", (did,))
+    donation = cur.fetchone()
+    if not donation:
+        cur.close(); conn.close()
+        return jsonify({"error": "الحجز غير موجود"}), 404
+
+    cur.execute("UPDATE donations SET status='مؤكد' WHERE id=%s", (did,))
+
+    cur.execute("SELECT * FROM blood_requests WHERE id=%s", (donation["request_id"],))
+    req = cur.fetchone()
+
+    cur.execute("""
+        SELECT bags_received, bags_needed FROM blood_requests WHERE id=%s
+    """, (donation["request_id"],))
+    bags = cur.fetchone()
+    if bags and bags["bags_received"] >= bags["bags_needed"]:
+        cur.execute("UPDATE blood_requests SET status='مكتمل' WHERE id=%s", (donation["request_id"],))
+        if req:
+            cur.execute("""
+                INSERT INTO notifications (user_id, message)
+                VALUES (%s, %s)
+            """, (req["user_id"], "🎉 اكتملت أكياس الدم المطلوبة لطلبك!"))
+
+    cur.execute("""
+        INSERT INTO notifications (user_id, message)
+        VALUES (%s, %s)
+    """, (donation["donor_id"], "✅ تم تأكيد تبرعك من قبل المستشفى — شكراً لك!"))
+
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({"message": "تم تأكيد التبرع ✅"})
+
+
 @app.post("/api/requests/<int:rid>/confirm")
 @jwt_required()
 def confirm_request(rid):
@@ -236,16 +335,12 @@ def confirm_request(rid):
         UPDATE blood_requests SET status='نشط', urgency=%s, bags_needed=%s WHERE id=%s
     """, (urgency, bags_needed, rid))
 
-    cur.execute("""
-        UPDATE donations SET status='مؤكد' WHERE request_id=%s
-    """, (rid,))
-
     if req:
         label = "عاجل 🚨" if urgency == "عاجل" else "عادي"
         cur.execute("""
             INSERT INTO notifications (user_id, message)
             VALUES (%s, %s)
-        """, (req["user_id"], f"✅ تم تأكيد طلبك كحالة {label}"))
+        """, (req["user_id"], f"✅ تم تأكيد طلبك كحالة {label} — بانتظار المتبرعين"))
 
     conn.commit(); cur.close(); conn.close()
     return jsonify({"message": "تم تأكيد الحالة ✅"})
@@ -326,12 +421,7 @@ def donate(rid):
     cur.execute("""
         INSERT INTO notifications (user_id, message)
         VALUES (%s, %s)
-    """, (req["user_id"], f"🩸 {donor_name} تبرع لطلبك — فصيلة {req['blood_type']}"))
-
-    cur.execute("""
-        UPDATE blood_requests SET status='مكتمل'
-        WHERE id=%s AND bags_received >= bags_needed
-    """, (rid,))
+    """, (req["user_id"], f"🩸 {donor_name} حجز موعد تبرع لطلبك — بانتظار تأكيد المستشفى"))
 
     conn.commit(); cur.close(); conn.close()
     return jsonify({"message": "تم حجز موعد التبرع ✅ +20 نقطة"})
