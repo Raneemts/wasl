@@ -4,9 +4,9 @@ import "./App.css";
 const API = "http://127.0.0.1:5000/api";
 
 const REGIONS = [
-  "الرياض", "مكة المكرمة", "المدينة المنورة", "الشرقية",
-  "القصيم", "عسير", "تبوك", "حائل",
-  "الحدود الشمالية", "جازان", "نجران", "الباحة", "الجوف"
+  "الرياض", "جدة", "مكة المكرمة", "المدينة المنورة",
+  "الدمام", "الخبر", "تبوك", "أبها",
+  "بريدة", "حائل", "نجران", "جازان", "الباحة"
 ];
 
 export default function App() {
@@ -97,14 +97,16 @@ function AuthPage({ mode, onLogin, onSwitch, onBack }) {
 
   const submit = async () => {
     setLoading(true); setError("");
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.email)) {
       setError("يرجى إدخال بريد إلكتروني صحيح (مثال: name@gmail.com)");
       setLoading(false);
       return;
     }
+
     try {
-      const res  = await fetch(`${API}/${isLogin ? "login" : "register"}`, {
+      const res = await fetch(`${API}/${isLogin ? "login" : "register"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
@@ -137,12 +139,12 @@ function AuthPage({ mode, onLogin, onSwitch, onBack }) {
             <option value="patient">قريب المريض</option>
             <option value="hospital">مستشفى</option>
           </select>
-          <select className="inp" value={form.region} onChange={e => { 
-              set("region", e.target.value); 
-              set("city", e.target.value); 
+          <select className="inp" value={form.region} onChange={e => {
+            set("region", e.target.value);
+            set("city", e.target.value);
           }}>
-              <option value="">— اختر المنطقة —</option>
-              {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+            <option value="">— اختر المدينة —</option>
+            {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
           {form.role === "donor" && (
             <select className="inp" value={form.blood_type} onChange={e => set("blood_type", e.target.value)}>
@@ -186,7 +188,7 @@ function DonorApp({ user, token, onLogout }) {
     if (user.city) url += `city=${encodeURIComponent(user.city)}&`;
     const r = await fetch(url);
     setRequests(await r.json());
-};
+  };
 
   const fetchProfile = async () => {
     const r = await fetch(`${API}/profile`, { headers: H });
@@ -214,30 +216,24 @@ function DonorApp({ user, token, onLogout }) {
   useEffect(() => { fetchNotifs(); }, []);
 
   const handleDonate = async () => {
-  try {
-    const r = await fetch(`${API}/requests/${selected.id}/donate`, {
-      method: "POST",
-      headers: H,
-      body: JSON.stringify({
-        date: booking.date,
-        time: booking.time
-      })
-    });
-    const d = await r.json();
-    if (!r.ok) {
-      alert(d.error || "حدث خطأ");
-      return;
+    try {
+      const r = await fetch(`${API}/requests/${selected.id}/donate`, {
+        method: "POST",
+        headers: H,
+        body: JSON.stringify({ date: booking.date, time: booking.time })
+      });
+      const d = await r.json();
+      if (!r.ok) { alert(d.error || "حدث خطأ"); return; }
+      setMsg(d.message || "تم الحجز بنجاح ✅");
+      setSelected(null);
+      setBooking({ date: "", time: "" });
+      fetchRequests();
+      setTimeout(() => setMsg(""), 3000);
+    } catch (err) {
+      alert("خطأ في الاتصال بالخادم");
+      console.error(err);
     }
-    setMsg(d.message || "تم الحجز بنجاح ✅");
-    setSelected(null);
-    setBooking({ date: "", time: "" });
-    fetchRequests();
-    setTimeout(() => setMsg(""), 3000);
-  } catch (err) {
-    alert("خطأ في الاتصال بالخادم");
-    console.error(err);
-  }
-};
+  };
 
   const unread = notifs.filter(n => !n.is_read).length;
 
@@ -374,22 +370,13 @@ function DonorApp({ user, token, onLogout }) {
           <div className="modalBox" onClick={e=>e.stopPropagation()}>
             <h3>حجز موعد تبرع 🩸</h3>
             <p>{selected.hospital_name} — {selected.blood_type}</p>
-
             <label className="dateLabel">📅 اختر التاريخ</label>
-            <input
-              className="inp dateInp"
-              type="date"
-              value={booking.date}
+            <input className="inp dateInp" type="date" value={booking.date}
               min={new Date().toISOString().split("T")[0]}
-              onChange={e=>setBooking({...booking, date:e.target.value})}
-            />
-
+              onChange={e=>setBooking({...booking, date:e.target.value})} />
             <label className="dateLabel">🕐 اختر الوقت</label>
-            <select
-              className="inp"
-              value={booking.time}
-              onChange={e=>setBooking({...booking, time:e.target.value})}
-            >
+            <select className="inp" value={booking.time}
+              onChange={e=>setBooking({...booking, time:e.target.value})}>
               <option value="">— اختر الوقت —</option>
               <option value="08:00">8:00 صباحاً</option>
               <option value="09:00">9:00 صباحاً</option>
@@ -402,19 +389,16 @@ function DonorApp({ user, token, onLogout }) {
               <option value="16:00">4:00 مساءً</option>
               <option value="17:00">5:00 مساءً</option>
             </select>
-
             <div className="modalBtns">
-             <button className="authBtn" onClick={async () => {
+              <button className="authBtn" onClick={async () => {
                 if (!booking.date || !booking.time) {
-                    alert("يرجى اختيار التاريخ والوقت");
-                    return;
-              }
-              await handleDonate();
-         }}>
-          تأكيد الحجز
-             </button>
+                  alert("يرجى اختيار التاريخ والوقت");
+                  return;
+                }
+                await handleDonate();
+              }}>تأكيد الحجز</button>
               <button className="cancelBtn" onClick={()=>setSelected(null)}>إلغاء</button>
-              </div>
+            </div>
           </div>
         </div>
       )}
@@ -428,7 +412,7 @@ function PatientApp({ user, token, onLogout }) {
   const [showForm, setShowForm] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState("");
   const [form, setForm] = useState({
-    patient_name:"", hospital_id:"", blood_type:"+O"
+    patient_name:"", hospital_id:"", blood_type:"+O", bags_needed:1, urgency:"عادي"
   });
   const [msg, setMsg] = useState("");
   const [notifs, setNotifs] = useState([]);
@@ -609,15 +593,15 @@ function HospitalApp({ user, token, onLogout }) {
                     <div className="progFill" style={{width:`${Math.round(r.bags_received/r.bags_needed*100)}%`}}/>
                   </div>
                   <small>{r.bags_received}/{r.bags_needed} أكياس</small>
-                   <div className="actionBtns">
-                  <button className="actBtn green" onClick={()=>action(r.id,"confirm",{urgency:"عادي", bags_needed: prompt("كم عدد الأكياس المطلوبة؟") || 1})}>
-                     تأكيد عادي             
+                  <div className="actionBtns">
+                    <button className="actBtn green" onClick={()=>action(r.id,"confirm",{urgency:"عادي", bags_needed: prompt("كم عدد الأكياس المطلوبة؟") || 1})}>
+                      تأكيد عادي
                     </button>
-                      <button className="actBtn red" onClick={()=>action(r.id,"confirm",{urgency:"عاجل", bags_needed: prompt("كم عدد الأكياس المطلوبة؟") || 1})}>
-                        تأكيد عاجل 🚨
-                       </button>
-                       <button className="actBtn gray" onClick={()=>action(r.id,"complete")}>إغلاق</button>
-                     </div>
+                    <button className="actBtn red" onClick={()=>action(r.id,"confirm",{urgency:"عاجل", bags_needed: prompt("كم عدد الأكياس المطلوبة؟") || 1})}>
+                      تأكيد عاجل 🚨
+                    </button>
+                    <button className="actBtn gray" onClick={()=>action(r.id,"complete")}>إغلاق</button>
+                  </div>
                 </div>
               </div>
             ))
