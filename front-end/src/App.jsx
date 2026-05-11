@@ -410,7 +410,7 @@ function PatientApp({ user, token, onLogout }) {
   const [requests, setRequests] = useState([]);
   const [hospitals, setHospitals] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [selectedRegion, setSelectedRegion] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
   const [form, setForm] = useState({
     patient_name:"", hospital_id:"", blood_type:"+O", bags_needed:1, urgency:"عادي"
   });
@@ -435,8 +435,8 @@ function PatientApp({ user, token, onLogout }) {
     setNotifs(ns => ns.map(n => ({ ...n, is_read: true })));
   };
 
-  const fetchHospitals = async (region) => {
-    const url = region ? `${API}/hospitals?region=${encodeURIComponent(region)}` : `${API}/hospitals`;
+  const fetchHospitals = async (city) => {
+    const url = city ? `${API}/hospitals?city=${encodeURIComponent(city)}` : `${API}/hospitals`;
     const r = await fetch(url);
     const list = await r.json();
     setHospitals(list);
@@ -444,7 +444,7 @@ function PatientApp({ user, token, onLogout }) {
   };
 
   useEffect(() => { fetchRequests(); fetchHospitals(""); fetchNotifs(); }, []);
-  useEffect(() => { fetchHospitals(selectedRegion); }, [selectedRegion]);
+  useEffect(() => { fetchHospitals(selectedCity); }, [selectedCity]);
 
   const unread = notifs.filter(n => !n.is_read).length;
 
@@ -487,28 +487,34 @@ function PatientApp({ user, token, onLogout }) {
             {showForm ? "إلغاء" : "+ طلب جديد"}
           </button>
         </div>
+
         {showForm && (
           <div className="formBox">
             <input className="inp" placeholder="اسم المريض"
               value={form.patient_name} onChange={e=>setForm({...form,patient_name:e.target.value})} />
-            <select className="inp" value={selectedRegion} onChange={e=>setSelectedRegion(e.target.value)}>
-              <option value="">— كل المناطق —</option>
+
+            <select className="inp" value={selectedCity} onChange={e=>setSelectedCity(e.target.value)}>
+              <option value="">— اختر المدينة —</option>
               {REGIONS.map(r=><option key={r} value={r}>{r}</option>)}
             </select>
+
             <select className="inp" value={form.hospital_id} onChange={e=>setForm({...form,hospital_id:e.target.value})}>
               {hospitals.length === 0
-                ? <option value="">لا توجد مستشفيات</option>
+                ? <option value="">لا توجد مستشفيات في هذه المدينة</option>
                 : hospitals.map(h=><option key={h.id} value={h.id}>{h.name} — {h.city}</option>)
               }
             </select>
+
             <select className="inp" value={form.blood_type} onChange={e=>setForm({...form,blood_type:e.target.value})}>
               {["+O","-O","+A","-A","+B","-B","+AB","-AB"].map(b=>
                 <option key={b} value={b}>{b}</option>
               )}
             </select>
+
             <button className="authBtn" onClick={submit}>إرسال الطلب</button>
           </div>
         )}
+
         <div className="cards">
           {requests.length === 0
             ? <p className="empty">لا توجد طلبات</p>
@@ -538,7 +544,9 @@ function PatientApp({ user, token, onLogout }) {
 }
 
 function HospitalApp({ user, token, onLogout }) {
+  const [tab, setTab]           = useState("requests");
   const [requests, setRequests] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [msg, setMsg] = useState("");
   const H = { "Content-Type":"application/json", Authorization:`Bearer ${token}` };
 
@@ -547,7 +555,12 @@ function HospitalApp({ user, token, onLogout }) {
     setRequests(await r.json());
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  const fetchAppointments = async () => {
+    const r = await fetch(`${API}/hospital/appointments`, { headers: H });
+    setAppointments(await r.json());
+  };
+
+  useEffect(() => { fetchAll(); fetchAppointments(); }, []);
 
   const action = async (id, endpoint, body={}) => {
     const r = await fetch(`${API}/requests/${id}/${endpoint}`, {
@@ -555,44 +568,63 @@ function HospitalApp({ user, token, onLogout }) {
     });
     const d = await r.json();
     setMsg(d.message || d.error);
-    fetchAll();
+    fetchAll(); fetchAppointments();
     setTimeout(() => setMsg(""), 3000);
   };
 
+  const confirmDonation = async (did) => {
+    const r = await fetch(`${API}/donations/${did}/confirm`, {
+      method:"POST", headers:H
+    });
+    const d = await r.json();
+    setMsg(d.message || d.error);
+    fetchAll(); fetchAppointments();
+    setTimeout(() => setMsg(""), 3000);
+  };
+
+  const pending   = requests.filter(r=>r.status==="معلق");
   const active    = requests.filter(r=>r.status==="نشط");
   const completed = requests.filter(r=>r.status==="مكتمل");
+  const pendingApts = appointments.filter(a=>a.status==="معلق");
+  const confirmedApts = appointments.filter(a=>a.status==="مؤكد");
 
   return (
     <div className="app" dir="rtl">
       {msg && <div className="successBar">{msg}</div>}
       <Navbar user={user} onLogout={onLogout} label="🏥 مستشفى" />
-      <main className="main">
-        <div className="hero blue">
-          <div><h2>لوحة التحكم 🏥</h2><p>إدارة طلبات الدم والحالات</p></div>
-          <div className="heroStats">
-            <Stat v={active.length} l="نشطة" />
-            <Stat v={completed.length} l="مكتملة" />
+
+      {/* تبويبات */}
+      <div className="tabs">
+        <button className={tab==="requests"?"active":""} onClick={()=>setTab("requests")}>الطلبات</button>
+        <button className={tab==="appointments"?"active":""} onClick={()=>setTab("appointments")}>
+          المواعيد {pendingApts.length > 0 && <span className="tabBadge">{pendingApts.length}</span>}
+        </button>
+      </div>
+
+      {tab === "requests" && (
+        <main className="main">
+          <div className="hero blue">
+            <div><h2>لوحة التحكم 🏥</h2><p>إدارة طلبات الدم والحالات</p></div>
+            <div className="heroStats">
+              <Stat v={pending.length}   l="معلقة" />
+              <Stat v={active.length}    l="نشطة" />
+              <Stat v={completed.length} l="مكتملة" />
+            </div>
           </div>
-        </div>
-        <h3 className="sectionTitle">الحالات النشطة</h3>
-        <div className="cards">
-          {active.length === 0
-            ? <p className="empty">لا توجد حالات نشطة</p>
-            : active.map(r => (
-              <div key={r.id} className={`card ${r.urgency==="عاجل"?"urgent":""}`}>
-                <div className="cardTop">
-                  <span className="badge">{r.blood_type}</span>
-                  <div>
-                    <b>{r.patient_name}</b>
-                    <p>{r.requester_name} • {r.city}</p>
-                    {r.urgency==="عاجل" && <span className="urgTag">🚨 عاجل</span>}
+
+          <h3 className="sectionTitle">🆕 طلبات جديدة — بانتظار التأكيد</h3>
+          <div className="cards">
+            {pending.length === 0
+              ? <p className="empty">لا توجد طلبات جديدة</p>
+              : pending.map(r => (
+                <div key={r.id} className="card">
+                  <div className="cardTop">
+                    <span className="badge">{r.blood_type}</span>
+                    <div>
+                      <b>{r.patient_name}</b>
+                      <p>{r.requester_name} • {r.city}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="cardBot">
-                  <div className="prog">
-                    <div className="progFill" style={{width:`${Math.round(r.bags_received/r.bags_needed*100)}%`}}/>
-                  </div>
-                  <small>{r.bags_received}/{r.bags_needed} أكياس</small>
                   <div className="actionBtns">
                     <button className="actBtn green" onClick={()=>action(r.id,"confirm",{urgency:"عادي", bags_needed: prompt("كم عدد الأكياس المطلوبة؟") || 1})}>
                       تأكيد عادي
@@ -600,28 +632,115 @@ function HospitalApp({ user, token, onLogout }) {
                     <button className="actBtn red" onClick={()=>action(r.id,"confirm",{urgency:"عاجل", bags_needed: prompt("كم عدد الأكياس المطلوبة؟") || 1})}>
                       تأكيد عاجل 🚨
                     </button>
-                    <button className="actBtn gray" onClick={()=>action(r.id,"complete")}>إغلاق</button>
+                    <button className="actBtn gray" onClick={()=>action(r.id,"complete")}>رفض</button>
                   </div>
                 </div>
-              </div>
-            ))
-          }
-        </div>
-        <h3 className="sectionTitle">الحالات المكتملة</h3>
-        <div className="cards">
-          {completed.length === 0
-            ? <p className="empty">لا توجد حالات مكتملة</p>
-            : completed.map(r => (
-              <div key={r.id} className="card done">
-                <div className="cardTop">
-                  <span className="badge">{r.blood_type}</span>
-                  <div><b>{r.patient_name}</b><p>✅ مكتمل</p></div>
+              ))
+            }
+          </div>
+
+          <h3 className="sectionTitle">الحالات النشطة</h3>
+          <div className="cards">
+            {active.length === 0
+              ? <p className="empty">لا توجد حالات نشطة</p>
+              : active.map(r => (
+                <div key={r.id} className={`card ${r.urgency==="عاجل"?"urgent":""}`}>
+                  <div className="cardTop">
+                    <span className="badge">{r.blood_type}</span>
+                    <div>
+                      <b>{r.patient_name}</b>
+                      <p>{r.requester_name} • {r.city}</p>
+                      {r.urgency==="عاجل" && <span className="urgTag">🚨 عاجل</span>}
+                    </div>
+                  </div>
+                  <div className="cardBot">
+                    <div className="prog">
+                      <div className="progFill" style={{width:`${Math.round(r.bags_received/r.bags_needed*100)}%`}}/>
+                    </div>
+                    <small>{r.bags_received}/{r.bags_needed} أكياس</small>
+                    <div className="actionBtns">
+                      <button className="actBtn gray" onClick={()=>action(r.id,"complete")}>إغلاق ✅</button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
-          }
-        </div>
-      </main>
+              ))
+            }
+          </div>
+
+          <h3 className="sectionTitle">الحالات المكتملة</h3>
+          <div className="cards">
+            {completed.length === 0
+              ? <p className="empty">لا توجد حالات مكتملة</p>
+              : completed.map(r => (
+                <div key={r.id} className="card done">
+                  <div className="cardTop">
+                    <span className="badge">{r.blood_type}</span>
+                    <div><b>{r.patient_name}</b><p>✅ مكتمل</p></div>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </main>
+      )}
+
+      {tab === "appointments" && (
+        <main className="main">
+          <div className="hero blue">
+            <div><h2>مواعيد التبرع 📅</h2><p>أكّد حضور المتبرعين</p></div>
+          </div>
+
+          <h3 className="sectionTitle">⏳ بانتظار التأكيد</h3>
+          <div className="cards">
+            {pendingApts.length === 0
+              ? <p className="empty">لا توجد مواعيد بانتظار التأكيد</p>
+              : pendingApts.map(a => (
+                <div key={a.id} className="card">
+                  <div className="cardTop">
+                    <span className="badge">{a.blood_type}</span>
+                    <div>
+                      <b>{a.donor_name}</b>
+                      <p>للمريض: {a.patient_name}</p>
+                    </div>
+                  </div>
+                  <div className="historyMeta">
+                    {a.appointment_date && <span>📅 {a.appointment_date}</span>}
+                    {a.appointment_time && <span>🕐 {a.appointment_time}</span>}
+                  </div>
+                  <div className="actionBtns" style={{marginTop:"10px"}}>
+                    <button className="actBtn green" onClick={()=>confirmDonation(a.id)}>
+                      تأكيد التبرع ✅
+                    </button>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+
+          <h3 className="sectionTitle">✅ تم التأكيد</h3>
+          <div className="cards">
+            {confirmedApts.length === 0
+              ? <p className="empty">لا توجد مواعيد مؤكدة</p>
+              : confirmedApts.map(a => (
+                <div key={a.id} className="card done">
+                  <div className="cardTop">
+                    <span className="badge">{a.blood_type}</span>
+                    <div>
+                      <b>{a.donor_name}</b>
+                      <p>للمريض: {a.patient_name}</p>
+                    </div>
+                  </div>
+                  <div className="historyMeta">
+                    {a.appointment_date && <span>📅 {a.appointment_date}</span>}
+                    {a.appointment_time && <span>🕐 {a.appointment_time}</span>}
+                    <span className="histStatus confirmed">✅ تم التبرع</span>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </main>
+      )}
     </div>
   );
 }
