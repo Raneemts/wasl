@@ -183,9 +183,10 @@ function DonorApp({ user, token, onLogout }) {
     let url = `${API}/requests?`;
     if (filter) url += `blood_type=${filter}&`;
     if (search) url += `search=${encodeURIComponent(search)}&`;
+    if (user.city) url += `city=${encodeURIComponent(user.city)}&`;
     const r = await fetch(url);
     setRequests(await r.json());
-  };
+};
 
   const fetchProfile = async () => {
     const r = await fetch(`${API}/profile`, { headers: H });
@@ -427,7 +428,7 @@ function PatientApp({ user, token, onLogout }) {
   const [showForm, setShowForm] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState("");
   const [form, setForm] = useState({
-    patient_name:"", hospital_id:"", blood_type:"+O", bags_needed:1, urgency:"عادي"
+    patient_name:"", hospital_id:"", blood_type:"+O"
   });
   const [msg, setMsg] = useState("");
   const [notifs, setNotifs] = useState([]);
@@ -521,12 +522,6 @@ function PatientApp({ user, token, onLogout }) {
                 <option key={b} value={b}>{b}</option>
               )}
             </select>
-            <input className="inp" type="number" min="1" placeholder="عدد الأكياس"
-              value={form.bags_needed} onChange={e=>setForm({...form,bags_needed:+e.target.value})} />
-            <select className="inp" value={form.urgency} onChange={e=>setForm({...form,urgency:e.target.value})}>
-              <option value="عادي">عادي</option>
-              <option value="عاجل">عاجل 🚨</option>
-            </select>
             <button className="authBtn" onClick={submit}>إرسال الطلب</button>
           </div>
         )}
@@ -614,11 +609,15 @@ function HospitalApp({ user, token, onLogout }) {
                     <div className="progFill" style={{width:`${Math.round(r.bags_received/r.bags_needed*100)}%`}}/>
                   </div>
                   <small>{r.bags_received}/{r.bags_needed} أكياس</small>
-                  <div className="actionBtns">
-                    <button className="actBtn green" onClick={()=>action(r.id,"confirm",{urgency:"عادي"})}>تأكيد عادي</button>
-                    <button className="actBtn red" onClick={()=>action(r.id,"confirm",{urgency:"عاجل"})}>تأكيد عاجل 🚨</button>
-                    <button className="actBtn gray" onClick={()=>action(r.id,"complete")}>إغلاق</button>
-                  </div>
+                   <div className="actionBtns">
+                  <button className="actBtn green" onClick={()=>action(r.id,"confirm",{urgency:"عادي", bags_needed: prompt("كم عدد الأكياس المطلوبة؟") || 1})}>
+                     تأكيد عادي             
+                    </button>
+                      <button className="actBtn red" onClick={()=>action(r.id,"confirm",{urgency:"عاجل", bags_needed: prompt("كم عدد الأكياس المطلوبة؟") || 1})}>
+                        تأكيد عاجل 🚨
+                       </button>
+                       <button className="actBtn gray" onClick={()=>action(r.id,"complete")}>إغلاق</button>
+                     </div>
                 </div>
               </div>
             ))
