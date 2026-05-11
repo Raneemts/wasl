@@ -132,6 +132,7 @@ def get_hospitals():
 def get_requests():
     blood_type = request.args.get("blood_type")
     search = request.args.get("search")
+    city = request.args.get("city")
     conn = db(); cur = conn.cursor(dictionary=True)
     sql = """
         SELECT br.*, h.name AS hospital_name, h.city
@@ -147,6 +148,9 @@ def get_requests():
         sql += " AND (h.name LIKE %s OR h.city LIKE %s OR br.patient_name LIKE %s)"
         q = f"%{search}%"
         vals.extend([q, q, q])
+    if city:
+        sql += " AND h.city = %s"
+        vals.append(city)
     sql += " ORDER BY br.urgency DESC, br.created_at DESC"
     cur.execute(sql, vals)
     rows = cur.fetchall()
@@ -161,7 +165,7 @@ def get_requests():
 def create_request():
     uid = get_jwt_identity()
     d = request.json
-    for f in ["patient_name","hospital_id","blood_type","bags_needed"]:
+    for f in ["patient_name","hospital_id","blood_type"]:
         if not d.get(f):
             return jsonify({"error": f"حقل مطلوب: {f}"}), 400
 
@@ -171,7 +175,7 @@ def create_request():
         (user_id,patient_name,hospital_id,blood_type,bags_needed,urgency)
         VALUES (%s,%s,%s,%s,%s,%s)
     """, (uid, d["patient_name"], d["hospital_id"],
-          d["blood_type"], d["bags_needed"], d.get("urgency","عادي")))
+          d["blood_type"], 1, "عادي"))
     conn.commit()
     rid = cur.lastrowid
     cur.close(); conn.close()
@@ -203,22 +207,30 @@ def hospital_requests():
 @app.post("/api/requests/<int:rid>/confirm")
 @jwt_required()
 def confirm_request(rid):
-    urgency = request.json.get("urgency", "عادي")
+    d = request.json
+    urgency = d.get("urgency", "عادي")
+    bags_needed = int(d.get("bags_needed", 1))
     conn = db(); cur = conn.cursor(dictionary=True)
     cur.execute("SELECT user_id FROM blood_requests WHERE id=%s", (rid,))
     req = cur.fetchone()
+
     cur.execute("""
-        UPDATE blood_requests SET status='نشط', urgency=%s WHERE id=%s
-    """, (urgency, rid))
+        UPDATE blood_requests SET status='نشط', urgency=%s, bags_needed=%s WHERE id=%s
+    """, (urgency, bags_needed, rid))
+
+    cur.execute("""
+        UPDATE donations SET status='مؤكد' WHERE request_id=%s
+    """, (rid,))
+
     if req:
         label = "عاجل 🚨" if urgency == "عاجل" else "عادي"
         cur.execute("""
             INSERT INTO notifications (user_id, message)
             VALUES (%s, %s)
         """, (req["user_id"], f"✅ تم تأكيد طلبك كحالة {label}"))
+
     conn.commit(); cur.close(); conn.close()
     return jsonify({"message": "تم تأكيد الحالة ✅"})
-
 
 @app.post("/api/requests/<int:rid>/complete")
 @jwt_required()
