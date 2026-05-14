@@ -1,175 +1,212 @@
+<!-- ===================== Stage 4 ===================== -->
+<!-- Sprint Planning & Development Execution -->
+
 # Stage 4 — Sprint Planning & Development Execution
 
 ## 1. Sprint Planning (Task 0)
 
+<!-- We divided the work into two main sprints -->
+
 To manage development effectively, the team divided the MVP work into two main sprints.
 
 ### Sprint Duration
-
-* Each sprint duration: **2 weeks**
+- Each sprint duration: **2 weeks**
 
 ---
 
 ### Sprint 1 — Core Backend & Database
 
+<!-- Focus on backend + database -->
+
 **Goal:** Prepare backend structure and database design
 
-| Task                                        | Priority    | Assigned To       |
-| ------------------------------------------- | ----------- | ----------------- |
-| Design database schema (ERD)                | Must Have   | Database Engineer |
-| Setup backend project (Python Flask/Django) | Must Have   | Backend Developer |
-| Implement authentication APIs               | Must Have   | Backend Developer |
-| Define API endpoints (requests & donations) | Must Have   | Backend Developer |
-| Test APIs using Postman (basic)             | Should Have | QA / Backend      |
+| Task | Priority | Assigned To |
+|------|----------|------------|
+| Design database schema (ERD) | Must Have | Database Engineer |
+| Setup backend project (Flask) | Must Have | Backend Developer |
+| Implement authentication APIs | Must Have | Backend Developer |
+| Define API endpoints | Must Have | Backend Developer |
+| Test APIs (Postman - basic) | Should Have | QA |
 
 ---
 
 ### Sprint 2 — Frontend & Integration
 
+<!-- Focus on UI + integration -->
+
 **Goal:** Prepare UI and system integration
 
-| Task                                  | Priority    | Assigned To        |
-| ------------------------------------- | ----------- | ------------------ |
-| Design UI screens (mockups)           | Must Have   | UI/UX Designer     |
-| Build frontend structure (React)      | Must Have   | Frontend Developer |
-| Connect frontend with APIs            | Should Have | Frontend + Backend |
-| Prepare notification logic (Firebase) | Should Have | Backend Developer  |
-| Integration testing (basic flows)     | Should Have | QA                 |
+| Task | Priority | Assigned To |
+|------|----------|------------|
+| Design UI mockups | Must Have | UI/UX |
+| Build React structure | Must Have | Frontend |
+| Connect frontend to APIs | Should Have | Frontend + Backend |
+| Notification logic (Firebase) | Should Have | Backend |
+| Integration testing | Should Have | QA |
 
 ---
 
 ### Task Prioritization
 
+<!-- Using MoSCoW -->
+
 The team used the **MoSCoW method**:
 
-* **Must Have:** Core features (registration, requests, donations)
-* **Should Have:** Enhancements (filters, notifications)
-* **Could Have:** Extra features (points system, sharing)
+- **Must Have:** Registration, requests, donations  
+- **Should Have:** Filters, notifications  
+- **Could Have:** Extra features  
 
 ---
 
 ## 2. Development Execution (Task 1)
 
-During this stage, the team focused on preparing and partially executing development tasks.
+<!-- Initial implementation -->
 
-### Development Work
+During this stage, the team focused on **initial implementation and setup**.
 
-* Backend Flask project initialized
-* React frontend project initialized
-* MySQL database schema designed and partially tested
-* Authentication module structure started
-* Initial API routes created
-* Frontend screens were designed (mockups)
-* API requests were tested conceptually using Postman
+### Work Completed
+
+- Flask backend project initialized  
+- React frontend initialized  
+- MySQL database schema designed  
+- Initial API routes created  
+- Authentication structure prepared  
+- UI mockups created  
+- API testing performed using Postman  
 
 ---
 
-### Source Control Management (SCM)
+### Source Control (SCM)
 
-* GitHub repository was created and configured
-* Feature branches were planned for each team member
-* Pull requests and code reviews were defined as the collaboration workflow
-* Repository structure was organized for frontend, backend, and database components
+<!-- Git workflow -->
+
+- GitHub repository created  
+- Feature branching strategy applied  
+- Pull request workflow defined  
 
 ---
 
 ### Quality Assurance (QA)
 
-* Manual testing strategy was prepared
-* API testing was planned using Postman
-* Integration testing process was outlined
-* Bug tracking strategy was prepared
+<!-- Testing plan -->
+
+- Manual testing strategy defined  
+- API testing using Postman  
+- Integration testing plan prepared  
 
 ---
 
-### Execution Status
+### ⚠️ Execution Status
+
+<!-- Important clarification -->
 
 Due to time constraints:
 
-* Full implementation was not completed
-* However, project setup, architecture, sprint planning, and development preparation were successfully completed
+- Full implementation was **partially completed**
+- However, **core setup + architecture + planning were successfully achieved**
 
 ---
 
-## 3. Weekly Progress Update
+## 3. Monitoring Progress (Task 2)
 
-### Project Setup Completed
+<!-- Tracking progress -->
 
-* GitHub repository created
-* Branching strategy established
-* Initial project structure prepared
-* Team communication through Discord organized
-* Backend Flask project initialized
-* React frontend project initialized
+To track progress:
 
----
+- Regular team check-ins were conducted  
+- Tasks were monitored using tools (e.g., Trello)  
 
-### Individual Task Progress
+### Metrics Used
 
-| Team Member        | Assigned Task                             | Current Progress                       |
-| ------------------ | ----------------------------------------- | -------------------------------------- |
-| UI/UX Designer     | Design screens and prototype              | Not Completed                          |
-| Database Engineer  | ERD and schema design                     | Completed                              |
-| Frontend Developer | React project structure                   | Not completed                          |
-| Backend Developer  | Python backend structure and API planning | Not completed                          |
+- Task completion rate  
+- Progress vs planned tasks  
+- Bug tracking (basic)
 
 ---
 
-### Estimated Tasks for This Week
+### Adjustments
 
-* Finalize Python backend project structure
-* Prepare React frontend base project
-* Setup MySQL database
-* Test API endpoints conceptually
-* Organize repository branches
+- Tasks were reassigned when needed  
+- Sprint goals were adjusted  
+- Focus shifted to core setup  
 
 ---
 
-## 4. Work Not Completed
+## 4. Sprint Reviews & Retrospectives (Task 3)
 
-The following implementation tasks were not completed:
+<!-- Review + reflection -->
 
-* Full frontend development using React
-* Full backend API implementation and deployment using Python Flask
-* Complete database integration (MySQL)
-* Firebase Cloud Messaging (FCM) integration
-* Full system integration
+At the end of the sprint:
 
----
+### Review
 
-## 5. Challenges Faced
-
-* Limited time for full-stack implementation
-* Lack of prior experience with some technologies
-* Coordination between frontend and backend development
-* Complexity of integrating multiple system components
+- Demonstrated:
+  - Backend setup  
+  - Database design  
+  - API structure  
 
 ---
 
-## 6. Next Steps
+### Retrospective
 
-If development continues, the following steps will be taken:
+**What went well:**
+- Clear planning and roles  
+- Good system design  
 
-* Implement backend APIs using Python Flask
-* Connect and test MySQL database
-* Develop frontend screens using React
-* Integrate Firebase notifications for real-time alerts
-* Perform full system integration and testing
+**Challenges:**
+- Limited time  
+- Integration complexity  
+
+**Improvements:**
+- Better time management  
+- Start implementation earlier  
+
+---
+
+## 5. Integration & QA Testing (Task 4)
+
+<!-- Testing phase -->
+
+### Testing Performed
+
+- API testing using Postman  
+- Basic integration validation  
+
+---
+
+### Not Fully Completed
+
+- Full frontend-backend integration  
+- Complete database connection  
+- Firebase integration  
+
+---
+
+## 6. Deliverables (Task 5)
+
+<!-- Final outputs -->
+
+- ✅ Sprint Planning Documentation  
+- ✅ GitHub Repository  
+- ✅ Database Schema (ERD)  
+- ✅ API Design  
+- ✅ Frontend & Backend Setup  
+- ✅ SCM Strategy  
+- ✅ QA Plan  
 
 ---
 
 ## 7. Final Summary
 
-While the MVP was not fully implemented, the team successfully established:
+<!-- Conclusion -->
 
-* Complete sprint planning
-* GitHub and project setup
-* Task assignments
-* UI/UX mockups
-* Database architecture
-* Initial backend and frontend project setup
-* API design
-* SCM workflow
-* QA strategy
+The project successfully achieved:
 
-This stage demonstrates clear project organization, proper Agile planning, and strong technical preparation for future implementation.
+- Agile sprint planning  
+- Clear task distribution  
+- System architecture design  
+- Backend & frontend initialization  
+- Database design  
+- Development workflow (SCM + QA)
+
+Although the MVP was not fully implemented, the team demonstrated **strong planning and technical foundation**.
