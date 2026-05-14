@@ -208,5 +208,5 @@ The project successfully achieved:
 - Backend & frontend initialization  
 - Database design  
 - Development workflow (SCM + QA)
-
+  
 Although the MVP was not fully implemented, the team demonstrated **strong planning and technical foundation**.
