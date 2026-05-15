@@ -2,6 +2,13 @@ DROP DATABASE IF EXISTS wasl_db;
 CREATE DATABASE wasl_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE wasl_db;
 
+CREATE TABLE hospitals (
+  id     INT AUTO_INCREMENT PRIMARY KEY,
+  name   VARCHAR(150) NOT NULL,
+  city   VARCHAR(100) NOT NULL,
+  region VARCHAR(100) NOT NULL
+);
+
 CREATE TABLE users (
   id            INT AUTO_INCREMENT PRIMARY KEY,
   name          VARCHAR(100) NOT NULL,
@@ -11,15 +18,10 @@ CREATE TABLE users (
   blood_type    VARCHAR(5),
   city          VARCHAR(100),
   region        VARCHAR(100),
+  hospital_id   INT,
   points        INT DEFAULT 0,
-  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE hospitals (
-  id     INT AUTO_INCREMENT PRIMARY KEY,
-  name   VARCHAR(150) NOT NULL,
-  city   VARCHAR(100) NOT NULL,
-  region VARCHAR(100) NOT NULL
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (hospital_id) REFERENCES hospitals(id)
 );
 
 CREATE TABLE blood_requests (
