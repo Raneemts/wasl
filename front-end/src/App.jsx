@@ -1,919 +1,852 @@
-import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
-import "./App.css";
+import { useEffect, useState } from 'react';
+import {
+  Droplet,
+  Users,
+  Building2,
+  HandHeart,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+  MapPin,
+  CheckCircle2,
+  Plus,
+  Home,
+  ClipboardList,
+  User,
+  LogOut,
+  Filter,
+} from 'lucide-react';
+import './App.css';
 
-const API = "http://127.0.0.1:5000/api";
+const API = 'http://127.0.0.1:5000/api';
 
 const REGIONS = [
-  "الرياض", "جدة", "مكة المكرمة", "المدينة المنورة",
-  "الدمام", "الخبر", "تبوك", "أبها",
-  "بريدة", "حائل", "نجران", "جازان", "الباحة"
+  'الرياض',
+  'جدة',
+  'مكة المكرمة',
+  'المدينة المنورة',
+  'الدمام',
+  'الخبر',
+  'تبوك',
+  'أبها',
+  'بريدة',
+  'حائل',
+  'نجران',
+  'جازان',
+  'الباحة',
 ];
 
-// ══════════════════════════════
-//  ROOT
-export default function App() {
-  const [token, setToken]   = useState(localStorage.getItem("wasl_token"));
-  const [user,  setUser]    = useState(JSON.parse(localStorage.getItem("wasl_user") || "null"));
+const SIGNUP_BLOOD_TYPES = ['+O', '-O', '+A', '-A', '+B', '-B', '+AB', '-AB'];
 
-  const login = (tok, u) => {
-    localStorage.setItem("wasl_token", tok);
-    localStorage.setItem("wasl_user", JSON.stringify(u));
-    setToken(tok); setUser(u);
-  };
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  const logout = () => {
-    localStorage.clear();
-    setToken(null); setUser(null);
-  };
+const FILTER_BLOOD_TYPES = ['الكل', 'A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
+function uiBloodToApi(type) {
+  if (!type || type === 'الكل') return null;
+  const sign = type.includes('+') ? '+' : '-';
+  const letter = type.replace('+', '').replace('-', '');
+  return `${sign}${letter}`;
+}
+
+function apiBloodToUi(type) {
+  if (!type) return '';
+  if (type.startsWith('+')) return `${type.slice(1)}+`;
+  if (type.startsWith('-')) return `${type.slice(1)}-`;
+  return type;
+}
+
+function WaslLogo({ variant = 'light', center = false, withHayat = false }) {
+  const classes = ['waslLogo', `waslLogo--${variant}`, center && 'waslLogo--center'].filter(Boolean).join(' ');
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        {!token ? (
+    <div className={classes}>
+      <div className="waslLogoIcon">
+        <Droplet size={20} strokeWidth={2.5} />
+      </div>
+      <span className="waslLogoText">
+        {withHayat ? (
           <>
-            <Route path="/"         element={<><Landing /><Footer /></>} />
-            <Route path="/login"    element={<AuthPage mode="login" onLogin={login} />} />
-            <Route path="/register" element={<AuthPage mode="register" onLogin={login} />} />
-            <Route path="*"         element={<Navigate to="/" />} />
+            وصل <em className="waslLogoHayat">حياة</em>
           </>
         ) : (
-          /* Protected Routes */
-          <>
-            <Route path="/home/*" element={
-              user?.role === "donor"    ? <DonorApp    user={user} token={token} onLogout={logout} /> :
-              user?.role === "patient"  ? <PatientApp  user={user} token={token} onLogout={logout} /> :
-              user?.role === "hospital" ? <HospitalApp user={user} token={token} onLogout={logout} /> :
-              <Navigate to="/" />
-            } />
-            <Route path="*" element={<Navigate to="/home" />} />
-          </>
+          'وصل'
         )}
-      </Routes>
-    </BrowserRouter>
-  );
-}
-
-// ══════════════════════════════
-//  COMPONENTS
-// ══════════════════════════════
-function Logo({ sm }) {
-  return (
-    <div className={`logo ${sm ? "sm" : ""}`} style={{ display: "flex", alignItems: "center", gap: "10px", color: "white", fontWeight: "bold" }}>
-      <svg viewBox="0 0 100 120" width={sm ? 24 : 40} height={sm ? 30 : 50}>
-        <path d="M50,10 Q10,60 50,110 Q90,60 50,10" fill="#ff2d55" />
-        <circle cx="50" cy="65" r="10" fill="white" opacity="0.4" />
-      </svg>
-      <span style={{ fontSize: sm ? "18px" : "28px" }}>وصل</span>
+      </span>
     </div>
   );
 }
 
-function Sidebar({ links }) {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  return (
-    <div className="sidebar">
-      {links.map(l => (
-        <button key={l.id} 
-          className={`sideLink ${location.pathname.includes(l.path) ? "active" : ""}`}
-          onClick={() => navigate(l.path)}>
-          <span style={{ fontSize: "18px" }}>{l.icon}</span> {l.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="footer">
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}><Logo /></div>
-      <p>منصة وصل للتبرع بالدم — جميع الحقوق محفوظة {new Date().getFullYear()}</p>
-      <p style={{ marginTop: "10px", opacity: 0.6 }}>نربط القلوب لإنقاذ الأرواح</p>
-    </footer>
-  );
-}
-
-// ══════════════════════════════
-//  LANDING
-// ══════════════════════════════
-function Landing() {
-  const navigate = useNavigate();
-  const [stats, setStats] = useState({ donors: 0, donations: 0, hospitals: 0 });
-
-  useEffect(() => {
-    fetch(`${API}/stats`).then(r => r.json()).then(setStats).catch(() => {});
-  }, []);
-
-  const roles = [
-    { icon: "🩸", title: "متبرع",         desc: "ساعد في إنقاذ حياة بالتبرع بدمك",           color: "#a0001c" },
-    { icon: "👨‍👩‍👧", title: "قريب المريض", desc: "أنشئ طلب دم لذويك واحصل على متبرع سريع",   color: "#7b2d00" },
-    { icon: "🏥", title: "مستشفى",         desc: "أدر طلبات الدم وتابع الحالات بسهولة",       color: "#003f7b" },
-  ];
-
-  return (
-    <div className="landing" dir="rtl">
-      <div className="landingBg" />
-      <div className="landingBox">
-        <div className="landingLogo"><Logo /></div>
-        <h1>كل قطرة دم <em>تفرق</em></h1>
-        <p className="landingSub">منصة تربط المتبرعين بالمحتاجين في لحظات الطوارئ</p>
-
-        <div className="landingStats">
-          <div className="landingStat">
-            <b>{stats.donors}</b><span>متبرع</span>
-          </div>
-          <div className="landingStat">
-            <b>{stats.donations}</b><span>عملية تبرع</span>
-          </div>
-          <div className="landingStat">
-            <b>{stats.hospitals}</b><span>مستشفى</span>
-          </div>
-        </div>
-
-        <p className="whoAreYou">من أنت؟</p>
-        <div className="roleCards">
-          {roles.map(r => (
-            <button key={r.title} className="roleCard" onClick={() => navigate("/login")}
-              style={{ "--c": r.color }}>
-              <span className="rIcon">{r.icon}</span>
-              <div>
-                <strong>{r.title}</strong>
-                <p>{r.desc}</p>
-              </div>
-              <span className="rArrow">←</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════
-//  AUTH
-// ══════════════════════════════
-function AuthPage({ mode, onLogin }) {
-  const navigate = useNavigate();
-  const isLogin = mode === "login";
-  const [form, setForm] = useState({
-    name:"", email:"", password:"", role:"donor", blood_type:"+O", city:"", region:""
-  });
-  const [error, setError] = useState("");
+function AuthPanel({ initialRole, authMode, setAuthMode, onBack, onSuccess }) {
+  const isLogin = authMode === 'login';
+  const [form, setForm] = useState(() => ({
+    name: '',
+    email: '',
+    password: '',
+    phone: '',
+    role: initialRole || 'donor',
+    blood_type: '+O',
+    city: '',
+    region: '',
+  }));
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+
+  const getRoleName = (r) => {
+    switch (r) {
+      case 'patient':
+        return 'قريب المريض';
+      case 'hospital':
+        return 'مستشفى';
+      case 'donor':
+        return 'متبرع';
+      default:
+        return '';
+    }
+  };
 
   const submit = async () => {
-    setLoading(true); setError("");
+    setLoading(true);
+    setError('');
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.email)) {
-      setError("يرجى إدخال بريد إلكتروني صحيح (مثال: name@gmail.com)");
+    if (!form.email?.trim()) {
+      setError('البريد الإلكتروني مطلوب');
+      setLoading(false);
+      return;
+    }
+    if (!EMAIL_REGEX.test(form.email.trim())) {
+      setError('يرجى إدخال بريد إلكتروني صحيح (مثال: name@gmail.com)');
+      setLoading(false);
+      return;
+    }
+    if (!form.password) {
+      setError('كلمة المرور مطلوبة');
       setLoading(false);
       return;
     }
 
+    if (!isLogin) {
+      if (!form.name?.trim()) {
+        setError('الاسم الكامل مطلوب');
+        setLoading(false);
+        return;
+      }
+      if (!form.phone?.trim()) {
+        setError('رقم الهاتف مطلوب');
+        setLoading(false);
+        return;
+      }
+      if (!form.city) {
+        setError('يرجى اختيار المدينة');
+        setLoading(false);
+        return;
+      }
+      if (form.role === 'donor' && !form.blood_type) {
+        setError('يرجى اختيار فصيلة الدم');
+        setLoading(false);
+        return;
+      }
+    }
+
+    const payload = isLogin
+      ? { email: form.email.trim(), password: form.password }
+      : {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          password: form.password,
+          phone: form.phone.trim(),
+          role: form.role,
+          blood_type: form.role === 'donor' ? form.blood_type : null,
+          city: form.city,
+          region: form.region || form.city,
+        };
+
     try {
-      const res  = await fetch(`${API}/${isLogin ? "login" : "register"}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+      const res = await fetch(`${API}/${isLogin ? 'login' : 'register'}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) return setError(data.error);
-      onLogin(data.token, data.user);
-      navigate("/home");
-    } catch { setError("خطأ في الاتصال"); }
-    finally { setLoading(false); }
+      if (!res.ok) {
+        setError(data.error || 'حدث خطأ');
+        return;
+      }
+      onSuccess(data.token, data.user);
+    } catch {
+      setError('خطأ في الاتصال بالخادم');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="authPage" dir="rtl">
-      <div className="authCard">
-        <button className="backBtn" onClick={() => navigate(isLogin ? "/" : "/login")}>→ رجوع</button>
-        <div className="authLogo"><Logo sm /></div>
-        <h3>{isLogin ? "تسجيل الدخول" : "إنشاء حساب"}</h3>
+    <>
+      <button type="button" className="backBtn" onClick={onBack}>
+        <ChevronRight /> عودة للرئيسية
+      </button>
 
-        {error && <div className="errBox">{error}</div>}
+      <WaslLogo variant="brand" />
+      <h3>
+        {isLogin ? `تسجيل الدخول - ${getRoleName(initialRole)}` : 'إنشاء حساب جديد'}
+      </h3>
 
-        {!isLogin && (
-          <input className="inp" placeholder="الاسم الكامل"
-            value={form.name} onChange={e => set("name", e.target.value)} />
-        )}
-        <input className="inp" type="email" placeholder="البريد الإلكتروني"
-          value={form.email} onChange={e => set("email", e.target.value)} />
-        <input className="inp" type="password" placeholder="كلمة المرور"
-          value={form.password} onChange={e => set("password", e.target.value)} />
+      {error && <div className="errBox">{error}</div>}
 
-        {!isLogin && <>
-          <select className="inp" value={form.role} onChange={e => set("role", e.target.value)}>
+      {!isLogin && (
+        <input
+          className="inp"
+          placeholder="الاسم الكامل"
+          value={form.name}
+          onChange={(e) => set('name', e.target.value)}
+        />
+      )}
+
+      <input
+        className="inp"
+        type="email"
+        placeholder="البريد الإلكتروني *"
+        value={form.email}
+        onChange={(e) => set('email', e.target.value)}
+        dir="ltr"
+      />
+
+      <input
+        className="inp"
+        type="password"
+        placeholder="كلمة المرور *"
+        value={form.password}
+        onChange={(e) => set('password', e.target.value)}
+      />
+
+      {!isLogin && (
+        <>
+          <input
+            className="inp"
+            type="tel"
+            placeholder="رقم الهاتف *"
+            value={form.phone}
+            onChange={(e) => set('phone', e.target.value)}
+            dir="ltr"
+          />
+
+          <select className="inp" value={form.role} onChange={(e) => set('role', e.target.value)}>
             <option value="donor">متبرع</option>
             <option value="patient">قريب المريض</option>
             <option value="hospital">مستشفى</option>
           </select>
-          <select className="inp" value={form.region} onChange={e => {
-            set("region", e.target.value);
-            set("city", e.target.value);
-          }}>
+
+          <select
+            className="inp"
+            value={form.city}
+            onChange={(e) => {
+              set('city', e.target.value);
+              set('region', e.target.value);
+            }}
+          >
             <option value="">— اختر المدينة —</option>
-            {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+            {REGIONS.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
           </select>
-          {form.role === "donor" && (
-            <select className="inp" value={form.blood_type}
-              onChange={e => set("blood_type", e.target.value)}>
-              {["+O","-O","+A","-A","+B","-B","+AB","-AB"].map(b =>
-                <option key={b} value={b}>{b}</option>
-              )}
+
+          {form.role === 'donor' && (
+            <select
+              className="inp"
+              value={form.blood_type}
+              onChange={(e) => set('blood_type', e.target.value)}
+            >
+              {SIGNUP_BLOOD_TYPES.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
             </select>
           )}
-        </>}
+        </>
+      )}
 
-        <button className="authBtn" onClick={submit} disabled={loading}>
-          {loading ? "..." : isLogin ? "دخول" : "إنشاء الحساب"}
+      <button type="button" className="authBtn" onClick={submit} disabled={loading}>
+        {loading ? 'جاري المعالجة...' : isLogin ? 'دخول' : 'إنشاء الحساب'}
+      </button>
+
+      <p className="switchTxt">
+        {isLogin ? 'ليس لديك حساب؟' : 'لديك حساب؟'}{' '}
+        <button
+          type="button"
+          className="switchLink"
+          onClick={() => {
+            setError('');
+            setAuthMode(isLogin ? 'signup' : 'login');
+          }}
+        >
+          {isLogin ? 'سجل الآن' : 'تسجيل الدخول'}
         </button>
-        <p className="switchTxt">
-          {isLogin ? "ما عندك حساب؟" : "عندك حساب؟"}{" "}
-          <span onClick={() => navigate(isLogin ? "/register" : "/login")}>{isLogin ? "سجّل الآن" : "سجّل دخولك"}</span>
-        </p>
-      </div>
-    </div>
+      </p>
+    </>
   );
 }
 
-// ══════════════════════════════
-//  DONOR APP
-// ══════════════════════════════
-function DonorApp({ user, token, onLogout }) {
-  const navigate = useNavigate();
-  const [requests, setRequests] = useState([]);
-  const [filter, setFilter]     = useState(null);
-  const [search, setSearch]     = useState("");
-  const [profile, setProfile]   = useState(null);
-  const [history, setHistory]   = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [booking, setBooking]   = useState({ date:"", time:"" });
-  const [msg, setMsg]           = useState("");
-  const [notifs, setNotifs]     = useState([]);
-  const [showNotif, setShowNotif] = useState(false);
-  const [loading, setLoading]   = useState(false);
-
-  const H = { "Content-Type":"application/json", Authorization:`Bearer ${token}` };
-
-  const fetchRequests = async () => {
-    setLoading(true);
-    let url = `${API}/requests?`;
-    if (filter) url += `blood_type=${filter}&`;
-    if (search) url += `search=${encodeURIComponent(search)}&`;
-    if (user.city) url += `city=${encodeURIComponent(user.city)}&`;
+export default function App() {
+  const [view, setView] = useState('landing');
+  const [token, setToken] = useState(() => localStorage.getItem('wasl_token'));
+  const [user, setUser] = useState(() => {
     try {
-      const r = await fetch(url);
-      setRequests(await r.json());
-    } finally { setLoading(false); }
+      return JSON.parse(localStorage.getItem('wasl_user') || 'null');
+    } catch {
+      return null;
+    }
+  });
+  const [role, setRole] = useState(user?.role ?? null);
+  const [authMode, setAuthMode] = useState('login');
+  const [activeTab, setActiveTab] = useState('home');
+  const [selectedFilter, setSelectedFilter] = useState('الكل');
+  const [isFiltering, setIsFiltering] = useState(false);
+  const [cases, setCases] = useState([]);
+  const [profile, setProfile] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [landingStats, setLandingStats] = useState({ donors: 0, donations: 0, hospitals: 0 });
+
+  const handleRoleSelect = (selectedRole) => {
+    setRole(selectedRole);
+    setAuthMode('login');
+    setView('auth');
   };
 
-  const fetchProfile = async () => {
-    const r = await fetch(`${API}/profile`, { headers: H });
-    setProfile(await r.json());
+  const handleFilterChange = (filter) => {
+    if (filter === selectedFilter) return;
+    setSelectedFilter(filter);
   };
 
-  const fetchHistory = async () => {
-    const r = await fetch(`${API}/donations/history`, { headers: H });
-    setHistory(await r.json());
+  const handleAuthSuccess = (newToken, newUser) => {
+    localStorage.setItem('wasl_token', newToken);
+    localStorage.setItem('wasl_user', JSON.stringify(newUser));
+    setToken(newToken);
+    setUser(newUser);
+    setRole(newUser.role);
+    setView('app');
   };
 
-  const fetchNotifs = async () => {
-    const r = await fetch(`${API}/notifications`, { headers: H });
-    setNotifs(await r.json());
+  const handleLogout = () => {
+    localStorage.removeItem('wasl_token');
+    localStorage.removeItem('wasl_user');
+    setToken(null);
+    setUser(null);
+    setRole(null);
+    setProfile(null);
+    setHistory([]);
+    setCases([]);
+    setAuthMode('login');
+    setView('landing');
   };
 
-  const markRead = async () => {
-    await fetch(`${API}/notifications/read`, { method:"POST", headers: H });
-    setNotifs(ns => ns.map(n => ({ ...n, is_read: true })));
-  };
+  const mapRequestToCase = (r) => ({
+    id: r.id,
+    type: apiBloodToUi(r.blood_type),
+    hospital: r.hospital_name,
+    city: r.city,
+    bags: `${r.bags_received ?? 0}/${r.bags_needed ?? 0}`,
+    urgent: r.urgency === 'عاجل',
+    status: r.status === 'مكتمل' ? 'done' : 'active',
+  });
 
-  useEffect(() => { fetchRequests(); }, [filter, search]);
-  useEffect(() => { fetchProfile(); fetchHistory(); fetchNotifs(); }, []);
-
-  const handleDonate = async () => {
+  const fetchCases = async () => {
+    if (!token || role !== 'donor') return;
+    setIsFiltering(true);
     try {
-      const r = await fetch(`${API}/requests/${selected.id}/donate`, {
-        method: "POST",
-        headers: H,
-        body: JSON.stringify({ date: booking.date, time: booking.time })
-      });
-      const d = await r.json();
-      if (!r.ok) { alert(d.error || "حدث خطأ"); return; }
-      setMsg(d.message || "تم الحجز بنجاح ✅");
-      setSelected(null);
-      setBooking({ date: "", time: "" });
-      fetchRequests();
-      setTimeout(() => setMsg(""), 3000);
-    } catch (err) {
-      alert("خطأ في الاتصال بالخادم");
+      let url = `${API}/requests?`;
+      const apiFilter = uiBloodToApi(selectedFilter);
+      if (apiFilter) url += `blood_type=${encodeURIComponent(apiFilter)}&`;
+      if (user?.city) url += `city=${encodeURIComponent(user.city)}&`;
+      const res = await fetch(url);
+      const data = await res.json();
+      setCases(Array.isArray(data) ? data.map(mapRequestToCase) : []);
+    } catch {
+      setCases([]);
+    } finally {
+      setIsFiltering(false);
     }
   };
 
-  const unread = notifs.filter(n => !n.is_read).length;
+  useEffect(() => {
+    if (token && user) {
+      setRole(user.role);
+      setView('app');
+    }
+  }, []);
 
-  const sideLinks = [
-    { id: "home",    label: "الرئيسية",  icon: "🏠", path: "/home" },
-    { id: "history", label: "سجلاتي",    icon: "📋", path: "/home/history" },
-    { id: "profile", label: "حسابي",     icon: "👤", path: "/home/profile" },
-  ];
+  useEffect(() => {
+    if (view !== 'landing') return;
+    fetch(`${API}/stats`)
+      .then((r) => r.json())
+      .then(setLandingStats)
+      .catch(() => {});
+  }, [view]);
+
+  useEffect(() => {
+    if (view === 'app' && activeTab === 'home' && role === 'donor' && token) {
+      fetchCases();
+    }
+  }, [view, activeTab, selectedFilter, role, token, user?.city]);
+
+  useEffect(() => {
+    if (view !== 'app' || activeTab !== 'account' || !token) return;
+    fetch(`${API}/profile`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then(setProfile)
+      .catch(() => setProfile(null));
+  }, [view, activeTab, token]);
+
+  useEffect(() => {
+    if (view !== 'app' || activeTab !== 'records' || !token || role !== 'donor') return;
+    fetch(`${API}/donations/history`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((data) => (Array.isArray(data) ? setHistory(data) : setHistory([])))
+      .catch(() => setHistory([]));
+  }, [view, activeTab, token, role]);
+
+  const getRoleName = (r) => {
+    switch (r) {
+      case 'patient':
+        return 'قريب المريض';
+      case 'hospital':
+        return 'مستشفى';
+      case 'donor':
+        return 'متبرع';
+      default:
+        return '';
+    }
+  };
+
+  const filteredCases = cases;
+
+  const renderSkeleton = () => (
+    <div className="cardsGrid">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="skeletonCard">
+          <div className="skeletonLine w60" />
+          <div className="skeletonLine w30" />
+          <div className="skeletonBlock" />
+        </div>
+      ))}
+    </div>
+  );
+
+  if (view === 'landing') {
+    return (
+      <div className="landing">
+        <div className="landingBg" />
+        <div className="landingBox">
+          <WaslLogo variant="light" center withHayat />
+          <h2 className="landingHeadline">
+            كل قطرة دم <em>تفرق</em>
+          </h2>
+          <p className="landingSub">منصة تربط المتبرعين بالمحتاجين في الأوقات الطارئة</p>
+
+          <div className="landingStats">
+            <div className="landingStat">
+              <b>{landingStats.donors}</b>
+              <span>متبرع</span>
+            </div>
+            <div className="landingStat">
+              <b>{landingStats.donations}</b>
+              <span>عملية تبرع</span>
+            </div>
+            <div className="landingStat">
+              <b>{landingStats.hospitals}</b>
+              <span>مستشفى</span>
+            </div>
+          </div>
+
+          <p className="whoAreYou">من أنت؟</p>
+          <div className="roleCards">
+            <button type="button" className="roleCard" onClick={() => handleRoleSelect('donor')}>
+              <Droplet className="rIcon" />
+              <div>
+                <strong>متبرع</strong>
+                <p>ساعد في إنقاذ حياة بالتبرع بدمك</p>
+              </div>
+              <ChevronLeft className="rArrow" />
+            </button>
+
+            <button type="button" className="roleCard" onClick={() => handleRoleSelect('patient')}>
+              <Users className="rIcon" />
+              <div>
+                <strong>قريب المريض</strong>
+                <p>أنشئ طلب دم لذويك واحصل على متبرع سريع</p>
+              </div>
+              <ChevronLeft className="rArrow" />
+            </button>
+
+            <button type="button" className="roleCard roleCardHospital" onClick={() => handleRoleSelect('hospital')}>
+              <Building2 className="rIcon" />
+              <div>
+                <strong>مستشفى</strong>
+                <p>أدر طلبات الدم وتابع الحالات بسهولة</p>
+              </div>
+              <ChevronLeft className="rArrow rArrowHospital" />
+            </button>
+          </div>
+        </div>
+
+        <div className="footer">
+          © {new Date().getFullYear()} وصل — جميع الحقوق محفوظة
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'auth') {
+    return (
+      <div className="authPage">
+        <div className="authCard">
+          <AuthPanel
+            key={`${role}-${authMode}`}
+            initialRole={role}
+            authMode={authMode}
+            setAuthMode={setAuthMode}
+            onBack={() => {
+              setAuthMode('login');
+              setView('landing');
+            }}
+            onSuccess={handleAuthSuccess}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="app" dir="rtl">
-      {msg && <div className="successBar">{msg}</div>}
-      <Navbar user={user} onLogout={onLogout} label="🩸 متبرع"
-        notifCount={unread} onBell={() => { setShowNotif(!showNotif); if (!showNotif) markRead(); }} />
-
-      {showNotif && (
-        <div className="notifDrop">
-          <h4>الإشعارات</h4>
-          {notifs.length === 0
-            ? <p className="empty">لا توجد إشعارات</p>
-            : notifs.map(n => (
-              <div key={n.id} className={`notifItem ${n.is_read ? "" : "unread"}`}>
-                <p>{n.message}</p>
-                <small>{n.created_at}</small>
-              </div>
-            ))
-          }
-        </div>
-      )}
-
-      <div className="appBody">
-        <Sidebar links={sideLinks} />
-
-        <Routes>
-          <Route path="/" element={
-            <main className="main">
-              <div className="hero red">
-                <div><h2>الحالات المتاحة 🩸</h2><p>اختر حالة وساعد في إنقاذ حياة</p></div>
-              </div>
-
-              <input className="inp searchBox" placeholder="🔍 ابحث عن مستشفى أو مدينة..."
-                value={search} onChange={e=>setSearch(e.target.value)} />
-
-              <div className="chips">
-                <button className={!filter?"act":""} onClick={()=>setFilter(null)}>الكل</button>
-                {["+O","-O","+A","-A","+B","-B","+AB","-AB"].map(b=>(
-                  <button key={b} className={filter===b?"act":""} onClick={()=>setFilter(b===filter?null:b)}>{b}</button>
-                ))}
-              </div>
-
-              <div className={`cards ${loading ? "loading-pulse" : ""}`}>
-                {requests.length === 0
-                  ? <p className="empty">{loading ? "جاري التحميل..." : "لا توجد حالات متاحة"}</p>
-                  : requests.map(r => (
-                    <div key={r.id} className={`card ${r.urgency==="عاجل"?"urgent":""}`}>
-                      <div className="cardTop">
-                        <span className="badge">{r.blood_type}</span>
-                        <div>
-                          <b>{r.hospital_name}</b>
-                          <p>{r.city} • حالة محتاجة</p>
-                          {r.urgency==="عاجل" && <span className="urgTag">🚨 عاجل</span>}
-                        </div>
-                      </div>
-                      <div className="cardBot">
-                        <div className="prog">
-                          <div className="progFill" style={{width:`${Math.round(r.bags_received/r.bags_needed*100)}%`}}/>
-                        </div>
-                        <small>{r.bags_received}/{r.bags_needed} أكياس 🩸</small>
-                        <button className="donateBtn" onClick={()=>{ setSelected(r); setBooking({date:"",time:""}); }}>
-                          <span className="donateBtnIcon">🩸</span>
-                          <span>تبرع الآن</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                }
-              </div>
-            </main>
-          } />
-
-          <Route path="/history" element={
-            <main className="main">
-              <div className="hero red"><h2>سجل التبرعات 📋</h2></div>
-              <div className="cards">
-                {history.length === 0
-                  ? <p className="empty">لا توجد تبرعات سابقة</p>
-                  : history.map(h => (
-                    <div key={h.id} className="card">
-                      <div className="cardTop">
-                        <span className="badge">{h.blood_type}</span>
-                        <div>
-                          <b>{h.hospital_name}</b>
-                          <p>{h.city} • تبرع مكتمل</p>
-                        </div>
-                      </div>
-                      <div className="historyMeta">
-                        <span className={`histStatus ${h.status === "مؤكد" ? "confirmed" : ""}`}>
-                          {h.status}
-                        </span>
-                        {h.appointment_date && <span>📅 {h.appointment_date}</span>}
-                        {h.appointment_time && <span>🕐 {h.appointment_time}</span>}
-                      </div>
-                    </div>
-                  ))
-                }
-              </div>
-            </main>
-          } />
-
-          <Route path="/profile" element={
-            profile && (
-              <main className="main">
-                <div className="hero red"><h2>حسابي 👤</h2></div>
-                <div className="profileCard">
-                  <div className="profileAvatar"><span>{profile.name?.charAt(0)}</span></div>
-                  <p className="profileName">{profile.name}</p>
-                  <p className="profileEmail">{profile.email}</p>
-                  <table className="profileTable">
-                    <tbody>
-                      <tr>
-                        <td className="profileLabel">فصيلة الدم</td>
-                        <td><span className="badge">{profile.blood_type}</span></td>
-                      </tr>
-                      <tr>
-                        <td className="profileLabel">المدينة</td>
-                        <td>{profile.city}</td>
-                      </tr>
-                      <tr>
-                        <td className="profileLabel">النقاط</td>
-                        <td><span className="pts">⭐ {profile.points} نقطة</span></td>
-                      </tr>
-                      <tr>
-                        <td className="profileLabel">عدد التبرعات</td>
-                        <td><span className="donationCount">🩸 {profile.donations} تبرع</span></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  <p style={{ marginTop: "20px", fontSize: "12px", color: "#999", textAlign: "center" }}>
-                    لا يمكن تعديل فصيلة الدم بعد التسجيل لأسباب أمنية.
-                  </p>
-                </div>
-              </main>
-            )
-          } />
-        </Routes>
-      </div>
-
-      <Footer />
-
-      {selected && (
-        <div className="modal" dir="rtl" onClick={()=>setSelected(null)}>
-          <div className="modalBox" onClick={e=>e.stopPropagation()}>
-            <h3>حجز موعد تبرع 🩸</h3>
-            <p>{selected.hospital_name} — {selected.blood_type}</p>
-            <label className="dateLabel">📅 اختر التاريخ</label>
-            <input className="inp dateInp" type="date" value={booking.date}
-              min={new Date().toISOString().split("T")[0]}
-              onChange={e=>setBooking({...booking, date:e.target.value})} />
-            <label className="dateLabel">🕐 اختر الوقت</label>
-            <select className="inp" value={booking.time}
-              onChange={e=>setBooking({...booking, time:e.target.value})}>
-              <option value="">— اختر الوقت —</option>
-              <option value="08:00">8:00 صباحاً</option>
-              <option value="09:00">9:00 صباحاً</option>
-              <option value="10:00">10:00 صباحاً</option>
-              <option value="11:00">11:00 صباحاً</option>
-              <option value="12:00">12:00 ظهراً</option>
-              <option value="13:00">1:00 مساءً</option>
-              <option value="14:00">2:00 مساءً</option>
-              <option value="15:00">3:00 مساءً</option>
-              <option value="16:00">4:00 مساءً</option>
-              <option value="17:00">5:00 مساءً</option>
-            </select>
-            <div className="modalBtns">
-              <button className="authBtn" onClick={async () => {
-                if (!booking.date || !booking.time) {
-                  alert("يرجى اختيار التاريخ والوقت");
-                  return;
-                }
-                await handleDonate();
-              }}>تأكيد الحجز</button>
-              <button className="cancelBtn" onClick={()=>setSelected(null)}>إلغاء</button>
+    <div className="appShell">
+      <aside className="sidebar">
+        <div className="sidebarTop">
+          <WaslLogo variant="brand" />
+          <div className="sidebarUser">
+            <div className="sidebarUserIcon">
+              {role === 'patient' && <Users />}
+              {role === 'hospital' && <Building2 />}
+              {role === 'donor' && <HandHeart />}
+            </div>
+            <div>
+              <p>مرحباً بك</p>
+              <strong>{getRoleName(role)}</strong>
             </div>
           </div>
         </div>
-      )}
-    </div>
-  );
-}
 
-// ══════════════════════════════
-//  PATIENT APP
-// ══════════════════════════════
-function PatientApp({ user, token, onLogout }) {
-  const [requests, setRequests] = useState([]);
-  const [hospitals, setHospitals] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [selectedCity, setSelectedCity] = useState("");
-  const [form, setForm] = useState({
-    patient_name:"", hospital_id:"", blood_type:"+O", bags_needed:1, urgency:"عادي"
-  });
-  const [msg, setMsg] = useState("");
-  const [notifs, setNotifs] = useState([]);
-  const [showNotif, setShowNotif] = useState(false);
+        <nav className="sidebarNav">
+          <button
+            type="button"
+            className={activeTab === 'home' ? 'active' : ''}
+            onClick={() => setActiveTab('home')}
+          >
+            <Home /> الرئيسية
+          </button>
+          <button
+            type="button"
+            className={activeTab === 'records' ? 'active' : ''}
+            onClick={() => setActiveTab('records')}
+          >
+            <ClipboardList /> سجلاتي
+          </button>
+          <button
+            type="button"
+            className={activeTab === 'account' ? 'active' : ''}
+            onClick={() => setActiveTab('account')}
+          >
+            <User /> حسابي
+          </button>
+        </nav>
 
-  const H = { "Content-Type":"application/json", Authorization:`Bearer ${token}` };
-
-  const fetchRequests = async () => {
-    const r = await fetch(`${API}/requests`);
-    setRequests(await r.json());
-  };
-
-  const fetchNotifs = async () => {
-    const r = await fetch(`${API}/notifications`, { headers: H });
-    setNotifs(await r.json());
-  };
-
-  const markRead = async () => {
-    await fetch(`${API}/notifications/read`, { method:"POST", headers: H });
-    setNotifs(ns => ns.map(n => ({ ...n, is_read: true })));
-  };
-
-  const fetchHospitals = async (city) => {
-    const url = city ? `${API}/hospitals?city=${encodeURIComponent(city)}` : `${API}/hospitals`;
-    const r = await fetch(url);
-    const list = await r.json();
-    setHospitals(list);
-    setForm(f => ({ ...f, hospital_id: list.length ? String(list[0].id) : "" }));
-  };
-
-  useEffect(() => { fetchRequests(); fetchHospitals(""); fetchNotifs(); }, []);
-  useEffect(() => { fetchHospitals(selectedCity); }, [selectedCity]);
-
-  const unread = notifs.filter(n => !n.is_read).length;
-
-  const submit = async () => {
-    const r = await fetch(`${API}/requests`, {
-      method:"POST", headers:H, body:JSON.stringify(form)
-    });
-    const d = await r.json();
-    setMsg(d.message || d.error);
-    setShowForm(false);
-    fetchRequests();
-    setTimeout(() => setMsg(""), 3000);
-  };
-
-  const sideLinks = [
-    { id: "home", label: "طلبات الدم", icon: "🏥", path: "/home" },
-    { id: "account", label: "حسابي", icon: "👤", path: "/home/profile" },
-  ];
-
-  return (
-    <div className="app" dir="rtl">
-      {msg && <div className="successBar">{msg}</div>}
-      <Navbar user={user} onLogout={onLogout} label="👨‍👩‍👧 عائلة مريض"
-        notifCount={unread} onBell={() => { setShowNotif(!showNotif); if (!showNotif) markRead(); }} />
-
-      {showNotif && (
-        <div className="notifDrop">
-          <h4>الإشعارات</h4>
-          {notifs.length === 0
-            ? <p className="empty">لا توجد إشعارات</p>
-            : notifs.map(n => (
-              <div key={n.id} className={`notifItem ${n.is_read ? "" : "unread"}`}>
-                <p>{n.message}</p>
-                <small>{n.created_at}</small>
-              </div>
-            ))
-          }
+        <div className="sidebarBottom">
+          <button type="button" className="sidebarLogout" onClick={handleLogout}>
+            <LogOut /> تسجيل الخروج
+          </button>
         </div>
-      )}
+      </aside>
 
-      <div className="appBody">
-        <Sidebar links={sideLinks} />
+      <div className="mainWrap">
+        <header className="mobileHeader">
+          <WaslLogo variant="brand" />
+          <button type="button" className="iconBtn" onClick={handleLogout} aria-label="تسجيل الخروج">
+            <LogOut />
+          </button>
+        </header>
 
-        <Routes>
-          <Route path="/" element={
-            <main className="main">
-              <div className="hero orange">
-                <div><h2>طلبات الدم 🏥</h2><p>أنشئ طلب وسنوصلك بمتبرع</p></div>
-                <button className="newBtn" onClick={()=>setShowForm(!showForm)}>
-                  {showForm ? "إلغاء" : "+ طلب جديد"}
-                </button>
-              </div>
-
-              {showForm && (
-                <div className="formBox">
-                  <input className="inp" placeholder="اسم المريض"
-                    value={form.patient_name} onChange={e=>setForm({...form,patient_name:e.target.value})} />
-
-                  <select className="inp" value={selectedCity} onChange={e=>setSelectedCity(e.target.value)}>
-                    <option value="">— اختر المدينة —</option>
-                    {REGIONS.map(r=><option key={r} value={r}>{r}</option>)}
-                  </select>
-
-                  <select className="inp" value={form.hospital_id} onChange={e=>setForm({...form,hospital_id:e.target.value})}>
-                    {hospitals.length === 0
-                      ? <option value="">لا توجد مستشفيات في هذه المدينة</option>
-                      : hospitals.map(h=><option key={h.id} value={h.id}>{h.name} — {h.city}</option>)
-                    }
-                  </select>
-
-                  <select className="inp" value={form.blood_type} onChange={e=>setForm({...form,blood_type:e.target.value})}>
-                    {["+O","-O","+A","-A","+B","-B","+AB","-AB"].map(b=>
-                      <option key={b} value={b}>{b}</option>
-                    )}
-                  </select>
-
-                  <button className="authBtn" onClick={submit}>إرسال الطلب</button>
+        <div className="contentArea">
+          {activeTab === 'home' && (
+            <div className="tabPanel">
+              {role === 'patient' && (
+                <div className="hero red">
+                  <div>
+                    <h2>طلبات التبرع</h2>
+                    <p>تابع حالة طلباتك أو أنشئ طلباً جديداً</p>
+                  </div>
+                  <div className="heroStats">
+                    <div className="heroStatBox">
+                      <b>١</b>
+                      <span>نشط</span>
+                    </div>
+                    <button type="button" className="newRequestBtn">
+                      <Plus /> طلب جديد
+                    </button>
+                  </div>
                 </div>
               )}
 
-              <div className="cards">
-                {requests.length === 0
-                  ? <p className="empty">لا توجد طلبات</p>
-                  : requests.map(r => (
-                    <div key={r.id} className={`card ${r.urgency==="عاجل"?"urgent":""}`}>
-                      <div className="cardTop">
-                        <span className="badge">{r.blood_type}</span>
-                        <div>
-                          <b>{r.hospital_name}</b>
-                          <p>{r.patient_name} • {r.city}</p>
-                          {r.urgency==="عاجل" && <span className="urgTag">🚨 عاجل</span>}
-                        </div>
-                      </div>
-                      <div className="cardBot">
-                        <div className="prog">
-                          <div className="progFill" style={{width:`${Math.round(r.bags_received/r.bags_needed*100)}%`}}/>
-                        </div>
-                        <small>{r.bags_received}/{r.bags_needed} أكياس</small>
-                      </div>
+              {role === 'hospital' && (
+                <div className="hero blue">
+                  <div>
+                    <h2>لوحة المستشفى</h2>
+                    <p>متابعة الحالات النشطة وتأكيد التبرعات</p>
+                  </div>
+                  <div className="heroStats">
+                    <div className="heroStatBox">
+                      <b>١٢</b>
+                      <span>حالة نشطة</span>
                     </div>
-                  ))
-                }
-              </div>
-            </main>
-          } />
-
-          <Route path="/profile" element={
-            <main className="main">
-              <div className="hero orange"><h2>حسابي 👤</h2></div>
-              <div className="profileCard">
-                <div className="profileRow"><span>الاسم</span><b>{user.name}</b></div>
-                <div className="profileRow"><span>الدور</span><b>قريب مريض</b></div>
-                <div className="profileRow"><span>المدينة</span><b>{user.city}</b></div>
-              </div>
-            </main>
-          } />
-        </Routes>
-      </div>
-      <Footer />
-    </div>
-  );
-}
-
-// ══════════════════════════════
-//  HOSPITAL APP
-// ══════════════════════════════
-function HospitalApp({ user, token, onLogout }) {
-  const [requests, setRequests] = useState([]);
-  const [appointments, setAppointments] = useState([]);
-  const [msg, setMsg] = useState("");
-  const H = { "Content-Type":"application/json", Authorization:`Bearer ${token}` };
-
-  const fetchAll = async () => {
-    const r = await fetch(`${API}/hospital/requests`, { headers: H });
-    setRequests(await r.json());
-  };
-
-  const fetchAppointments = async () => {
-    const r = await fetch(`${API}/hospital/appointments`, { headers: H });
-    setAppointments(await r.json());
-  };
-
-  useEffect(() => { fetchAll(); fetchAppointments(); }, []);
-
-  const action = async (id, endpoint, body={}) => {
-    const r = await fetch(`${API}/requests/${id}/${endpoint}`, {
-      method:"POST", headers:H, body:JSON.stringify(body)
-    });
-    const d = await r.json();
-    setMsg(d.message || d.error);
-    fetchAll(); fetchAppointments();
-    setTimeout(() => setMsg(""), 3000);
-  };
-
-  const confirmDonation = async (did) => {
-    const r = await fetch(`${API}/donations/${did}/confirm`, {
-      method:"POST", headers:H
-    });
-    const d = await r.json();
-    setMsg(d.message || d.error);
-    fetchAll(); fetchAppointments();
-    setTimeout(() => setMsg(""), 3000);
-  };
-
-  const pending   = requests.filter(r=>r.status==="معلق");
-  const active    = requests.filter(r=>r.status==="نشط");
-  const completed = requests.filter(r=>r.status==="مكتمل");
-  const pendingApts = appointments.filter(a=>a.status==="معلق");
-  const confirmedApts = appointments.filter(a=>a.status==="مؤكد");
-
-  const sideLinks = [
-    { id: "home", label: "الطلبات", icon: "📊", path: "/home" },
-    { id: "appointments", label: `المواعيد ${pendingApts.length > 0 ? "🔔" : ""}`, icon: "📅", path: "/home/appointments" },
-    { id: "account", label: "حسابي", icon: "👤", path: "/home/profile" },
-  ];
-
-  return (
-    <div className="app" dir="rtl">
-      {msg && <div className="successBar">{msg}</div>}
-      <Navbar user={user} onLogout={onLogout} label="🏥 مستشفى" />
-      
-      <div className="appBody">
-        <Sidebar links={sideLinks} />
-
-        <Routes>
-          <Route path="/" element={
-            <main className="main">
-              <div className="hero blue">
-                <div><h2>لوحة التحكم 🏥</h2><p>إدارة طلبات الدم والحالات</p></div>
-                <div className="heroStats">
-                  <Stat v={pending.length}   l="معلقة" />
-                  <Stat v={active.length}    l="نشطة" />
-                  <Stat v={completed.length} l="مكتملة" />
+                    <div className="heroStatBox">
+                      <b>٤٥</b>
+                      <span>تبرع مكتمل</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <h3 className="sectionTitle">🆕 طلبات جديدة — بانتظار التأكيد</h3>
-              <div className="cards">
-                {pending.length === 0
-                  ? <p className="empty">لا توجد طلبات جديدة</p>
-                  : pending.map(r => (
-                    <div key={r.id} className="card">
-                      <div className="cardTop">
-                        <span className="badge">{r.blood_type}</span>
-                        <div>
-                          <b>{r.patient_name}</b>
-                          <p>{r.requester_name} • {r.city}</p>
-                        </div>
-                      </div>
-                      <div className="actionBtns">
-                        <button className="actBtn green" onClick={()=>action(r.id,"confirm",{urgency:"عادي", bags_needed: prompt("كم عدد الأكياس المطلوبة؟") || 1})}>
-                          تأكيد عادي
-                        </button>
-                        <button className="actBtn red" onClick={()=>action(r.id,"confirm",{urgency:"عاجل", bags_needed: prompt("كم عدد الأكياس المطلوبة؟") || 1})}>
-                          تأكيد عاجل 🚨
-                        </button>
-                        <button className="actBtn gray" onClick={()=>action(r.id,"complete")}>رفض</button>
-                      </div>
+              {role === 'donor' && (
+                <div className="hero orange">
+                  <div>
+                    <h2>أنقذ حياة اليوم</h2>
+                    <p>فصيلة دمك مطلوبة في حالات قريبة منك</p>
+                  </div>
+                  <div className="heroStats">
+                    <div className="heroStatBox">
+                      <b>٣</b>
+                      <span>تبرعاتك</span>
                     </div>
-                  ))
-                }
-              </div>
-
-              <h3 className="sectionTitle">الحالات النشطة</h3>
-              <div className="cards">
-                {active.length === 0
-                  ? <p className="empty">لا توجد حالات نشطة</p>
-                  : active.map(r => (
-                    <div key={r.id} className={`card ${r.urgency==="عاجل"?"urgent":""}`}>
-                      <div className="cardTop">
-                        <span className="badge">{r.blood_type}</span>
-                        <div>
-                          <b>{r.patient_name}</b>
-                          <p>{r.requester_name} • {r.city}</p>
-                          {r.urgency==="عاجل" && <span className="urgTag">🚨 عاجل</span>}
-                        </div>
-                      </div>
-                      <div className="cardBot">
-                        <div className="prog">
-                          <div className="progFill" style={{width:`${Math.round(r.bags_received/r.bags_needed*100)}%`}}/>
-                        </div>
-                        <small>{r.bags_received}/{r.bags_needed} أكياس</small>
-                        <div className="actionBtns">
-                          <button className="actBtn gray" onClick={()=>action(r.id,"complete")}>إغلاق ✅</button>
-                        </div>
-                      </div>
+                    <div className="heroStatBox">
+                      <b>١٥٠</b>
+                      <span>نقطة</span>
                     </div>
-                  ))
-                }
+                  </div>
+                </div>
+              )}
+
+              <div className="filterHead">
+                <Filter /> فصائل الدم
+              </div>
+              <div className="filterScroll">
+                {FILTER_BLOOD_TYPES.map((bt) => (
+                  <button
+                    key={bt}
+                    type="button"
+                    className={`filterChip ${selectedFilter === bt ? 'act' : ''}`}
+                    onClick={() => handleFilterChange(bt)}
+                    dir="ltr"
+                  >
+                    {bt}
+                  </button>
+                ))}
               </div>
 
-              <h3 className="sectionTitle">الحالات المكتملة</h3>
-              <div className="cards">
-                {completed.length === 0
-                  ? <p className="empty">لا توجد حالات مكتملة</p>
-                  : completed.map(r => (
-                    <div key={r.id} className="card done">
-                      <div className="cardTop">
-                        <span className="badge">{r.blood_type}</span>
-                        <div>
-                          <b>{r.patient_name}</b>
-                          <p>✅ مكتمل</p>
+              {isFiltering ? (
+                renderSkeleton()
+              ) : filteredCases.length > 0 ? (
+                <div className="cardsGrid">
+                  {filteredCases.map((c) => {
+                    const isUrgent = c.urgent && c.status !== 'done';
+                    const isDone = c.status === 'done';
+                    const cardClass = ['caseCard', isUrgent && 'urgent', isDone && 'done'].filter(Boolean).join(' ');
+
+                    return (
+                      <article key={c.id} className={cardClass}>
+                        <div className="caseCardTop">
+                          <span className={`badge lg ${isDone ? 'done' : ''}`} dir="ltr">
+                            {c.type}
+                          </span>
+                          <div className="caseInfo">
+                            <h4>
+                              {c.hospital}
+                              {isUrgent && (
+                                <span className="urgentPill">
+                                  <AlertCircle /> حالة عاجلة
+                                </span>
+                              )}
+                            </h4>
+                            <p className="caseMeta">
+                              <MapPin /> {c.city}
+                            </p>
+                          </div>
+                          {isDone && <CheckCircle2 className="doneIcon" />}
                         </div>
-                      </div>
-                    </div>
-                  ))
-                }
-              </div>
-            </main>
-          } />
 
-          <Route path="/appointments" element={
-            <main className="main">
-              <div className="hero blue">
-                <div><h2>مواعيد التبرع 📅</h2><p>أكّد حضور المتبرعين</p></div>
-              </div>
+                        <div className="caseCardFoot">
+                          <div>
+                            <span className="needLabel">الاحتياج</span>
+                            <span className="needValue" dir="ltr">
+                              {c.bags}
+                            </span>
+                          </div>
 
-              <h3 className="sectionTitle">⏳ بانتظار التأكيد</h3>
-              <div className="cards">
-                {pendingApts.length === 0
-                  ? <p className="empty">لا توجد مواعيد بانتظار التأكيد</p>
-                  : pendingApts.map(a => (
-                    <div key={a.id} className="card">
-                      <div className="cardTop">
-                        <span className="badge">{a.blood_type}</span>
-                        <div>
-                          <b>{a.donor_name}</b>
-                          <p>للمريض: {a.patient_name}</p>
+                          {!isDone && role === 'donor' && (
+                            <button type="button" className="donateBtn lg">
+                              أريد التبرع
+                            </button>
+                          )}
+                          {!isDone && role === 'hospital' && (
+                            <button type="button" className="outlineBtn">
+                              تأكيد الإنجاز
+                            </button>
+                          )}
+                          {!isDone && role === 'patient' && (
+                            <button type="button" className="outlineBtn gray">
+                              تعديل الطلب
+                            </button>
+                          )}
                         </div>
-                      </div>
-                      <div className="historyMeta">
-                        {a.appointment_date && <span>📅 {a.appointment_date}</span>}
-                        {a.appointment_time && <span>🕐 {a.appointment_time}</span>}
-                      </div>
-                      <div className="actionBtns" style={{marginTop:"10px"}}>
-                        <button className="actBtn green" onClick={()=>confirmDonation(a.id)}>
-                          تأكيد التبرع ✅
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                }
-              </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="emptyState">
+                  <Droplet />
+                  <h3>لا توجد حالات حالياً</h3>
+                  <p>لم يتم العثور على حالات مطابقة لفصيلة {selectedFilter}</p>
+                </div>
+              )}
+            </div>
+          )}
 
-              <h3 className="sectionTitle">✅ تم التأكيد</h3>
-              <div className="cards">
-                {confirmedApts.length === 0
-                  ? <p className="empty">لا توجد مواعيد مؤكدة</p>
-                  : confirmedApts.map(a => (
-                    <div key={a.id} className="card done">
-                      <div className="cardTop">
-                        <span className="badge">{a.blood_type}</span>
-                        <div>
-                          <b>{a.donor_name}</b>
-                          <p>للمريض: {a.patient_name}</p>
-                        </div>
-                      </div>
-                      <div className="historyMeta">
-                        {a.appointment_date && <span>📅 {a.appointment_date}</span>}
-                        {a.appointment_time && <span>🕐 {a.appointment_time}</span>}
-                        <span className="histStatus confirmed">✅ تم التبرع</span>
-                      </div>
-                    </div>
-                  ))
-                }
-              </div>
-            </main>
-          } />
-
-          <Route path="/profile" element={
-            <main className="main">
-              <div className="hero blue"><h2>حسابي 👤</h2></div>
+          {activeTab === 'account' && (
+            <div className="tabPanel accountWrap">
+              <h2 className="pageTitle">حسابي الشخصي</h2>
               <div className="profileCard">
-                <div className="profileRow"><span>الاسم</span><b>{user.name}</b></div>
-                <div className="profileRow"><span>المدينة</span><b>{user.city}</b></div>
+                <div className="profileHeader">
+                  <div className="avatar">{(profile?.name || user?.name)?.charAt(0) || '؟'}</div>
+                  <div>
+                    <h3>{profile?.name || user?.name || '—'}</h3>
+                    <span className="rolePill">{getRoleName(role)}</span>
+                  </div>
+                </div>
+
+                <div className="formGrid">
+                  <div className="field">
+                    <label>الاسم الكامل / الجهة</label>
+                    <input
+                      className="inp"
+                      type="text"
+                      defaultValue={profile?.name || user?.name || ''}
+                      readOnly
+                    />
+                  </div>
+                  <div className="field">
+                    <label>المدينة</label>
+                    <input className="inp" type="text" defaultValue={profile?.city || user?.city || ''} readOnly />
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label>البريد الإلكتروني</label>
+                  <input className="inp" type="email" defaultValue={profile?.email || user?.email || ''} readOnly dir="ltr" />
+                </div>
+
+                {role === 'donor' && (
+                  <div className="bloodTypeBox">
+                    <div className="bloodTypeHead">
+                      <span>فصيلة الدم الخاصة بك</span>
+                      <span className="lockedTag">غير قابل للتعديل</span>
+                    </div>
+                    <input
+                      className="inp disabled"
+                      type="text"
+                      value={apiBloodToUi(profile?.blood_type || user?.blood_type) || ''}
+                      disabled
+                      readOnly
+                      dir="ltr"
+                    />
+                    <p className="bloodNote">
+                      <AlertCircle />
+                      لضمان دقة البيانات الطبية وسلامة المرضى، لا يمكن تغيير فصيلة الدم بعد التسجيل. إذا كان هناك خطأ،
+                      يرجى التواصل مع الدعم الفني.
+                    </p>
+                  </div>
+                )}
+
+                <button type="button" className="saveBtn">
+                  حفظ التعديلات
+                </button>
               </div>
-            </main>
-          } />
-        </Routes>
+            </div>
+          )}
+
+          {activeTab === 'records' && (
+            <div className="tabPanel">
+              <h2 className="pageTitle">سجلاتي</h2>
+              {history.length === 0 ? (
+                <div className="recordsEmpty">
+                  <ClipboardList />
+                  <h3>سجلك نظيف ومشرّف</h3>
+                  <p>هنا ستظهر جميع السجلات السابقة الخاصة بك في وصل.</p>
+                </div>
+              ) : (
+                <div className="cardsGrid">
+                  {history.map((h) => (
+                    <article key={h.id} className="caseCard">
+                      <div className="caseCardTop">
+                        <span className="badge lg" dir="ltr">
+                          {apiBloodToUi(h.blood_type)}
+                        </span>
+                        <div className="caseInfo">
+                          <h4>{h.hospital_name}</h4>
+                          <p className="caseMeta">
+                            <MapPin /> {h.city}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="caseMeta">{h.status}</p>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <footer className="appFooter">
+          © {new Date().getFullYear()} تطبيق وصل. جميع الحقوق محفوظة.
+        </footer>
       </div>
-      <Footer />
+
+      <nav className="bottomNav">
+        <button
+          type="button"
+          className={activeTab === 'home' ? 'active' : ''}
+          onClick={() => setActiveTab('home')}
+        >
+          <Home />
+          <span>الرئيسية</span>
+        </button>
+        <button
+          type="button"
+          className={activeTab === 'records' ? 'active' : ''}
+          onClick={() => setActiveTab('records')}
+        >
+          <ClipboardList />
+          <span>سجلاتي</span>
+        </button>
+        <button
+          type="button"
+          className={activeTab === 'account' ? 'active' : ''}
+          onClick={() => setActiveTab('account')}
+        >
+          <User />
+          <span>حسابي</span>
+        </button>
+      </nav>
     </div>
   );
-}
-
-// ══════════════════════════════
-//  SHARED
-// ══════════════════════════════
-function Navbar({ user, onLogout, label, notifCount = 0, onBell }) {
-  return (
-    <nav className="nav">
-      <div className="navBrand"><Logo sm /></div>
-      <div className="navRight">
-        <span className="roleTag">{label}</span>
-        {onBell && (
-          <button className="bellBtn" onClick={onBell}>
-            🔔{notifCount > 0 && <span className="bellBadge">{notifCount}</span>}
-          </button>
-        )}
-        <span className="userName">{user?.name}</span>
-        <button className="logoutBtn" onClick={onLogout}>خروج</button>
-      </div>
-    </nav>
-  );
-}
-
-function Stat({ v, l }) {
-  return <div className="stat"><b>{v}</b><span>{l}</span></div>;
 }
