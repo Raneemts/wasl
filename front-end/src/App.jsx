@@ -160,7 +160,7 @@ function AuthPage({ mode, onLogin }) {
   const navigate = useNavigate();
   const isLogin = mode === "login";
   const [form, setForm] = useState({
-    name:"", email:"", password:"", role:"donor", blood_type:"+O", city:"", region:""
+    name:"", email:"", password:"", phone:"", role:"donor", blood_type:"+O", city:"", region:""
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -175,6 +175,24 @@ function AuthPage({ mode, onLogin }) {
       setError("يرجى إدخال بريد إلكتروني صحيح (مثال: name@gmail.com)");
       setLoading(false);
       return;
+    }
+
+    if (!isLogin) {
+      if (!form.name?.trim()) {
+        setError("الاسم الكامل مطلوب");
+        setLoading(false);
+        return;
+      }
+      if (!form.phone?.trim()) {
+        setError("رقم الهاتف مطلوب");
+        setLoading(false);
+        return;
+      }
+      if (!form.city) {
+        setError("يرجى اختيار المدينة");
+        setLoading(false);
+        return;
+      }
     }
 
     try {
@@ -194,7 +212,7 @@ function AuthPage({ mode, onLogin }) {
   return (
     <div className="authPage" dir="rtl">
       <div className="authCard">
-        <button className="backBtn" onClick={() => navigate(isLogin ? "/" : "/login")}>→ رجوع</button>
+        <button className="backBtn" onClick={() => navigate("/login")}>→ رجوع</button>
         <div className="authLogo"><Logo sm /></div>
         <h3>{isLogin ? "تسجيل الدخول" : "إنشاء حساب"}</h3>
 
@@ -208,6 +226,11 @@ function AuthPage({ mode, onLogin }) {
           value={form.email} onChange={e => set("email", e.target.value)} />
         <input className="inp" type="password" placeholder="كلمة المرور"
           value={form.password} onChange={e => set("password", e.target.value)} />
+
+        {!isLogin && (
+          <input className="inp" type="tel" placeholder="رقم الهاتف"
+            value={form.phone} onChange={e => set("phone", e.target.value)} dir="ltr" />
+        )}
 
         {!isLogin && <>
           <select className="inp" value={form.role} onChange={e => set("role", e.target.value)}>
@@ -248,7 +271,6 @@ function AuthPage({ mode, onLogin }) {
 //  DONOR APP
 // ══════════════════════════════
 function DonorApp({ user, token, onLogout }) {
-  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [filter, setFilter]     = useState(null);
   const [search, setSearch]     = useState("");
@@ -312,7 +334,7 @@ function DonorApp({ user, token, onLogout }) {
       setBooking({ date: "", time: "" });
       fetchRequests();
       setTimeout(() => setMsg(""), 3000);
-    } catch (err) {
+    } catch {
       alert("خطأ في الاتصال بالخادم");
     }
   };
@@ -437,7 +459,16 @@ function DonorApp({ user, token, onLogout }) {
                     <tbody>
                       <tr>
                         <td className="profileLabel">فصيلة الدم</td>
-                        <td><span className="badge">{profile.blood_type}</span></td>
+                        <td>
+                          <input
+                            className="inp bloodTypeLocked"
+                            type="text"
+                            value={profile.blood_type || ""}
+                            disabled
+                            dir="ltr"
+                            readOnly
+                          />
+                        </td>
                       </tr>
                       <tr>
                         <td className="profileLabel">المدينة</td>
@@ -453,7 +484,7 @@ function DonorApp({ user, token, onLogout }) {
                       </tr>
                     </tbody>
                   </table>
-                  <p style={{ marginTop: "20px", fontSize: "12px", color: "#999", textAlign: "center" }}>
+                  <p style={{ marginTop: "12px", fontSize: "12px", color: "#999", textAlign: "center" }}>
                     لا يمكن تعديل فصيلة الدم بعد التسجيل لأسباب أمنية.
                   </p>
                 </div>
