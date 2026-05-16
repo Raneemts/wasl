@@ -6,6 +6,7 @@ from flask_jwt_extended import (
     jwt_required, get_jwt_identity
 )
 import mysql.connector
+import os
 from datetime import timedelta
 
 app = Flask(__name__)
@@ -17,10 +18,10 @@ jwt = JWTManager(app)
 
 def db():
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="NewStrongPass123!",
-        database="wasl_db"
+        host=os.getenv("DB_HOST", "localhost"),
+        user=os.getenv("DB_USER", "root"),
+        password=os.getenv("DB_PASS", ""),
+        database=os.getenv("DB_NAME", "wasl_db"),
     )
 
 # ══════════════════════════════
@@ -47,9 +48,9 @@ def register():
 
     try:
         cur.execute("""
-            INSERT INTO users (name,email,password_hash,role,blood_type,city,region)
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
-        """, (d["name"], d["email"], hashed, d["role"],
+            INSERT INTO users (name,email,phone,password_hash,role,blood_type,city,region)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (d["name"], d["email"], d.get("phone"), hashed, d["role"],
               d.get("blood_type"), d.get("city"), d.get("region")))
         conn.commit()
         uid = cur.lastrowid

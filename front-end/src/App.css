@@ -34,6 +34,7 @@ body{font-family:'Cairo',Tahoma,Arial,sans-serif;background:#faf7f4;direction:rt
 .inp{width:100%;padding:13px 16px;border:1.5px solid #e0d8d0;border-radius:12px;font-size:15px;font-family:'Cairo',Tahoma,Arial,sans-serif;margin-bottom:10px;text-align:right;direction:rtl;transition:.2s;background:#fffcfa;color:#000;letter-spacing:.2px;line-height:1.5}
 .inp:focus{outline:none;border-color:#e8758a;box-shadow:0 0 0 3px rgba(255,45,85,.1)}
 .inp::placeholder{color:#777}
+.inp.bloodTypeLocked,.inp:disabled{background:#f5f0ed;color:#666;cursor:not-allowed;opacity:1;max-width:120px}
 .authBtn{width:100%;background:linear-gradient(135deg,#ff2d55,#a0001c);color:white;border:none;padding:14px;border-radius:14px;font-size:16px;font-weight:bold;cursor:pointer;font-family:'Cairo',Tahoma,Arial,sans-serif;transition:.2s}
 .authBtn:hover:not(:disabled){opacity:.9}
 .authBtn:disabled{opacity:.6;cursor:not-allowed}
