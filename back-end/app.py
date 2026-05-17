@@ -9,7 +9,7 @@ import mysql.connector
 import os
 from datetime import timedelta
 from pathlib import Path
-from notifications import notify_user
+from notifications import notify_user, strip_emojis
 
 def _load_env_file():
     env_path = Path(__file__).resolve().parent / ".env"
@@ -296,7 +296,7 @@ def create_request():
         if not d.get(f):
             return jsonify({"error": f"حقل مطلوب: {f}"}), 400
 
-    conn = db(); cur = conn.cursor()
+    conn = db(); cur = conn.cursor(dictionary=True)
     cur.execute("""
         INSERT INTO blood_requests
         (user_id,patient_name,hospital_id,blood_type,bags_needed,urgency,status)
@@ -304,8 +304,23 @@ def create_request():
     """, (uid, d["patient_name"], d["hospital_id"],
           d["blood_type"], int(d.get("bags_needed") or 1),
           d.get("urgency") or "عادي", "نشط"))
-    conn.commit()
     rid = cur.lastrowid
+    notify_user(
+        cur,
+        uid,
+        "تم إنشاء طلبك بنجاح — ستصلك إشعارات عند حجز المواعيد أو اكتمال الحالة",
+    )
+    cur.execute("""
+        SELECT id FROM users
+        WHERE role='hospital' AND hospital_id=%s AND account_status='approved'
+    """, (d["hospital_id"],))
+    for hosp in cur.fetchall():
+        notify_user(
+            cur,
+            hosp["id"],
+            f"طلب تبرع جديد — فصيلة {d['blood_type']} بانتظار المتابعة",
+        )
+    conn.commit()
     cur.close(); conn.close()
     return jsonify({"message": "تم إنشاء الطلب، بانتظار تأكيد المستشفى", "id": rid}), 201
 
@@ -537,6 +552,21 @@ def donate(rid):
         f"{donor_name} حجز موعد تبرع لطلبك — بانتظار تأكيد المستشفى",
         subject="موعد تبرع جديد — وصل",
     )
+    cur.execute("""
+        SELECT id FROM users
+        WHERE role='hospital' AND hospital_id=%s AND account_status='approved'
+    """, (req["hospital_id"],))
+    for hosp in cur.fetchall():
+        notify_user(
+            cur,
+            hosp["id"],
+            f"متبرع حجز موعد تبرع — فصيلة {req['blood_type']} بانتظار تأكيدكم",
+        )
+    notify_user(
+        cur,
+        uid,
+        "تم حجز موعد التبرع — بانتظار تأكيد المستشفى",
+    )
 
     conn.commit(); cur.close(); conn.close()
     return jsonify({"message": "تم حجز موعد التبرع — +20 نقطة"})
@@ -584,6 +614,8 @@ def get_notifications():
     rows = cur.fetchall()
     for r in rows:
         r["created_at"] = str(r["created_at"])
+        if r.get("message"):
+            r["message"] = strip_emojis(r["message"])
     cur.close(); conn.close()
     return jsonify(rows)
 
