@@ -8,6 +8,9 @@ from flask_jwt_extended import (
 import mysql.connector
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
