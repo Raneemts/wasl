@@ -713,24 +713,494 @@ select.inp {
   z-index: 999;
 }
 
+.mobileHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .bellBtn {
-  background: transparent;
+  background: #f5f5f5;
   border: none;
-  color: white;
+  border-radius: 50%;
+  padding: 8px;
+  color: #7a7080;
   cursor: pointer;
   position: relative;
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bellBtn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.notifDrop {
+  background: white;
+  margin: 0 16px 12px;
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0e8e0;
+}
+
+.notifDrop h4 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.notifList {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.notifList li {
+  padding: 10px 0;
+  border-bottom: 1px solid #f0e8e0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.notifList li.unread {
+  font-weight: bold;
+  color: #a0001c;
+}
+
+.notifEmpty {
+  color: #7a7080;
+  font-size: 14px;
+  margin: 0 0 12px;
+}
+
+/* ── إشعار علوي واحد + جرس السجل (سطح المكتب) ── */
+.notifBannerWrap,
+.sidebarNotifBell,
+.notifHistoryPanel,
+.notifHistoryBackdrop {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .mainWrap.hasNotifBanner {
+    padding-top: 52px;
+  }
+
+  .notifBannerWrap {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 256px;
+    z-index: 100;
+    padding: 10px 32px;
+    background: #faf7f4;
+    border-bottom: 1px solid #f0e8e0;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .notifBanner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: white;
+    border: 1px solid #f0e8e0;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    max-width: 100%;
+  }
+
+  .notifBanner.unread {
+    border-color: rgba(160, 0, 28, 0.35);
+    background: #fffafb;
+  }
+
+  .notifBannerIcon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #fff0f3;
+    color: #a0001c;
+  }
+
+  .notifBannerIcon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .notifBanner--complete .notifBannerIcon,
+  .notifBanner--confirmed .notifBannerIcon,
+  .notifBanner--approved .notifBannerIcon {
+    background: #e8f8ef;
+    color: #1a7a3a;
+  }
+
+  .notifBanner--booking .notifBannerIcon {
+    background: #eef4ff;
+    color: #2a5ea8;
+  }
+
+  .notifBannerBody {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .notifBannerLabel {
+    font-size: 12px;
+    font-weight: bold;
+    color: #a0001c;
+    white-space: nowrap;
+  }
+
+  .notifBannerMsg {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: #2a2030;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .notifBannerTime {
+    font-size: 11px;
+    color: #9a9098;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .notifBannerClose {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 8px;
+    background: #f5f0eb;
+    color: #7a7080;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+  }
+
+  .notifBannerClose svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .notifBannerClose:hover {
+    background: #ffe8ec;
+    color: #a0001c;
+  }
+
+  .sidebarNotifBell {
+    display: block;
+    padding: 0 24px 16px;
+  }
+
+  .sidebarBellBtn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border: 1px solid #f0e8e0;
+    border-radius: 12px;
+    background: #faf7f4;
+    color: #3a3040;
+    font-size: 14px;
+    font-weight: bold;
+    font-family: 'Cairo', Tahoma, Arial, sans-serif;
+    cursor: pointer;
+    position: relative;
+    transition: 0.2s;
+  }
+
+  .sidebarBellBtn svg {
+    width: 18px;
+    height: 18px;
+    color: #a0001c;
+  }
+
+  .sidebarBellIconWrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .sidebarBellLabel {
+    flex: 1;
+    text-align: right;
+  }
+
+  .sidebarBellBtn:hover,
+  .sidebarBellBtn.active {
+    background: #fff0f3;
+    border-color: rgba(160, 0, 28, 0.35);
+    color: #a0001c;
+  }
+
+  .sidebarBellBtn .bellBadge {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #ff2d55;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    line-height: 1;
+    box-sizing: border-box;
+    border: 2px solid white;
+  }
+
+  .notifHistoryBackdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    left: 0;
+    right: 256px;
+    z-index: 85;
+    border: none;
+    background: rgba(42, 32, 48, 0.35);
+    cursor: pointer;
+  }
+
+  .notifHistoryPanel {
+    display: block;
+    position: fixed;
+    top: 16px;
+    left: 32px;
+    right: 288px;
+    z-index: 90;
+    max-height: calc(100vh - 48px);
+  }
+
+  .notifHistoryPanel--withBanner {
+    top: 72px;
+    max-height: calc(100vh - 96px);
+  }
+
+  .notifHistoryPanelCard {
+    background: white;
+    border: 1px solid #f0e8e0;
+    border-radius: 16px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14);
+    padding: 20px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    max-height: inherit;
+  }
+
+  .notifHistoryHead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #f0e8e0;
+    flex-shrink: 0;
+  }
+
+  .notifHistoryHead h4 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    color: #2a2030;
+  }
+
+  .notifHistorySub {
+    margin: 0;
+    font-size: 13px;
+    color: #7a7080;
+  }
+
+  .notifHistoryHeadActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .notifHistoryMark {
+    border: none;
+    background: #fff0f3;
+    color: #a0001c;
+    font-size: 13px;
+    font-weight: bold;
+    font-family: 'Cairo', Tahoma, Arial, sans-serif;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    white-space: nowrap;
+  }
+
+  .notifHistoryMark:hover {
+    background: #ffe0e6;
+  }
+
+  .notifHistoryClose {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    background: #f5f0eb;
+    color: #7a7080;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .notifHistoryClose svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .notifHistoryClose:hover {
+    background: #ffe8ec;
+    color: #a0001c;
+  }
+
+  .notifHistoryEmpty {
+    text-align: center;
+    padding: 40px 24px;
+    color: #3a3040;
+  }
+
+  .notifHistoryEmpty svg {
+    width: 40px;
+    height: 40px;
+    color: #a0001c;
+    margin-bottom: 12px;
+  }
+
+  .notifHistoryEmpty p {
+    margin: 0 0 8px;
+    font-size: 17px;
+    font-weight: bold;
+    color: #2a2030;
+  }
+
+  .notifHistoryEmpty span {
+    font-size: 14px;
+    color: #7a7080;
+    line-height: 1.6;
+  }
+
+  .notifHistoryList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .notifHistoryItem {
+    display: flex;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #faf7f4;
+    border: 1.5px solid #ebe3db;
+  }
+
+  .notifHistoryItem.unread {
+    border-color: #a0001c;
+    background: #fffafb;
+  }
+
+  .notifHistoryIcon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #fff0f3;
+    color: #a0001c;
+  }
+
+  .notifHistoryIcon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .notifHistoryBody {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .notifHistoryMeta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
+  .notifHistoryLabel {
+    font-size: 12px;
+    font-weight: bold;
+    color: #a0001c;
+  }
+
+  .notifHistoryMeta time {
+    font-size: 12px;
+    color: #7a7080;
+  }
+
+  .notifHistoryBody p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.55;
+    color: #2a2030;
+    font-weight: 500;
+  }
 }
 
 .bellBadge {
-  position: absolute;
-  top: -6px;
-  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
   background: #ff2d55;
   color: white;
   font-size: 10px;
-  border-radius: 50%;
-  padding: 2px 6px;
+  font-weight: bold;
+  line-height: 1;
+  box-sizing: border-box;
 }
 
 /* ── LOGO ── */
@@ -865,7 +1335,8 @@ select.inp {
   gap: 6px;
 }
 
-.sidebarNav button {
+.sidebarNav button,
+.sidebarNav a {
   width: 100%;
   display: flex;
   align-items: center;
@@ -880,19 +1351,24 @@ select.inp {
   background: transparent;
   color: #7a7080;
   transition: 0.2s;
+  text-decoration: none;
+  box-sizing: border-box;
 }
 
-.sidebarNav button svg {
+.sidebarNav button svg,
+.sidebarNav a svg {
   width: 20px;
   height: 20px;
 }
 
-.sidebarNav button:hover {
+.sidebarNav button:hover,
+.sidebarNav a:hover {
   background: #fff0f3;
   color: #a0001c;
 }
 
-.sidebarNav button.active {
+.sidebarNav button.active,
+.sidebarNav a.active {
   background: #a0001c;
   color: white;
   box-shadow: 0 4px 12px rgba(160, 0, 28, 0.2);
@@ -975,7 +1451,7 @@ select.inp {
   flex: 1;
   padding: 16px;
   width: 100%;
-  max-width: 1000px;
+  max-width: 1120px;
   margin: 0 auto;
 }
 
@@ -1002,7 +1478,8 @@ select.inp {
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
 }
 
-.bottomNav button {
+.bottomNav button,
+.bottomNav a {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1013,19 +1490,126 @@ select.inp {
   background: transparent;
   color: #b0a8a0;
   font-family: 'Cairo', Tahoma, Arial, sans-serif;
+  text-decoration: none;
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
 }
 
-.bottomNav button svg {
+.bottomNav button svg,
+.bottomNav a svg {
   width: 24px;
   height: 24px;
 }
 
-.bottomNav button.active {
+.bottomNav button.active,
+.bottomNav a.active {
   color: #a0001c;
   font-weight: bold;
+}
+
+.cardsGrid.loading-pulse {
+  opacity: 0.55;
+  pointer-events: none;
+  animation: filterPulse 0.9s ease-in-out infinite;
+}
+
+@keyframes filterPulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.85; }
+}
+
+.successBox {
+  background: #e8f8ee;
+  color: #1a7a4a;
+  border: 1px solid #c3e6cb;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-weight: bold;
+}
+
+.authFooter {
+  margin-top: auto;
+}
+
+.modalSub {
+  color: #7a7080;
+  font-size: 14px;
+  margin: -8px 0 12px;
+}
+
+.modalHint {
+  color: #a0001c;
+  font-size: 13px;
+  margin: -4px 0 8px;
+}
+
+.tabPanel {
+  width: 100%;
+}
+
+.tabPanelWide {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.filterHeadLoading .filterLoadingLabel {
+  margin-right: auto;
+  font-size: 13px;
+  color: #a0001c;
+  animation: filterPulse 0.9s ease-in-out infinite;
+}
+
+.filterScrollBusy .filterChip:not(.act) {
+  opacity: 0.5;
+}
+
+.caseMetaSub {
+  color: #7a7080;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.caseMetaSub::before {
+  content: none;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 16px;
+  color: #3a3040;
+}
+
+.pendingBox {
+  margin-bottom: 24px;
+}
+
+.hospitalActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.hospitalActions .outlineBtn,
+.hospitalActions .donateBtn {
+  flex: 1;
+  min-width: 100px;
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hospitalActions svg {
+  width: 16px;
+  height: 16px;
+}
+
+.mobileFooterNote {
+  display: none;
 }
 
 /* ── FILTERS ── */
@@ -1606,6 +2190,43 @@ select.inp {
 }
 
 @media (max-width: 768px) {
+  .contentArea {
+    padding: 12px 14px 88px;
+  }
+
+  .hero {
+    padding: 18px;
+    gap: 14px;
+  }
+
+  .heroStats {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .filterScroll {
+    margin: 0 -14px;
+    padding: 0 14px 10px;
+  }
+
+  .caseCard {
+    padding: 16px;
+  }
+
+  .pageTitle {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .mobileFooterNote {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    color: #7a7080;
+    padding: 8px 14px 4px;
+  }
+
   .tabs {
     position: relative;
     flex-direction: row;
@@ -1660,6 +2281,18 @@ select.inp {
   }
 
   .appFooter {
-    display: none;
+    display: block;
+    padding: 12px;
+    font-size: 11px;
   }
+
+  .authPage {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.mobileFooterNote {
+  display: none;
 }

@@ -8,9 +8,23 @@ from flask_jwt_extended import (
 import mysql.connector
 import os
 from datetime import timedelta
-from dotenv import load_dotenv
+from pathlib import Path
+from notifications import notify_user, strip_emojis
 
-load_dotenv()
+
+def _load_env_file():
+    env_path = Path(__file__).resolve().parent / ".env"
+    if not env_path.exists():
+        return
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+_load_env_file()
 
 app = Flask(__name__)
 CORS(app)
@@ -19,13 +33,64 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
+_DB_PASS_PLACEHOLDERS = frozenset({
+    "",
+    "your-mysql-password-here",
+    "changeme",
+    "password",
+})
+
+
+def _db_password():
+    return (os.getenv("DB_PASS") or "").strip()
+
+
 def db():
     return mysql.connector.connect(
         host=os.getenv("DB_HOST", "localhost"),
         user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASS", ""),
+        password=_db_password(),
         database=os.getenv("DB_NAME", "wasl_db"),
     )
+
+
+def _ensure_schema():
+    """Add account_status column on existing databases (safe to re-run)."""
+    try:
+        conn = db()
+        cur = conn.cursor()
+        cur.execute("""
+            ALTER TABLE users
+            ADD COLUMN account_status ENUM('pending','approved','rejected')
+            DEFAULT 'approved' AFTER points
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+    except mysql.connector.Error:
+        pass
+
+
+def _account_status_message(user):
+    status = (user or {}).get("account_status") or "approved"
+    if status == "pending":
+        return "حسابك بانتظار الموافقة — ستصلك إشعار عند التفعيل"
+    if status == "rejected":
+        return "تم رفض حسابك — تواصل مع الدعم"
+    return None
+
+
+def _user_payload(user):
+    return {
+        "id": user["id"],
+        "name": user["name"],
+        "role": user["role"],
+        "blood_type": user.get("blood_type"),
+        "city": user.get("city"),
+        "region": user.get("region"),
+        "points": user.get("points", 0),
+        "account_status": user.get("account_status") or "approved",
+    }
 
 # ══════════════════════════════
 #  AUTH
@@ -49,12 +114,13 @@ def register():
         """, (d["name"], d.get("city"), d.get("region")))
         conn.commit()
 
+    account_status = "pending" if d["role"] == "hospital" else "approved"
     try:
         cur.execute("""
-            INSERT INTO users (name,email,phone,password_hash,role,blood_type,city,region)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            INSERT INTO users (name,email,phone,password_hash,role,blood_type,city,region,account_status)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (d["name"], d["email"], d.get("phone"), hashed, d["role"],
-              d.get("blood_type"), d.get("city"), d.get("region")))
+              d.get("blood_type"), d.get("city"), d.get("region"), account_status))
         conn.commit()
         uid = cur.lastrowid
     except mysql.connector.IntegrityError:
@@ -62,33 +128,50 @@ def register():
     finally:
         cur.close(); conn.close()
 
+    if account_status == "pending":
+        return jsonify({
+            "message": "تم التسجيل — حساب المستشفى بانتظار الموافقة",
+            "account_status": account_status,
+        }), 201
+
     token = create_access_token(identity=str(uid))
     return jsonify({
         "token": token,
-        "user": {"id": uid, "name": d["name"], "role": d["role"],
-                 "blood_type": d.get("blood_type"), "city": d.get("city"),
-                 "region": d.get("region"), "points": 0}
+        "user": _user_payload({
+            "id": uid,
+            "name": d["name"],
+            "role": d["role"],
+            "blood_type": d.get("blood_type"),
+            "city": d.get("city"),
+            "region": d.get("region"),
+            "points": 0,
+            "account_status": account_status,
+        }),
     }), 201
 
 
 @app.post("/api/login")
 def login():
-    d = request.json
-    conn = db(); cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT * FROM users WHERE email=%s", (d.get("email"),))
-    user = cur.fetchone()
-    cur.close(); conn.close()
+    d = request.json or {}
+    try:
+        conn = db()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("SELECT * FROM users WHERE email=%s", (d.get("email"),))
+        user = cur.fetchone()
+        cur.close()
+        conn.close()
+    except mysql.connector.Error:
+        return jsonify({"error": "تعذر الاتصال بقاعدة البيانات. تحقق من إعدادات DB في back-end/.env"}), 503
 
-    if not user or not bcrypt.check_password_hash(user["password_hash"], d.get("password","")):
+    if not user or not bcrypt.check_password_hash(user["password_hash"], d.get("password", "")):
         return jsonify({"error": "بيانات غير صحيحة"}), 401
 
+    blocked = _account_status_message(user)
+    if blocked:
+        return jsonify({"error": blocked, "account_status": user.get("account_status")}), 403
+
     token = create_access_token(identity=str(user["id"]))
-    return jsonify({
-        "token": token,
-        "user": {"id": user["id"], "name": user["name"], "role": user["role"],
-                 "blood_type": user["blood_type"], "city": user["city"],
-                 "region": user["region"], "points": user["points"]}
-    })
+    return jsonify({"token": token, "user": _user_payload(user)})
 
 # ══════════════════════════════
 #  PROFILE
@@ -99,7 +182,10 @@ def login():
 def profile():
     uid = get_jwt_identity()
     conn = db(); cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT id,name,email,role,blood_type,city,points FROM users WHERE id=%s", (uid,))
+    cur.execute(
+        "SELECT id,name,email,role,blood_type,city,points,account_status FROM users WHERE id=%s",
+        (uid,),
+    )
     user = cur.fetchone()
     cur.execute("SELECT COUNT(*) AS c FROM donations WHERE donor_id=%s AND status='مؤكد'", (uid,))
     donations = cur.fetchone()["c"]
@@ -163,14 +249,35 @@ def get_requests():
         sql += " AND br.blood_type = %s"
         vals.append(blood_type)
     if search:
-        sql += " AND (h.name LIKE %s OR h.city LIKE %s OR br.patient_name LIKE %s)"
+        # لا نبحث باسم المريض — خصوصية
+        sql += " AND (h.name LIKE %s OR h.city LIKE %s)"
         q = f"%{search}%"
-        vals.extend([q, q, q])
+        vals.extend([q, q])
     if city:
         sql += " AND h.city = %s"
         vals.append(city)
     sql += " ORDER BY br.urgency DESC, br.created_at DESC"
     cur.execute(sql, vals)
+    rows = cur.fetchall()
+    for r in rows:
+        r["created_at"] = str(r["created_at"])
+        r.pop("patient_name", None)
+    cur.close(); conn.close()
+    return jsonify(rows)
+
+
+@app.get("/api/my/requests")
+@jwt_required()
+def my_requests():
+    uid = get_jwt_identity()
+    conn = db(); cur = conn.cursor(dictionary=True)
+    cur.execute("""
+        SELECT br.*, h.name AS hospital_name, h.city
+        FROM blood_requests br
+        JOIN hospitals h ON br.hospital_id = h.id
+        WHERE br.user_id = %s
+        ORDER BY br.created_at DESC
+    """, (uid,))
     rows = cur.fetchall()
     for r in rows:
         r["created_at"] = str(r["created_at"])
@@ -187,15 +294,31 @@ def create_request():
         if not d.get(f):
             return jsonify({"error": f"حقل مطلوب: {f}"}), 400
 
-    conn = db(); cur = conn.cursor()
+    conn = db(); cur = conn.cursor(dictionary=True)
     cur.execute("""
         INSERT INTO blood_requests
         (user_id,patient_name,hospital_id,blood_type,bags_needed,urgency,status)
         VALUES (%s,%s,%s,%s,%s,%s,%s)
     """, (uid, d["patient_name"], d["hospital_id"],
-          d["blood_type"], 1, "عادي", "معلق"))
-    conn.commit()
+          d["blood_type"], int(d.get("bags_needed") or 1),
+          d.get("urgency") or "عادي", "نشط"))
     rid = cur.lastrowid
+    notify_user(
+        cur,
+        uid,
+        "تم إنشاء طلبك بنجاح — ستصلك إشعارات عند حجز المواعيد أو اكتمال الحالة",
+    )
+    cur.execute("""
+        SELECT id FROM users
+        WHERE role='hospital' AND hospital_id=%s AND account_status='approved'
+    """, (d["hospital_id"],))
+    for hosp in cur.fetchall():
+        notify_user(
+            cur,
+            hosp["id"],
+            f"طلب تبرع جديد — فصيلة {d['blood_type']} بانتظار المتابعة",
+        )
+    conn.commit()
     cur.close(); conn.close()
     return jsonify({"message": "تم إنشاء الطلب، بانتظار تأكيد المستشفى", "id": rid}), 201
 
@@ -311,18 +434,12 @@ def confirm_donation(did):
     if bags and bags["bags_received"] >= bags["bags_needed"]:
         cur.execute("UPDATE blood_requests SET status='مكتمل' WHERE id=%s", (donation["request_id"],))
         if req:
-            cur.execute("""
-                INSERT INTO notifications (user_id, message)
-                VALUES (%s, %s)
-            """, (req["user_id"], "🎉 اكتملت أكياس الدم المطلوبة لطلبك!"))
+            notify_user(cur, req["user_id"], "اكتملت أكياس الدم المطلوبة لطلبك")
 
-    cur.execute("""
-        INSERT INTO notifications (user_id, message)
-        VALUES (%s, %s)
-    """, (donation["donor_id"], "✅ تم تأكيد تبرعك من قبل المستشفى — شكراً لك!"))
+    notify_user(cur, donation["donor_id"], "تم تأكيد تبرعك من قبل المستشفى — شكراً لك")
 
     conn.commit(); cur.close(); conn.close()
-    return jsonify({"message": "تم تأكيد التبرع ✅"})
+    return jsonify({"message": "تم تأكيد التبرع"})
 
 
 @app.post("/api/requests/<int:rid>/confirm")
@@ -340,14 +457,15 @@ def confirm_request(rid):
     """, (urgency, bags_needed, rid))
 
     if req:
-        label = "عاجل 🚨" if urgency == "عاجل" else "عادي"
-        cur.execute("""
-            INSERT INTO notifications (user_id, message)
-            VALUES (%s, %s)
-        """, (req["user_id"], f"✅ تم تأكيد طلبك كحالة {label} — بانتظار المتبرعين"))
+        label = "عاجلة" if urgency == "عاجل" else "عادية"
+        notify_user(
+            cur,
+            req["user_id"],
+            f"تم تأكيد طلبك كحالة {label} — بانتظار المتبرعين",
+        )
 
     conn.commit(); cur.close(); conn.close()
-    return jsonify({"message": "تم تأكيد الحالة ✅"})
+    return jsonify({"message": "تم تأكيد الحالة"})
 
 
 @app.post("/api/requests/<int:rid>/complete")
@@ -358,12 +476,9 @@ def complete_request(rid):
     req = cur.fetchone()
     cur.execute("UPDATE blood_requests SET status='مكتمل' WHERE id=%s", (rid,))
     if req:
-        cur.execute("""
-            INSERT INTO notifications (user_id, message)
-            VALUES (%s, %s)
-        """, (req["user_id"], "🎉 تم اكتمال طلبك — شكراً لثقتك بوصل"))
+        notify_user(cur, req["user_id"], "تم اكتمال طلبك — شكراً لثقتك بوصل")
     conn.commit(); cur.close(); conn.close()
-    return jsonify({"message": "تم إغلاق الحالة ✅"})
+    return jsonify({"message": "تم إغلاق الحالة"})
 
 # ══════════════════════════════
 #  DONATIONS (DONOR)
@@ -378,6 +493,11 @@ def donate(rid):
 
     cur.execute("SELECT * FROM users WHERE id=%s", (uid,))
     donor = cur.fetchone()
+    blocked = _account_status_message(donor)
+    if blocked:
+        cur.close()
+        conn.close()
+        return jsonify({"error": blocked}), 403
 
     cur.execute("SELECT * FROM blood_requests WHERE id=%s AND status='نشط'", (rid,))
     req = cur.fetchone()
@@ -411,7 +531,9 @@ def donate(rid):
     """, (rid, uid))
     if cur.fetchone():
         cur.close(); conn.close()
-        return jsonify({"error": "لقد حجزت موعداً لهذا الطلب مسبقاً"}), 400
+        return jsonify({
+            "error": "يمكنك التبرع مرة واحدة فقط لكل طلب — لقد حجزت لهذا الطلب مسبقاً",
+        }), 400
 
     cur.execute("""
         INSERT INTO donations (request_id, donor_id, appointment_date, appointment_time)
@@ -422,13 +544,30 @@ def donate(rid):
     cur.execute("UPDATE users SET points = points+20 WHERE id=%s", (uid,))
 
     donor_name = donor["name"]
+    notify_user(
+        cur,
+        req["user_id"],
+        f"{donor_name} حجز موعد تبرع لطلبك — بانتظار تأكيد المستشفى",
+        subject="موعد تبرع جديد — وصل",
+    )
     cur.execute("""
-        INSERT INTO notifications (user_id, message)
-        VALUES (%s, %s)
-    """, (req["user_id"], f"🩸 {donor_name} حجز موعد تبرع لطلبك — بانتظار تأكيد المستشفى"))
+        SELECT id FROM users
+        WHERE role='hospital' AND hospital_id=%s AND account_status='approved'
+    """, (req["hospital_id"],))
+    for hosp in cur.fetchall():
+        notify_user(
+            cur,
+            hosp["id"],
+            f"متبرع حجز موعد تبرع — فصيلة {req['blood_type']} بانتظار تأكيدكم",
+        )
+    notify_user(
+        cur,
+        uid,
+        "تم حجز موعد التبرع — بانتظار تأكيد المستشفى",
+    )
 
     conn.commit(); cur.close(); conn.close()
-    return jsonify({"message": "تم حجز موعد التبرع ✅ +20 نقطة"})
+    return jsonify({"message": "تم حجز موعد التبرع — +20 نقطة"})
 
 # ══════════════════════════════
 #  DONOR HISTORY
@@ -441,7 +580,7 @@ def donation_history():
     conn = db(); cur = conn.cursor(dictionary=True)
     cur.execute("""
         SELECT d.id, d.appointment_date, d.appointment_time, d.status,
-               d.created_at, br.blood_type, br.patient_name,
+               d.created_at, br.blood_type,
                h.name AS hospital_name, h.city
         FROM donations d
         JOIN blood_requests br ON d.request_id = br.id
@@ -473,6 +612,8 @@ def get_notifications():
     rows = cur.fetchall()
     for r in rows:
         r["created_at"] = str(r["created_at"])
+        if r.get("message"):
+            r["message"] = strip_emojis(r["message"])
     cur.close(); conn.close()
     return jsonify(rows)
 
@@ -487,5 +628,71 @@ def mark_notifications_read():
     return jsonify({"message": "تم"})
 
 
+@app.get("/api/users/pending")
+@jwt_required()
+def pending_hospital_users():
+    """قائمة حسابات المستشفيات بانتظار الاعتماد."""
+    conn = db()
+    cur = conn.cursor(dictionary=True)
+    cur.execute("""
+        SELECT id, name, email, city, created_at
+        FROM users
+        WHERE role='hospital' AND account_status='pending'
+        ORDER BY created_at DESC
+    """)
+    rows = cur.fetchall()
+    for r in rows:
+        r["created_at"] = str(r["created_at"])
+    cur.close()
+    conn.close()
+    return jsonify(rows)
+
+
+@app.post("/api/users/<int:uid>/approve")
+@jwt_required()
+def approve_user(uid):
+    """Hospital/admin: approve pending account (hospital role)."""
+    conn = db()
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT id, email, account_status FROM users WHERE id=%s", (uid,))
+    target = cur.fetchone()
+    if not target:
+        cur.close()
+        conn.close()
+        return jsonify({"error": "المستخدم غير موجود"}), 404
+    cur.execute("UPDATE users SET account_status='approved' WHERE id=%s", (uid,))
+    notify_user(cur, uid, "تم اعتماد حسابك — يمكنك تسجيل الدخول الآن", subject="تم اعتماد حسابك — وصل")
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"message": "تم اعتماد الحساب"})
+
+
+@app.post("/api/users/<int:uid>/reject")
+@jwt_required()
+def reject_user(uid):
+    conn = db()
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT id FROM users WHERE id=%s AND role='hospital'", (uid,))
+    if not cur.fetchone():
+        cur.close()
+        conn.close()
+        return jsonify({"error": "المستخدم غير موجود"}), 404
+    cur.execute("UPDATE users SET account_status='rejected' WHERE id=%s", (uid,))
+    notify_user(cur, uid, "تم رفض طلب تسجيل المستشفى — تواصل مع الدعم", subject="حالة الحساب — وصل")
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"message": "تم رفض الحساب"})
+
+
 if __name__ == "__main__":
+    _ensure_schema()
+    try:
+        _conn = db()
+        _conn.close()
+        print("Database: connected to", os.getenv("DB_NAME", "wasl_db"))
+    except mysql.connector.Error as e:
+        print("Database: FAILED —", e)
+        print("Fix DB_PASS in back-end/.env (see .env.example)")
     app.run(debug=True)
