@@ -20,8 +20,9 @@ CREATE TABLE users (
   city          VARCHAR(100),
   region        VARCHAR(100),
   hospital_id   INT,
-  points        INT DEFAULT 0,
-  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  points          INT DEFAULT 0,
+  account_status  ENUM('pending','approved','rejected') DEFAULT 'approved',
+  created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (hospital_id) REFERENCES hospitals(id)
 );
 
