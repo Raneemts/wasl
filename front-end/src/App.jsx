@@ -1474,7 +1474,7 @@ function DashboardApp() {
               ) : history.length === 0 ? (
                 <div className="recordsEmpty">
                   <ClipboardList />
-                  <h3>سجلك نظيف ومشرّف</h3>
+                  <h3>سجلك نظيف</h3>
                   <p>هنا ستظهر جميع السجلات السابقة الخاصة بك في وصل.</p>
                 </div>
               ) : (
