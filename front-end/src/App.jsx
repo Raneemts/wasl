@@ -110,6 +110,180 @@ function WaslLogo({ variant = 'light', center = false, withHayat = false }) {
   );
 }
 
+function stripEmojis(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getNotificationMeta(message) {
+  const m = stripEmojis(message || '');
+  if (m.includes('اكتمال') || m.includes('اكتملت')) {
+    return { kind: 'complete', label: 'اكتمال طلب', Icon: CheckCircle2 };
+  }
+  if (m.includes('تأكيد تبرعك') || m.includes('اعتماد حسابك')) {
+    return { kind: 'confirmed', label: 'تأكيد', Icon: CheckCircle2 };
+  }
+  if (m.includes('تأكيد طلبك')) {
+    return { kind: 'approved', label: 'طلب مؤكد', Icon: CheckCircle2 };
+  }
+  if (m.includes('حجز موعد') || m.includes('موعد تبرع') || m.includes('متبرع حجز')) {
+    return { kind: 'booking', label: 'موعد تبرع', Icon: HandHeart };
+  }
+  if (m.includes('طلب تبرع جديد') || m.includes('إنشاء طلبك')) {
+    return { kind: 'new', label: 'طلب جديد', Icon: Plus };
+  }
+  if (m.includes('رفض')) {
+    return { kind: 'alert', label: 'تنبيه', Icon: AlertCircle };
+  }
+  return { kind: 'default', label: 'إشعار', Icon: Bell };
+}
+
+function formatNotifTime(createdAt) {
+  if (!createdAt) return '';
+  const d = new Date(createdAt);
+  if (Number.isNaN(d.getTime())) return '';
+  const now = new Date();
+  const diffMs = now - d;
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'الآن';
+  if (mins < 60) return `منذ ${mins} د`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `منذ ${hours} س`;
+  return d.toLocaleDateString('ar-SA', { day: 'numeric', month: 'short' });
+}
+
+function NotificationsBanner({ notification, onDismiss }) {
+  if (!notification) return null;
+  const { kind, label, Icon } = getNotificationMeta(notification.message);
+
+  return (
+    <div className="notifBannerWrap" role="status" aria-live="polite">
+      <div className={`notifBanner notifBanner--${kind}${notification.is_read ? '' : ' unread'}`}>
+        <div className="notifBannerIcon" aria-hidden>
+          <Icon />
+        </div>
+        <div className="notifBannerBody">
+          <span className="notifBannerLabel">{label}</span>
+          <p className="notifBannerMsg">{stripEmojis(notification.message)}</p>
+        </div>
+        <time className="notifBannerTime">{formatNotifTime(notification.created_at)}</time>
+        <button
+          type="button"
+          className="notifBannerClose"
+          onClick={onDismiss}
+          aria-label="إغلاق الإشعار"
+        >
+          <X />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NotificationsBell({ notifications, showHistory, onToggle }) {
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  return (
+    <div className="sidebarNotifBell">
+      <button
+        type="button"
+        className={`sidebarBellBtn${showHistory ? ' active' : ''}`}
+        aria-expanded={showHistory}
+        aria-label="الإشعارات"
+        onClick={onToggle}
+      >
+        <span className="sidebarBellIconWrap">
+          <Bell />
+          {unreadCount > 0 && (
+            <span className="bellBadge" aria-label={`${unreadCount} غير مقروء`}>
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </span>
+        <span className="sidebarBellLabel">الإشعارات</span>
+      </button>
+    </div>
+  );
+}
+
+function NotificationsHistoryPanel({
+  notifications,
+  onClose,
+  token,
+  fetchNotifications,
+  hasBanner,
+}) {
+  const markAllRead = async () => {
+    await fetch(`${API}/notifications/read`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    fetchNotifications();
+  };
+
+  return (
+    <div
+      className={`notifHistoryPanel${hasBanner ? ' notifHistoryPanel--withBanner' : ''}`}
+      role="dialog"
+      aria-label="الإشعارات السابقة"
+    >
+      <div className="notifHistoryPanelCard">
+        <div className="notifHistoryHead">
+          <div>
+            <h4>الإشعارات السابقة</h4>
+            <p className="notifHistorySub">جميع التنبيهات التي وصلتك</p>
+          </div>
+          <div className="notifHistoryHeadActions">
+            {notifications.length > 0 && (
+              <button type="button" className="notifHistoryMark" onClick={markAllRead}>
+                تعليم الكل كمقروء
+              </button>
+            )}
+            <button type="button" className="notifHistoryClose" onClick={onClose} aria-label="إغلاق">
+              <X />
+            </button>
+          </div>
+        </div>
+
+        {notifications.length === 0 ? (
+          <div className="notifHistoryEmpty">
+            <Bell />
+            <p>لا توجد إشعارات بعد</p>
+            <span>ستظهر هنا عند تأكيد التبرع أو اكتمال الحالة</span>
+          </div>
+        ) : (
+          <ul className="notifHistoryList">
+            {notifications.map((n) => {
+              const { kind, label, Icon } = getNotificationMeta(n.message);
+              return (
+                <li
+                  key={n.id}
+                  className={`notifHistoryItem notifHistoryItem--${kind}${n.is_read ? '' : ' unread'}`}
+                >
+                  <div className="notifHistoryIcon" aria-hidden>
+                    <Icon />
+                  </div>
+                  <div className="notifHistoryBody">
+                    <div className="notifHistoryMeta">
+                      <span className="notifHistoryLabel">{label}</span>
+                      <time>{formatNotifTime(n.created_at)}</time>
+                    </div>
+                      <p>{stripEmojis(n.message)}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 function AuthPanel({ initialRole, authMode, setAuthMode, onSuccess }) {
   const navigate = useNavigate();
   const isLogin = authMode === 'login';
@@ -227,11 +401,12 @@ function AuthPanel({ initialRole, authMode, setAuthMode, onSuccess }) {
         type="button"
         className="backBtn"
         onClick={() => {
+          const r = form.role || initialRole || 'donor';
           if (isLogin) navigate('/');
-          else navigate(`/login/${initialRole || 'donor'}`);
+          else navigate(`/login/${r}`);
         }}
       >
-        <ChevronRight /> {isLogin ? 'عودة للصفحة الرئيسية' : 'عودة لتسجيل الدخول'}
+        <ChevronRight /> {isLogin ? 'عودة لاختيار نوع الحساب' : 'عودة لتسجيل الدخول'}
       </button>
 
       <WaslLogo variant="brand" />
@@ -463,7 +638,7 @@ export default function App() {
         <Route path="/" element={token ? <Navigate to="/app/home" replace /> : <LandingPage />} />
         <Route path="/login/:role" element={<AuthPage mode="login" />} />
         <Route path="/signup/:role" element={<AuthPage mode="signup" />} />
-        <Route path="/app/*" element={token ? <DashboardApp /> : <Navigate to="/" replace />} />
+        <Route path="/app/*" element={token ? <DashboardApp /> : <Navigate to="/login/donor" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthContext.Provider>
@@ -503,8 +678,11 @@ function DashboardApp() {
   const [requestError, setRequestError] = useState('');
   const [requestLoading, setRequestLoading] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [showNotifs, setShowNotifs] = useState(false);
+  const [dismissedBannerId, setDismissedBannerId] = useState(null);
+  const [showNotifHistory, setShowNotifHistory] = useState(false);
   const [pendingHospitals, setPendingHospitals] = useState([]);
+  const latestNotif = notifications[0] ?? null;
+  const showLatestBanner = latestNotif && latestNotif.id !== dismissedBannerId;
 
   const loadHomeCases = async (filterValue) => {
     if (!token) return;
@@ -558,7 +736,7 @@ function DashboardApp() {
     setProfile(null);
     setHistory([]);
     setCases([]);
-    navigate('/', { replace: true });
+    navigate(`/login/${role || 'donor'}`, { replace: true });
   };
 
   const mapRequestToCase = (r) => ({
@@ -618,6 +796,7 @@ function DashboardApp() {
       setDonateTarget(null);
       setBooking({ date: '', time: '' });
       fetchCases();
+      fetchNotifications();
       if (activeTab === 'records') fetchDonorHistory();
     } catch {
       setDonateError('تعذر الاتصال بالخادم');
@@ -784,6 +963,7 @@ function DashboardApp() {
       }
       setShowRequestModal(false);
       fetchPatientCases();
+      fetchNotifications();
     } catch {
       setRequestError('تعذر الاتصال بالخادم');
     } finally {
@@ -817,6 +997,8 @@ function DashboardApp() {
   useEffect(() => {
     if (!token) return;
     fetchNotifications();
+    const timer = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(timer);
   }, [token, activeTab]);
 
   useEffect(() => {
@@ -891,6 +1073,12 @@ function DashboardApp() {
           </div>
         </div>
 
+        <NotificationsBell
+          notifications={notifications}
+          showHistory={showNotifHistory}
+          onToggle={() => setShowNotifHistory((v) => !v)}
+        />
+
         <nav className="sidebarNav">
           <NavLink to="/app/home" className={({ isActive }) => (isActive ? 'active' : '')}>
             <Home /> الرئيسية
@@ -910,55 +1098,40 @@ function DashboardApp() {
         </div>
       </aside>
 
-      <div className="mainWrap">
+      <div className={`mainWrap${showLatestBanner ? ' hasNotifBanner' : ''}`}>
+        {showLatestBanner && (
+          <NotificationsBanner
+            notification={latestNotif}
+            onDismiss={() => setDismissedBannerId(latestNotif.id)}
+          />
+        )}
+
+        {showNotifHistory && (
+          <>
+            <button
+              type="button"
+              className="notifHistoryBackdrop"
+              aria-label="إغلاق الإشعارات"
+              onClick={() => setShowNotifHistory(false)}
+            />
+            <NotificationsHistoryPanel
+              notifications={notifications}
+              onClose={() => setShowNotifHistory(false)}
+              token={token}
+              fetchNotifications={fetchNotifications}
+              hasBanner={showLatestBanner}
+            />
+          </>
+        )}
+
         <header className="mobileHeader">
           <WaslLogo variant="brand" />
           <div className="mobileHeaderActions">
-            <button
-              type="button"
-              className="bellBtn"
-              aria-label="الإشعارات"
-              onClick={() => setShowNotifs((v) => !v)}
-            >
-              <Bell />
-              {notifications.some((n) => !n.is_read) && (
-                <span className="bellBadge">{notifications.filter((n) => !n.is_read).length}</span>
-              )}
-            </button>
             <button type="button" className="iconBtn" onClick={handleLogout} aria-label="تسجيل الخروج">
               <LogOut />
             </button>
           </div>
         </header>
-        {showNotifs && (
-          <div className="notifDrop">
-            <h4>الإشعارات</h4>
-            {notifications.length === 0 ? (
-              <p className="notifEmpty">لا توجد إشعارات</p>
-            ) : (
-              <ul className="notifList">
-                {notifications.map((n) => (
-                  <li key={n.id} className={n.is_read ? '' : 'unread'}>
-                    {n.message}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <button
-              type="button"
-              className="outlineBtn gray"
-              onClick={async () => {
-                await fetch(`${API}/notifications/read`, {
-                  method: 'POST',
-                  headers: { Authorization: `Bearer ${token}` },
-                });
-                fetchNotifications();
-              }}
-            >
-              تعليم الكل كمقروء
-            </button>
-          </div>
-        )}
 
         <div className="contentArea">
           {activeTab === 'home' && (
