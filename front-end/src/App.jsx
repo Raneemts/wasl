@@ -506,7 +506,6 @@ function AuthPanel({ initialRole, authMode, setAuthMode, onSuccess }) {
 
 function LandingPage() {
   const navigate = useNavigate();
-  const { token } = useAuth();
   const [landingStats, setLandingStats] = useState({ donors: 0, donations: 0, hospitals: 0 });
 
   useEffect(() => {
@@ -541,13 +540,7 @@ function LandingPage() {
           </div>
         </div>
 
-        {token && (
-          <button type="button" className="landingEnterBtn" onClick={() => navigate('/app/home')}>
-            الدخول للمنصة — الرئيسية
-          </button>
-        )}
-
-        <p className="whoAreYou">{token ? 'أو اختر نوع حساب آخر' : 'من أنت؟'}</p>
+        <p className="whoAreYou">من أنت؟</p>
         <div className="roleCards">
           <button type="button" className="roleCard" onClick={() => navigate('/login/donor')}>
             <Droplet className="rIcon" />
@@ -646,7 +639,7 @@ export default function App() {
   return (
     <AuthContext.Provider value={authValue}>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={token ? <Navigate to="/app/home" replace /> : <LandingPage />} />
         <Route path="/login/:role" element={<AuthPage mode="login" />} />
         <Route path="/signup/:role" element={<AuthPage mode="signup" />} />
         <Route path="/app/*" element={token ? <DashboardApp /> : <Navigate to="/login/donor" replace />} />
