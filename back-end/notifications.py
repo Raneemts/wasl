@@ -1,7 +1,27 @@
 """In-app notifications + optional email (SMTP via .env)."""
 import os
+import re
 import smtplib
 from email.mime.text import MIMEText
+
+_EMOJI_RE = re.compile(
+    "["
+    "\U0001F600-\U0001F64F"
+    "\U0001F300-\U0001F5FF"
+    "\U0001F680-\U0001F6FF"
+    "\U0001F1E0-\U0001F1FF"
+    "\U00002702-\U000027B0"
+    "\U000024C2-\U0001F251"
+    "]+",
+    flags=re.UNICODE,
+)
+
+
+def strip_emojis(text):
+    if not text:
+        return text
+    cleaned = _EMOJI_RE.sub("", str(text))
+    return re.sub(r"\s+", " ", cleaned).strip()
 
 
 def email_enabled():
@@ -36,6 +56,7 @@ def send_email(to_addr, subject, body):
 
 def notify_user(cur, user_id, message, subject="إشعار من وصل"):
     """Save notification in DB and send email when MAIL_ENABLED=true."""
+    message = strip_emojis(message)
     cur.execute(
         "INSERT INTO notifications (user_id, message) VALUES (%s, %s)",
         (user_id, message),
