@@ -506,6 +506,7 @@ function AuthPanel({ initialRole, authMode, setAuthMode, onSuccess }) {
 
 function LandingPage() {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [landingStats, setLandingStats] = useState({ donors: 0, donations: 0, hospitals: 0 });
 
   useEffect(() => {
@@ -540,7 +541,13 @@ function LandingPage() {
           </div>
         </div>
 
-        <p className="whoAreYou">من أنت؟</p>
+        {token && (
+          <button type="button" className="landingEnterBtn" onClick={() => navigate('/app/home')}>
+            الدخول للمنصة — الرئيسية
+          </button>
+        )}
+
+        <p className="whoAreYou">{token ? 'أو اختر نوع حساب آخر' : 'من أنت؟'}</p>
         <div className="roleCards">
           <button type="button" className="roleCard" onClick={() => navigate('/login/donor')}>
             <Droplet className="rIcon" />
@@ -579,8 +586,12 @@ function LandingPage() {
 function AuthPage({ mode }) {
   const { role: roleParam } = useParams();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { token, login } = useAuth();
   const role = roleParam || 'donor';
+
+  if (token) {
+    return <Navigate to="/app/home" replace />;
+  }
   const [authMode, setAuthMode] = useState(mode === 'signup' ? 'signup' : 'login');
 
   useEffect(() => {
@@ -635,7 +646,7 @@ export default function App() {
   return (
     <AuthContext.Provider value={authValue}>
       <Routes>
-        <Route path="/" element={token ? <Navigate to="/app/home" replace /> : <LandingPage />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login/:role" element={<AuthPage mode="login" />} />
         <Route path="/signup/:role" element={<AuthPage mode="signup" />} />
         <Route path="/app/*" element={token ? <DashboardApp /> : <Navigate to="/login/donor" replace />} />
@@ -650,11 +661,9 @@ function DashboardApp() {
   const location = useLocation();
   const { token, user, logout } = useAuth();
   const role = user?.role ?? null;
-  const activeTab = location.pathname.includes('/records')
-    ? 'records'
-    : location.pathname.includes('/account')
-      ? 'account'
-      : 'home';
+  const appSegment = location.pathname.split('/')[2] || '';
+  const activeTab =
+    appSegment === 'records' ? 'records' : appSegment === 'account' ? 'account' : 'home';
   const [selectedFilter, setSelectedFilter] = useState('الكل');
   const [isFiltering, setIsFiltering] = useState(false);
   const [cases, setCases] = useState([]);
@@ -797,6 +806,7 @@ function DashboardApp() {
       setBooking({ date: '', time: '' });
       fetchCases();
       fetchNotifications();
+      fetchProfile();
       if (activeTab === 'records') fetchDonorHistory();
     } catch {
       setDonateError('تعذر الاتصال بالخادم');
@@ -972,10 +982,10 @@ function DashboardApp() {
   };
 
   useEffect(() => {
-    if (location.pathname === '/app' || location.pathname === '/app/') {
+    if (!['home', 'records', 'account'].includes(appSegment)) {
       navigate('/app/home', { replace: true });
     }
-  }, [location.pathname, navigate]);
+  }, [appSegment, navigate]);
 
   useEffect(() => {
     if (role === 'patient' && token) loadHospitals();
@@ -1008,13 +1018,21 @@ function DashboardApp() {
     if (role === 'hospital') fetchPendingHospitals();
   }, [activeTab, role, token, user?.city]);
 
+  const fetchProfile = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/profile`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      setProfile(data);
+    } catch {
+      setProfile(null);
+    }
+  };
+
   useEffect(() => {
-    if (activeTab !== 'account' || !token) return;
-    fetch(`${API}/profile`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
-      .then(setProfile)
-      .catch(() => setProfile(null));
-  }, [activeTab, token]);
+    if (!token) return;
+    fetchProfile();
+  }, [token]);
 
   useEffect(() => {
     if (activeTab !== 'records' || !token) return;
@@ -1040,7 +1058,7 @@ function DashboardApp() {
   const hospitalActiveCount = hospitalRequests.filter((c) => c.status !== 'done').length;
   const hospitalDoneCount = hospitalRequests.filter((c) => c.status === 'done').length;
   const donorPoints = profile?.points ?? user?.points ?? 0;
-  const donorDonationCount = history.length;
+  const donorDonationCount = profile?.donations ?? history.length;
 
   const renderSkeleton = () => (
     <div className="cardsGrid">
@@ -1080,13 +1098,13 @@ function DashboardApp() {
         />
 
         <nav className="sidebarNav">
-          <NavLink to="/app/home" className={({ isActive }) => (isActive ? 'active' : '')}>
+          <NavLink to="/app/home" end className={({ isActive }) => (isActive ? 'active' : '')}>
             <Home /> الرئيسية
           </NavLink>
-          <NavLink to="/app/records" className={({ isActive }) => (isActive ? 'active' : '')}>
+          <NavLink to="/app/records" end className={({ isActive }) => (isActive ? 'active' : '')}>
             <ClipboardList /> سجلاتي
           </NavLink>
-          <NavLink to="/app/account" className={({ isActive }) => (isActive ? 'active' : '')}>
+          <NavLink to="/app/account" end className={({ isActive }) => (isActive ? 'active' : '')}>
             <User /> حسابي
           </NavLink>
         </nav>
@@ -1344,6 +1362,20 @@ function DashboardApp() {
           {activeTab === 'account' && (
             <div className="tabPanel accountWrap">
               <h2 className="pageTitle">حسابي الشخصي</h2>
+
+              {role === 'donor' && (
+                <div className="accountStats">
+                  <div className="accountStatBox">
+                    <b>{donorPoints}</b>
+                    <span>نقطة</span>
+                  </div>
+                  <div className="accountStatBox">
+                    <b>{donorDonationCount}</b>
+                    <span>تبرعاتك</span>
+                  </div>
+                </div>
+              )}
+
               <div className="profileCard">
                 <div className="profileHeader">
                   <div className="avatar">{(profile?.name || user?.name)?.charAt(0) || '؟'}</div>
@@ -1409,10 +1441,6 @@ function DashboardApp() {
                     </p>
                   </div>
                 )}
-
-                <button type="button" className="saveBtn" disabled>
-                  حفظ التعديلات
-                </button>
               </div>
             </div>
           )}
@@ -1610,15 +1638,15 @@ function DashboardApp() {
       )}
 
       <nav className="bottomNav">
-        <NavLink to="/app/home" className={({ isActive }) => (isActive ? 'active' : '')}>
+        <NavLink to="/app/home" end className={({ isActive }) => (isActive ? 'active' : '')}>
           <Home />
           <span>الرئيسية</span>
         </NavLink>
-        <NavLink to="/app/records" className={({ isActive }) => (isActive ? 'active' : '')}>
+        <NavLink to="/app/records" end className={({ isActive }) => (isActive ? 'active' : '')}>
           <ClipboardList />
           <span>سجلاتي</span>
         </NavLink>
-        <NavLink to="/app/account" className={({ isActive }) => (isActive ? 'active' : '')}>
+        <NavLink to="/app/account" end className={({ isActive }) => (isActive ? 'active' : '')}>
           <User />
           <span>حسابي</span>
         </NavLink>

@@ -149,6 +149,27 @@ body,
   opacity: 0.95;
 }
 
+.landingEnterBtn {
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 14px;
+  background: white;
+  color: #a0001c;
+  font-size: 16px;
+  font-weight: bold;
+  font-family: 'Cairo', Tahoma, Arial, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transition: 0.2s;
+}
+
+.landingEnterBtn:hover {
+  background: #fff0f3;
+  transform: translateY(-1px);
+}
+
 .whoAreYou {
   color: rgba(255, 255, 255, 0.8);
   font-size: 13px;
@@ -1915,6 +1936,35 @@ select.inp {
   font-weight: 900;
   margin-bottom: 24px;
   color: #3a3040;
+}
+
+.accountStats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.accountStatBox {
+  flex: 1;
+  background: white;
+  border: 1px solid #f0e8e0;
+  border-radius: 14px;
+  padding: 16px 20px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.accountStatBox b {
+  display: block;
+  font-size: 28px;
+  color: #a0001c;
+  line-height: 1.1;
+}
+
+.accountStatBox span {
+  font-size: 13px;
+  color: #7a7080;
+  font-weight: bold;
 }
 
 .accountWrap {
