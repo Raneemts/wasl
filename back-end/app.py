@@ -26,6 +26,12 @@ def _load_env_file():
 
 _load_env_file()
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 app = Flask(__name__)
 CORS(app)
 app.config["JWT_SECRET_KEY"] = "wasl-secret-2026"
