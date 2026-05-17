@@ -149,27 +149,6 @@ body,
   opacity: 0.95;
 }
 
-.landingEnterBtn {
-  width: 100%;
-  margin-bottom: 20px;
-  padding: 14px 20px;
-  border: none;
-  border-radius: 14px;
-  background: white;
-  color: #a0001c;
-  font-size: 16px;
-  font-weight: bold;
-  font-family: 'Cairo', Tahoma, Arial, sans-serif;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  transition: 0.2s;
-}
-
-.landingEnterBtn:hover {
-  background: #fff0f3;
-  transform: translateY(-1px);
-}
-
 .whoAreYou {
   color: rgba(255, 255, 255, 0.8);
   font-size: 13px;
