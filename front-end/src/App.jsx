@@ -1,4 +1,13 @@
-import { useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import {
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useParams,
+  useLocation,
+  NavLink,
+} from 'react-router-dom';
 import {
   Droplet,
   Users,
@@ -15,6 +24,9 @@ import {
   User,
   LogOut,
   Filter,
+  Bell,
+  Check,
+  X,
 } from 'lucide-react';
 import './App.css';
 
@@ -41,6 +53,28 @@ const SIGNUP_BLOOD_TYPES = ['+O', '-O', '+A', '-A', '+B', '-B', '+AB', '-AB'];
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const FILTER_BLOOD_TYPES = ['الكل', 'A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+
+const FILTER_LOAD_MS = 450;
+
+const AuthContext = createContext(null);
+
+function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth outside AuthContext');
+  return ctx;
+}
+
+function minLoad(ms = FILTER_LOAD_MS) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function SiteFooter({ className = 'footer' }) {
+  return (
+    <footer className={className}>
+      © {new Date().getFullYear()} وصل — جميع الحقوق محفوظة
+    </footer>
+  );
+}
 
 function uiBloodToApi(type) {
   if (!type || type === 'الكل') return null;
@@ -76,13 +110,187 @@ function WaslLogo({ variant = 'light', center = false, withHayat = false }) {
   );
 }
 
-function AuthPanel({ initialRole, authMode, setAuthMode, onBack, onSuccess }) {
+function stripEmojis(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getNotificationMeta(message) {
+  const m = stripEmojis(message || '');
+  if (m.includes('اكتمال') || m.includes('اكتملت')) {
+    return { kind: 'complete', label: 'اكتمال طلب', Icon: CheckCircle2 };
+  }
+  if (m.includes('تأكيد تبرعك') || m.includes('اعتماد حسابك')) {
+    return { kind: 'confirmed', label: 'تأكيد', Icon: CheckCircle2 };
+  }
+  if (m.includes('تأكيد طلبك')) {
+    return { kind: 'approved', label: 'طلب مؤكد', Icon: CheckCircle2 };
+  }
+  if (m.includes('حجز موعد') || m.includes('موعد تبرع') || m.includes('متبرع حجز')) {
+    return { kind: 'booking', label: 'موعد تبرع', Icon: HandHeart };
+  }
+  if (m.includes('طلب تبرع جديد') || m.includes('إنشاء طلبك')) {
+    return { kind: 'new', label: 'طلب جديد', Icon: Plus };
+  }
+  if (m.includes('رفض')) {
+    return { kind: 'alert', label: 'تنبيه', Icon: AlertCircle };
+  }
+  return { kind: 'default', label: 'إشعار', Icon: Bell };
+}
+
+function formatNotifTime(createdAt) {
+  if (!createdAt) return '';
+  const d = new Date(createdAt);
+  if (Number.isNaN(d.getTime())) return '';
+  const now = new Date();
+  const diffMs = now - d;
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'الآن';
+  if (mins < 60) return `منذ ${mins} د`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `منذ ${hours} س`;
+  return d.toLocaleDateString('ar-SA', { day: 'numeric', month: 'short' });
+}
+
+function NotificationsBanner({ notification, onDismiss }) {
+  if (!notification) return null;
+  const { kind, label, Icon } = getNotificationMeta(notification.message);
+
+  return (
+    <div className="notifBannerWrap" role="status" aria-live="polite">
+      <div className={`notifBanner notifBanner--${kind}${notification.is_read ? '' : ' unread'}`}>
+        <div className="notifBannerIcon" aria-hidden>
+          <Icon />
+        </div>
+        <div className="notifBannerBody">
+          <span className="notifBannerLabel">{label}</span>
+          <p className="notifBannerMsg">{stripEmojis(notification.message)}</p>
+        </div>
+        <time className="notifBannerTime">{formatNotifTime(notification.created_at)}</time>
+        <button
+          type="button"
+          className="notifBannerClose"
+          onClick={onDismiss}
+          aria-label="إغلاق الإشعار"
+        >
+          <X />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NotificationsBell({ notifications, showHistory, onToggle }) {
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  return (
+    <div className="sidebarNotifBell">
+      <button
+        type="button"
+        className={`sidebarBellBtn${showHistory ? ' active' : ''}`}
+        aria-expanded={showHistory}
+        aria-label="الإشعارات"
+        onClick={onToggle}
+      >
+        <span className="sidebarBellIconWrap">
+          <Bell />
+          {unreadCount > 0 && (
+            <span className="bellBadge" aria-label={`${unreadCount} غير مقروء`}>
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </span>
+        <span className="sidebarBellLabel">الإشعارات</span>
+      </button>
+    </div>
+  );
+}
+
+function NotificationsHistoryPanel({
+  notifications,
+  onClose,
+  token,
+  fetchNotifications,
+  hasBanner,
+}) {
+  const markAllRead = async () => {
+    await fetch(`${API}/notifications/read`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    fetchNotifications();
+  };
+
+  return (
+    <div
+      className={`notifHistoryPanel${hasBanner ? ' notifHistoryPanel--withBanner' : ''}`}
+      role="dialog"
+      aria-label="الإشعارات السابقة"
+    >
+      <div className="notifHistoryPanelCard">
+        <div className="notifHistoryHead">
+          <div>
+            <h4>الإشعارات السابقة</h4>
+            <p className="notifHistorySub">جميع التنبيهات التي وصلتك</p>
+          </div>
+          <div className="notifHistoryHeadActions">
+            {notifications.length > 0 && (
+              <button type="button" className="notifHistoryMark" onClick={markAllRead}>
+                تعليم الكل كمقروء
+              </button>
+            )}
+            <button type="button" className="notifHistoryClose" onClick={onClose} aria-label="إغلاق">
+              <X />
+            </button>
+          </div>
+        </div>
+
+        {notifications.length === 0 ? (
+          <div className="notifHistoryEmpty">
+            <Bell />
+            <p>لا توجد إشعارات بعد</p>
+            <span>ستظهر هنا عند تأكيد التبرع أو اكتمال الحالة</span>
+          </div>
+        ) : (
+          <ul className="notifHistoryList">
+            {notifications.map((n) => {
+              const { kind, label, Icon } = getNotificationMeta(n.message);
+              return (
+                <li
+                  key={n.id}
+                  className={`notifHistoryItem notifHistoryItem--${kind}${n.is_read ? '' : ' unread'}`}
+                >
+                  <div className="notifHistoryIcon" aria-hidden>
+                    <Icon />
+                  </div>
+                  <div className="notifHistoryBody">
+                    <div className="notifHistoryMeta">
+                      <span className="notifHistoryLabel">{label}</span>
+                      <time>{formatNotifTime(n.created_at)}</time>
+                    </div>
+                      <p>{stripEmojis(n.message)}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+function AuthPanel({ initialRole, authMode, setAuthMode, onSuccess }) {
+  const navigate = useNavigate();
   const isLogin = authMode === 'login';
   const [form, setForm] = useState(() => ({
     name: '',
     email: '',
     password: '',
-    phone: '',
     role: initialRole || 'donor',
     blood_type: '+O',
     city: '',
@@ -132,11 +340,6 @@ function AuthPanel({ initialRole, authMode, setAuthMode, onBack, onSuccess }) {
         setLoading(false);
         return;
       }
-      if (!form.phone?.trim()) {
-        setError('رقم الهاتف مطلوب');
-        setLoading(false);
-        return;
-      }
       if (!form.city) {
         setError('يرجى اختيار المدينة');
         setLoading(false);
@@ -155,7 +358,6 @@ function AuthPanel({ initialRole, authMode, setAuthMode, onBack, onSuccess }) {
           name: form.name.trim(),
           email: form.email.trim(),
           password: form.password,
-          phone: form.phone.trim(),
           role: form.role,
           blood_type: form.role === 'donor' ? form.blood_type : null,
           city: form.city,
@@ -168,14 +370,26 @@ function AuthPanel({ initialRole, authMode, setAuthMode, onBack, onSuccess }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        setError('الخادم لا يستجيب بشكل صحيح. تأكد أن back-end يعمل على المنفذ 5000');
+        return;
+      }
+
       if (!res.ok) {
         setError(data.error || 'حدث خطأ');
         return;
       }
+      if (data.account_status === 'pending' || !data.token) {
+        setError(data.message || 'تم التسجيل — الحساب بانتظار الموافقة');
+        return;
+      }
       onSuccess(data.token, data.user);
     } catch {
-      setError('خطأ في الاتصال بالخادم');
+      setError('تعذر الاتصال بالخادم. شغّل back-end: python app.py');
     } finally {
       setLoading(false);
     }
@@ -183,8 +397,16 @@ function AuthPanel({ initialRole, authMode, setAuthMode, onBack, onSuccess }) {
 
   return (
     <>
-      <button type="button" className="backBtn" onClick={onBack}>
-        <ChevronRight /> عودة للرئيسية
+      <button
+        type="button"
+        className="backBtn"
+        onClick={() => {
+          const r = form.role || initialRole || 'donor';
+          if (isLogin) navigate('/');
+          else navigate(`/login/${r}`);
+        }}
+      >
+        <ChevronRight /> {isLogin ? 'عودة لاختيار نوع الحساب' : 'عودة لتسجيل الدخول'}
       </button>
 
       <WaslLogo variant="brand" />
@@ -222,15 +444,6 @@ function AuthPanel({ initialRole, authMode, setAuthMode, onBack, onSuccess }) {
 
       {!isLogin && (
         <>
-          <input
-            className="inp"
-            type="tel"
-            placeholder="رقم الهاتف *"
-            value={form.phone}
-            onChange={(e) => set('phone', e.target.value)}
-            dir="ltr"
-          />
-
           <select className="inp" value={form.role} onChange={(e) => set('role', e.target.value)}>
             <option value="donor">متبرع</option>
             <option value="patient">قريب المريض</option>
@@ -280,7 +493,8 @@ function AuthPanel({ initialRole, authMode, setAuthMode, onBack, onSuccess }) {
           className="switchLink"
           onClick={() => {
             setError('');
-            setAuthMode(isLogin ? 'signup' : 'login');
+            const r = initialRole || 'donor';
+            navigate(isLogin ? `/signup/${r}` : `/login/${r}`);
           }}
         >
           {isLogin ? 'سجل الآن' : 'تسجيل الدخول'}
@@ -290,8 +504,109 @@ function AuthPanel({ initialRole, authMode, setAuthMode, onBack, onSuccess }) {
   );
 }
 
+function LandingPage() {
+  const navigate = useNavigate();
+  const [landingStats, setLandingStats] = useState({ donors: 0, donations: 0, hospitals: 0 });
+
+  useEffect(() => {
+    fetch(`${API}/stats`)
+      .then((r) => r.json())
+      .then(setLandingStats)
+      .catch(() => {});
+  }, []);
+
+  return (
+    <div className="landing">
+      <div className="landingBg" />
+      <div className="landingBox">
+        <WaslLogo variant="light" center withHayat />
+        <h2 className="landingHeadline">
+          كل قطرة دم <em>تفرق</em>
+        </h2>
+        <p className="landingSub">منصة تربط المتبرعين بالمحتاجين في الأوقات الطارئة</p>
+
+        <div className="landingStats">
+          <div className="landingStat">
+            <b>{landingStats.donors}</b>
+            <span>متبرع</span>
+          </div>
+          <div className="landingStat">
+            <b>{landingStats.donations}</b>
+            <span>عملية تبرع</span>
+          </div>
+          <div className="landingStat">
+            <b>{landingStats.hospitals}</b>
+            <span>مستشفى</span>
+          </div>
+        </div>
+
+        <p className="whoAreYou">من أنت؟</p>
+        <div className="roleCards">
+          <button type="button" className="roleCard" onClick={() => navigate('/login/donor')}>
+            <Droplet className="rIcon" />
+            <div>
+              <strong>متبرع</strong>
+              <p>ساعد في إنقاذ حياة بالتبرع بدمك</p>
+            </div>
+            <ChevronLeft className="rArrow" />
+          </button>
+
+          <button type="button" className="roleCard" onClick={() => navigate('/login/patient')}>
+            <Users className="rIcon" />
+            <div>
+              <strong>قريب المريض</strong>
+              <p>أنشئ طلب دم لذويك واحصل على متبرع سريع</p>
+            </div>
+            <ChevronLeft className="rArrow" />
+          </button>
+
+          <button type="button" className="roleCard roleCardHospital" onClick={() => navigate('/login/hospital')}>
+            <Building2 className="rIcon" />
+            <div>
+              <strong>مستشفى</strong>
+              <p>أدر طلبات الدم وتابع الحالات بسهولة</p>
+            </div>
+            <ChevronLeft className="rArrow rArrowHospital" />
+          </button>
+        </div>
+      </div>
+
+      <SiteFooter />
+    </div>
+  );
+}
+
+function AuthPage({ mode }) {
+  const { role: roleParam } = useParams();
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const role = roleParam || 'donor';
+  const [authMode, setAuthMode] = useState(mode === 'signup' ? 'signup' : 'login');
+
+  useEffect(() => {
+    setAuthMode(mode === 'signup' ? 'signup' : 'login');
+  }, [mode]);
+
+  return (
+    <div className="authPage">
+      <div className="authCard">
+        <AuthPanel
+          key={`${role}-${authMode}`}
+          initialRole={role}
+          authMode={authMode}
+          setAuthMode={setAuthMode}
+          onSuccess={(tok, u) => {
+            login(tok, u);
+            navigate('/app/home', { replace: true });
+          }}
+        />
+      </div>
+      <SiteFooter className="footer authFooter" />
+    </div>
+  );
+}
+
 export default function App() {
-  const [view, setView] = useState('landing');
   const [token, setToken] = useState(() => localStorage.getItem('wasl_token'));
   const [user, setUser] = useState(() => {
     try {
@@ -300,47 +615,128 @@ export default function App() {
       return null;
     }
   });
-  const [role, setRole] = useState(user?.role ?? null);
-  const [authMode, setAuthMode] = useState('login');
-  const [activeTab, setActiveTab] = useState('home');
+
+  const login = useCallback((newToken, newUser) => {
+    localStorage.setItem('wasl_token', newToken);
+    localStorage.setItem('wasl_user', JSON.stringify(newUser));
+    setToken(newToken);
+    setUser(newUser);
+  }, []);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('wasl_token');
+    localStorage.removeItem('wasl_user');
+    setToken(null);
+    setUser(null);
+  }, []);
+
+  const authValue = { token, user, login, logout };
+
+  return (
+    <AuthContext.Provider value={authValue}>
+      <Routes>
+        <Route path="/" element={token ? <Navigate to="/app/home" replace /> : <LandingPage />} />
+        <Route path="/login/:role" element={<AuthPage mode="login" />} />
+        <Route path="/signup/:role" element={<AuthPage mode="signup" />} />
+        <Route path="/app/*" element={token ? <DashboardApp /> : <Navigate to="/login/donor" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AuthContext.Provider>
+  );
+}
+
+function DashboardApp() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { token, user, logout } = useAuth();
+  const role = user?.role ?? null;
+  const activeTab = location.pathname.includes('/records')
+    ? 'records'
+    : location.pathname.includes('/account')
+      ? 'account'
+      : 'home';
   const [selectedFilter, setSelectedFilter] = useState('الكل');
   const [isFiltering, setIsFiltering] = useState(false);
   const [cases, setCases] = useState([]);
   const [profile, setProfile] = useState(null);
   const [history, setHistory] = useState([]);
-  const [landingStats, setLandingStats] = useState({ donors: 0, donations: 0, hospitals: 0 });
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [donateTarget, setDonateTarget] = useState(null);
+  const [booking, setBooking] = useState({ date: '', time: '' });
+  const [donateError, setDonateError] = useState('');
+  const [donateLoading, setDonateLoading] = useState(false);
+  const [hospitalRequests, setHospitalRequests] = useState([]);
+  const [actionMsg, setActionMsg] = useState('');
+  const [hospitals, setHospitals] = useState([]);
+  const [requestForm, setRequestForm] = useState({
+    patient_name: '',
+    hospital_id: '',
+    blood_type: '+O',
+    bags_needed: 1,
+    urgency: 'عادي',
+  });
+  const [requestError, setRequestError] = useState('');
+  const [requestLoading, setRequestLoading] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [dismissedBannerId, setDismissedBannerId] = useState(null);
+  const [showNotifHistory, setShowNotifHistory] = useState(false);
+  const [pendingHospitals, setPendingHospitals] = useState([]);
+  const latestNotif = notifications[0] ?? null;
+  const showLatestBanner = latestNotif && latestNotif.id !== dismissedBannerId;
 
-  const handleRoleSelect = (selectedRole) => {
-    setRole(selectedRole);
-    setAuthMode('login');
-    setView('auth');
+  const loadHomeCases = async (filterValue) => {
+    if (!token) return;
+    setIsFiltering(true);
+    setCases([]);
+    try {
+      if (role === 'donor') {
+        let url = `${API}/requests?`;
+        const apiFilter = uiBloodToApi(filterValue);
+        if (apiFilter) url += `blood_type=${encodeURIComponent(apiFilter)}&`;
+        if (user?.city) url += `city=${encodeURIComponent(user.city)}&`;
+        const [res] = await Promise.all([fetch(url), minLoad()]);
+        const data = await res.json();
+        setCases(Array.isArray(data) ? data.map(mapRequestToCase) : []);
+      } else if (role === 'patient') {
+        const [res] = await Promise.all([
+          fetch(`${API}/my/requests`, { headers: { Authorization: `Bearer ${token}` } }),
+          minLoad(),
+        ]);
+        const data = await res.json();
+        let list = Array.isArray(data) ? data.map(mapRequestToCase) : [];
+        if (filterValue !== 'الكل') list = list.filter((c) => c.type === filterValue);
+        setCases(list);
+      } else if (role === 'hospital') {
+        const [res] = await Promise.all([
+          fetch(`${API}/hospital/requests`, { headers: { Authorization: `Bearer ${token}` } }),
+          minLoad(),
+        ]);
+        const data = await res.json();
+        let list = Array.isArray(data) ? data.map(mapRequestToCase) : [];
+        if (filterValue !== 'الكل') list = list.filter((c) => c.type === filterValue);
+        setHospitalRequests(list);
+        setCases(list);
+      }
+    } catch {
+      setCases([]);
+      if (role === 'hospital') setHospitalRequests([]);
+    } finally {
+      setIsFiltering(false);
+    }
   };
 
   const handleFilterChange = (filter) => {
     if (filter === selectedFilter) return;
     setSelectedFilter(filter);
-  };
-
-  const handleAuthSuccess = (newToken, newUser) => {
-    localStorage.setItem('wasl_token', newToken);
-    localStorage.setItem('wasl_user', JSON.stringify(newUser));
-    setToken(newToken);
-    setUser(newUser);
-    setRole(newUser.role);
-    setView('app');
+    if (activeTab === 'home') loadHomeCases(filter);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('wasl_token');
-    localStorage.removeItem('wasl_user');
-    setToken(null);
-    setUser(null);
-    setRole(null);
+    logout();
     setProfile(null);
     setHistory([]);
     setCases([]);
-    setAuthMode('login');
-    setView('landing');
+    navigate(`/login/${role || 'donor'}`, { replace: true });
   };
 
   const mapRequestToCase = (r) => ({
@@ -348,65 +744,283 @@ export default function App() {
     type: apiBloodToUi(r.blood_type),
     hospital: r.hospital_name,
     city: r.city,
+    patientName: r.patient_name || null,
     bags: `${r.bags_received ?? 0}/${r.bags_needed ?? 0}`,
     urgent: r.urgency === 'عاجل',
     status: r.status === 'مكتمل' ? 'done' : 'active',
+    rawStatus: r.status,
   });
 
-  const fetchCases = async () => {
-    if (!token || role !== 'donor') return;
-    setIsFiltering(true);
+  const getCaseCardLines = (c) => {
+    if (role === 'patient') {
+      return {
+        title: c.hospital,
+        meta: c.patientName ? `${c.patientName} • ${c.city}` : c.city,
+      };
+    }
+    if (role === 'hospital') {
+      return {
+        title: c.patientName || c.hospital,
+        meta: c.city,
+      };
+    }
+    return {
+      title: c.hospital,
+      meta: c.city,
+      sub: 'حالة محتاجة',
+    };
+  };
+
+  const fetchPatientCases = () => loadHomeCases(selectedFilter);
+  const fetchCases = () => loadHomeCases(selectedFilter);
+  const fetchHospitalRequests = () => loadHomeCases(selectedFilter);
+
+  const submitDonate = async () => {
+    if (!donateTarget) return;
+    setDonateError('');
+    setDonateLoading(true);
     try {
-      let url = `${API}/requests?`;
-      const apiFilter = uiBloodToApi(selectedFilter);
-      if (apiFilter) url += `blood_type=${encodeURIComponent(apiFilter)}&`;
-      if (user?.city) url += `city=${encodeURIComponent(user.city)}&`;
-      const res = await fetch(url);
+      const res = await fetch(`${API}/requests/${donateTarget.id}/donate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ date: booking.date, time: booking.time }),
+      });
       const data = await res.json();
-      setCases(Array.isArray(data) ? data.map(mapRequestToCase) : []);
+      if (!res.ok) {
+        setDonateError(data.error || 'تعذر حجز الموعد');
+        return;
+      }
+      setDonateTarget(null);
+      setBooking({ date: '', time: '' });
+      fetchCases();
+      fetchNotifications();
+      if (activeTab === 'records') fetchDonorHistory();
     } catch {
-      setCases([]);
+      setDonateError('تعذر الاتصال بالخادم');
     } finally {
-      setIsFiltering(false);
+      setDonateLoading(false);
+    }
+  };
+
+  const hospitalConfirm = async (requestId, urgency) => {
+    const bags = window.prompt('كم عدد الأكياس المطلوبة؟', '1');
+    if (bags === null) return;
+    try {
+      const res = await fetch(`${API}/requests/${requestId}/confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ urgency, bags_needed: Number(bags) || 1 }),
+      });
+      const data = await res.json();
+      setActionMsg(data.message || 'تم تأكيد الحالة');
+      loadHomeCases(selectedFilter);
+      fetchNotifications();
+    } catch {
+      setActionMsg('تعذر تنفيذ العملية');
+    }
+  };
+
+  const hospitalComplete = async (requestId) => {
+    try {
+      const res = await fetch(`${API}/requests/${requestId}/complete`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setActionMsg(data.message || 'تم');
+      loadHomeCases(selectedFilter);
+      fetchNotifications();
+    } catch {
+      setActionMsg('تعذر تنفيذ العملية');
+    }
+  };
+
+  const fetchPendingHospitals = async () => {
+    if (!token || role !== 'hospital') return;
+    try {
+      const res = await fetch(`${API}/users/pending`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setPendingHospitals(Array.isArray(data) ? data : []);
+    } catch {
+      setPendingHospitals([]);
+    }
+  };
+
+  const reviewHospital = async (userId, action) => {
+    try {
+      const res = await fetch(`${API}/users/${userId}/${action}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setActionMsg(data.message || 'تم');
+      fetchPendingHospitals();
+      fetchNotifications();
+    } catch {
+      setActionMsg('تعذر تنفيذ العملية');
+    }
+  };
+
+  const accountStatusLabel = (status) => {
+    switch (status) {
+      case 'pending':
+        return 'بانتظار الموافقة';
+      case 'rejected':
+        return 'مرفوض';
+      default:
+        return 'معتمد';
+    }
+  };
+
+  const fetchDonorHistory = async () => {
+    if (!token || role !== 'donor') return;
+    try {
+      const res = await fetch(`${API}/donations/history`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setHistory(Array.isArray(data) ? data : []);
+    } catch {
+      setHistory([]);
+    }
+  };
+
+  const loadHospitals = async () => {
+    try {
+      let list = [];
+      if (user?.city) {
+        const cityRes = await fetch(`${API}/hospitals?city=${encodeURIComponent(user.city)}`);
+        const cityData = await cityRes.json();
+        list = Array.isArray(cityData) ? cityData : [];
+      }
+      if (list.length === 0) {
+        const allRes = await fetch(`${API}/hospitals`);
+        const allData = await allRes.json();
+        list = Array.isArray(allData) ? allData : [];
+      }
+      setHospitals(list);
+    } catch {
+      setHospitals([]);
+    }
+  };
+
+  const openRequestModal = () => {
+    setRequestError('');
+    setRequestForm({
+      patient_name: '',
+      hospital_id: '',
+      blood_type: '+O',
+      bags_needed: 1,
+      urgency: 'عادي',
+    });
+    setShowRequestModal(true);
+    loadHospitals();
+  };
+
+  const submitNewRequest = async () => {
+    setRequestError('');
+    if (!requestForm.patient_name?.trim()) {
+      setRequestError('اسم المريض مطلوب');
+      return;
+    }
+    if (!requestForm.hospital_id) {
+      setRequestError('يرجى اختيار المستشفى');
+      return;
+    }
+    if (!requestForm.blood_type) {
+      setRequestError('يرجى اختيار فصيلة الدم');
+      return;
+    }
+
+    setRequestLoading(true);
+    try {
+      const res = await fetch(`${API}/requests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          patient_name: requestForm.patient_name.trim(),
+          hospital_id: Number(requestForm.hospital_id),
+          blood_type: requestForm.blood_type,
+          bags_needed: Number(requestForm.bags_needed) || 1,
+          urgency: requestForm.urgency,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRequestError(data.error || 'تعذر إنشاء الطلب');
+        return;
+      }
+      setShowRequestModal(false);
+      fetchPatientCases();
+      fetchNotifications();
+    } catch {
+      setRequestError('تعذر الاتصال بالخادم');
+    } finally {
+      setRequestLoading(false);
     }
   };
 
   useEffect(() => {
-    if (token && user) {
-      setRole(user.role);
-      setView('app');
+    if (location.pathname === '/app' || location.pathname === '/app/') {
+      navigate('/app/home', { replace: true });
     }
-  }, []);
+  }, [location.pathname, navigate]);
 
   useEffect(() => {
-    if (view !== 'landing') return;
-    fetch(`${API}/stats`)
-      .then((r) => r.json())
-      .then(setLandingStats)
-      .catch(() => {});
-  }, [view]);
+    if (role === 'patient' && token) loadHospitals();
+  }, [role, token, user?.city]);
 
-  useEffect(() => {
-    if (view === 'app' && activeTab === 'home' && role === 'donor' && token) {
-      fetchCases();
+  const fetchNotifications = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/notifications`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch {
+      setNotifications([]);
     }
-  }, [view, activeTab, selectedFilter, role, token, user?.city]);
+  };
 
   useEffect(() => {
-    if (view !== 'app' || activeTab !== 'account' || !token) return;
+    if (!token) return;
+    fetchNotifications();
+    const timer = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(timer);
+  }, [token, activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'home' || !token) return;
+    loadHomeCases(selectedFilter);
+    if (role === 'donor') fetchDonorHistory();
+    if (role === 'hospital') fetchPendingHospitals();
+  }, [activeTab, role, token, user?.city]);
+
+  useEffect(() => {
+    if (activeTab !== 'account' || !token) return;
     fetch(`${API}/profile`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then(setProfile)
       .catch(() => setProfile(null));
-  }, [view, activeTab, token]);
+  }, [activeTab, token]);
 
   useEffect(() => {
-    if (view !== 'app' || activeTab !== 'records' || !token || role !== 'donor') return;
-    fetch(`${API}/donations/history`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
-      .then((data) => (Array.isArray(data) ? setHistory(data) : setHistory([])))
-      .catch(() => setHistory([]));
-  }, [view, activeTab, token, role]);
+    if (activeTab !== 'records' || !token) return;
+    if (role === 'donor') fetchDonorHistory();
+    if (role === 'patient') fetchPatientCases();
+  }, [activeTab, token, role]);
 
   const getRoleName = (r) => {
     switch (r) {
@@ -422,6 +1036,11 @@ export default function App() {
   };
 
   const filteredCases = cases;
+  const patientActiveCount = cases.filter((c) => c.status !== 'done').length;
+  const hospitalActiveCount = hospitalRequests.filter((c) => c.status !== 'done').length;
+  const hospitalDoneCount = hospitalRequests.filter((c) => c.status === 'done').length;
+  const donorPoints = profile?.points ?? user?.points ?? 0;
+  const donorDonationCount = history.length;
 
   const renderSkeleton = () => (
     <div className="cardsGrid">
@@ -435,89 +1054,6 @@ export default function App() {
     </div>
   );
 
-  if (view === 'landing') {
-    return (
-      <div className="landing">
-        <div className="landingBg" />
-        <div className="landingBox">
-          <WaslLogo variant="light" center withHayat />
-          <h2 className="landingHeadline">
-            كل قطرة دم <em>تفرق</em>
-          </h2>
-          <p className="landingSub">منصة تربط المتبرعين بالمحتاجين في الأوقات الطارئة</p>
-
-          <div className="landingStats">
-            <div className="landingStat">
-              <b>{landingStats.donors}</b>
-              <span>متبرع</span>
-            </div>
-            <div className="landingStat">
-              <b>{landingStats.donations}</b>
-              <span>عملية تبرع</span>
-            </div>
-            <div className="landingStat">
-              <b>{landingStats.hospitals}</b>
-              <span>مستشفى</span>
-            </div>
-          </div>
-
-          <p className="whoAreYou">من أنت؟</p>
-          <div className="roleCards">
-            <button type="button" className="roleCard" onClick={() => handleRoleSelect('donor')}>
-              <Droplet className="rIcon" />
-              <div>
-                <strong>متبرع</strong>
-                <p>ساعد في إنقاذ حياة بالتبرع بدمك</p>
-              </div>
-              <ChevronLeft className="rArrow" />
-            </button>
-
-            <button type="button" className="roleCard" onClick={() => handleRoleSelect('patient')}>
-              <Users className="rIcon" />
-              <div>
-                <strong>قريب المريض</strong>
-                <p>أنشئ طلب دم لذويك واحصل على متبرع سريع</p>
-              </div>
-              <ChevronLeft className="rArrow" />
-            </button>
-
-            <button type="button" className="roleCard roleCardHospital" onClick={() => handleRoleSelect('hospital')}>
-              <Building2 className="rIcon" />
-              <div>
-                <strong>مستشفى</strong>
-                <p>أدر طلبات الدم وتابع الحالات بسهولة</p>
-              </div>
-              <ChevronLeft className="rArrow rArrowHospital" />
-            </button>
-          </div>
-        </div>
-
-        <div className="footer">
-          © {new Date().getFullYear()} وصل — جميع الحقوق محفوظة
-        </div>
-      </div>
-    );
-  }
-
-  if (view === 'auth') {
-    return (
-      <div className="authPage">
-        <div className="authCard">
-          <AuthPanel
-            key={`${role}-${authMode}`}
-            initialRole={role}
-            authMode={authMode}
-            setAuthMode={setAuthMode}
-            onBack={() => {
-              setAuthMode('login');
-              setView('landing');
-            }}
-            onSuccess={handleAuthSuccess}
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="appShell">
@@ -537,28 +1073,22 @@ export default function App() {
           </div>
         </div>
 
+        <NotificationsBell
+          notifications={notifications}
+          showHistory={showNotifHistory}
+          onToggle={() => setShowNotifHistory((v) => !v)}
+        />
+
         <nav className="sidebarNav">
-          <button
-            type="button"
-            className={activeTab === 'home' ? 'active' : ''}
-            onClick={() => setActiveTab('home')}
-          >
+          <NavLink to="/app/home" className={({ isActive }) => (isActive ? 'active' : '')}>
             <Home /> الرئيسية
-          </button>
-          <button
-            type="button"
-            className={activeTab === 'records' ? 'active' : ''}
-            onClick={() => setActiveTab('records')}
-          >
+          </NavLink>
+          <NavLink to="/app/records" className={({ isActive }) => (isActive ? 'active' : '')}>
             <ClipboardList /> سجلاتي
-          </button>
-          <button
-            type="button"
-            className={activeTab === 'account' ? 'active' : ''}
-            onClick={() => setActiveTab('account')}
-          >
+          </NavLink>
+          <NavLink to="/app/account" className={({ isActive }) => (isActive ? 'active' : '')}>
             <User /> حسابي
-          </button>
+          </NavLink>
         </nav>
 
         <div className="sidebarBottom">
@@ -568,12 +1098,39 @@ export default function App() {
         </div>
       </aside>
 
-      <div className="mainWrap">
+      <div className={`mainWrap${showLatestBanner ? ' hasNotifBanner' : ''}`}>
+        {showLatestBanner && (
+          <NotificationsBanner
+            notification={latestNotif}
+            onDismiss={() => setDismissedBannerId(latestNotif.id)}
+          />
+        )}
+
+        {showNotifHistory && (
+          <>
+            <button
+              type="button"
+              className="notifHistoryBackdrop"
+              aria-label="إغلاق الإشعارات"
+              onClick={() => setShowNotifHistory(false)}
+            />
+            <NotificationsHistoryPanel
+              notifications={notifications}
+              onClose={() => setShowNotifHistory(false)}
+              token={token}
+              fetchNotifications={fetchNotifications}
+              hasBanner={showLatestBanner}
+            />
+          </>
+        )}
+
         <header className="mobileHeader">
           <WaslLogo variant="brand" />
-          <button type="button" className="iconBtn" onClick={handleLogout} aria-label="تسجيل الخروج">
-            <LogOut />
-          </button>
+          <div className="mobileHeaderActions">
+            <button type="button" className="iconBtn" onClick={handleLogout} aria-label="تسجيل الخروج">
+              <LogOut />
+            </button>
+          </div>
         </header>
 
         <div className="contentArea">
@@ -587,10 +1144,10 @@ export default function App() {
                   </div>
                   <div className="heroStats">
                     <div className="heroStatBox">
-                      <b>١</b>
+                      <b>{patientActiveCount}</b>
                       <span>نشط</span>
                     </div>
-                    <button type="button" className="newRequestBtn">
+                    <button type="button" className="newRequestBtn" onClick={openRequestModal}>
                       <Plus /> طلب جديد
                     </button>
                   </div>
@@ -605,11 +1162,11 @@ export default function App() {
                   </div>
                   <div className="heroStats">
                     <div className="heroStatBox">
-                      <b>١٢</b>
+                      <b>{hospitalActiveCount}</b>
                       <span>حالة نشطة</span>
                     </div>
                     <div className="heroStatBox">
-                      <b>٤٥</b>
+                      <b>{hospitalDoneCount}</b>
                       <span>تبرع مكتمل</span>
                     </div>
                   </div>
@@ -624,21 +1181,53 @@ export default function App() {
                   </div>
                   <div className="heroStats">
                     <div className="heroStatBox">
-                      <b>٣</b>
+                      <b>{donorDonationCount}</b>
                       <span>تبرعاتك</span>
                     </div>
                     <div className="heroStatBox">
-                      <b>١٥٠</b>
+                      <b>{donorPoints}</b>
                       <span>نقطة</span>
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="filterHead">
+              {actionMsg && role === 'hospital' && (
+                <div className="successBox">{actionMsg}</div>
+              )}
+
+              {role === 'hospital' && pendingHospitals.length > 0 && (
+                <div className="pendingBox">
+                  <h3 className="sectionTitle">مستشفيات بانتظار الاعتماد</h3>
+                  <div className="cardsGrid">
+                    {pendingHospitals.map((h) => (
+                      <article key={h.id} className="caseCard">
+                        <div className="caseInfo">
+                          <h4>{h.name}</h4>
+                          <p className="caseMeta">
+                            <MapPin /> {h.city}
+                          </p>
+                          <p className="caseMeta">{h.email}</p>
+                        </div>
+                        <div className="hospitalActions">
+                          <button type="button" className="outlineBtn" onClick={() => reviewHospital(h.id, 'approve')}>
+                            <Check /> اعتماد
+                          </button>
+                          <button type="button" className="outlineBtn gray" onClick={() => reviewHospital(h.id, 'reject')}>
+                            <X /> رفض
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className={`filterHead ${isFiltering ? 'filterHeadLoading' : ''}`}>
                 <Filter /> فصائل الدم
+                {isFiltering && <span className="filterLoadingLabel">جاري التحميل...</span>}
               </div>
-              <div className="filterScroll">
+              <div className={`filterScroll ${isFiltering ? 'filterScrollBusy' : ''}`}>
                 {FILTER_BLOOD_TYPES.map((bt) => (
                   <button
                     key={bt}
@@ -655,11 +1244,12 @@ export default function App() {
               {isFiltering ? (
                 renderSkeleton()
               ) : filteredCases.length > 0 ? (
-                <div className="cardsGrid">
+                <div className={`cardsGrid ${isFiltering ? 'loading-pulse' : ''}`}>
                   {filteredCases.map((c) => {
                     const isUrgent = c.urgent && c.status !== 'done';
                     const isDone = c.status === 'done';
                     const cardClass = ['caseCard', isUrgent && 'urgent', isDone && 'done'].filter(Boolean).join(' ');
+                    const { title, meta, sub } = getCaseCardLines(c);
 
                     return (
                       <article key={c.id} className={cardClass}>
@@ -669,7 +1259,7 @@ export default function App() {
                           </span>
                           <div className="caseInfo">
                             <h4>
-                              {c.hospital}
+                              {title}
                               {isUrgent && (
                                 <span className="urgentPill">
                                   <AlertCircle /> حالة عاجلة
@@ -677,8 +1267,9 @@ export default function App() {
                               )}
                             </h4>
                             <p className="caseMeta">
-                              <MapPin /> {c.city}
+                              <MapPin /> {meta}
                             </p>
+                            {sub && <p className="caseMeta caseMetaSub">{sub}</p>}
                           </div>
                           {isDone && <CheckCircle2 className="doneIcon" />}
                         </div>
@@ -692,19 +1283,42 @@ export default function App() {
                           </div>
 
                           {!isDone && role === 'donor' && (
-                            <button type="button" className="donateBtn lg">
+                            <button
+                              type="button"
+                              className="donateBtn lg"
+                              onClick={() => {
+                                setDonateError('');
+                                setBooking({ date: '', time: '' });
+                                setDonateTarget(c);
+                              }}
+                            >
                               أريد التبرع
                             </button>
                           )}
                           {!isDone && role === 'hospital' && (
-                            <button type="button" className="outlineBtn">
-                              تأكيد الإنجاز
-                            </button>
-                          )}
-                          {!isDone && role === 'patient' && (
-                            <button type="button" className="outlineBtn gray">
-                              تعديل الطلب
-                            </button>
+                            <div className="hospitalActions">
+                              <button
+                                type="button"
+                                className="outlineBtn"
+                                onClick={() => hospitalConfirm(c.id, 'عادي')}
+                              >
+                                تأكيد عادي
+                              </button>
+                              <button
+                                type="button"
+                                className="donateBtn lg"
+                                onClick={() => hospitalConfirm(c.id, 'عاجل')}
+                              >
+                                تأكيد عاجل
+                              </button>
+                              <button
+                                type="button"
+                                className="outlineBtn gray"
+                                onClick={() => hospitalComplete(c.id)}
+                              >
+                                إغلاق الطلب
+                              </button>
+                            </div>
                           )}
                         </div>
                       </article>
@@ -714,8 +1328,14 @@ export default function App() {
               ) : (
                 <div className="emptyState">
                   <Droplet />
-                  <h3>لا توجد حالات حالياً</h3>
-                  <p>لم يتم العثور على حالات مطابقة لفصيلة {selectedFilter}</p>
+                  <h3>{role === 'patient' ? 'لا توجد طلبات' : 'لا توجد حالات حالياً'}</h3>
+                  <p>
+                    {role === 'patient'
+                      ? selectedFilter === 'الكل'
+                        ? 'اضغط «طلب جديد» لإنشاء أول طلب تبرع'
+                        : `لا توجد طلبات لفصيلة ${selectedFilter}`
+                      : `لم يتم العثور على حالات مطابقة لفصيلة ${selectedFilter}`}
+                  </p>
                 </div>
               )}
             </div>
@@ -754,20 +1374,34 @@ export default function App() {
                   <input className="inp" type="email" defaultValue={profile?.email || user?.email || ''} readOnly dir="ltr" />
                 </div>
 
+                <div className="field">
+                  <label>حالة الحساب</label>
+                  <input
+                    className="inp"
+                    type="text"
+                    value={accountStatusLabel(profile?.account_status || user?.account_status)}
+                    readOnly
+                  />
+                </div>
+
                 {role === 'donor' && (
                   <div className="bloodTypeBox">
                     <div className="bloodTypeHead">
                       <span>فصيلة الدم الخاصة بك</span>
                       <span className="lockedTag">غير قابل للتعديل</span>
                     </div>
-                    <input
+                    <select
                       className="inp disabled"
-                      type="text"
-                      value={apiBloodToUi(profile?.blood_type || user?.blood_type) || ''}
+                      value={profile?.blood_type || user?.blood_type || '+O'}
                       disabled
-                      readOnly
                       dir="ltr"
-                    />
+                    >
+                      {SIGNUP_BLOOD_TYPES.map((bt) => (
+                        <option key={bt} value={bt}>
+                          {apiBloodToUi(bt)}
+                        </option>
+                      ))}
+                    </select>
                     <p className="bloodNote">
                       <AlertCircle />
                       لضمان دقة البيانات الطبية وسلامة المرضى، لا يمكن تغيير فصيلة الدم بعد التسجيل. إذا كان هناك خطأ،
@@ -776,7 +1410,7 @@ export default function App() {
                   </div>
                 )}
 
-                <button type="button" className="saveBtn">
+                <button type="button" className="saveBtn" disabled>
                   حفظ التعديلات
                 </button>
               </div>
@@ -786,7 +1420,37 @@ export default function App() {
           {activeTab === 'records' && (
             <div className="tabPanel">
               <h2 className="pageTitle">سجلاتي</h2>
-              {history.length === 0 ? (
+              {role === 'patient' ? (
+                cases.length === 0 ? (
+                  <div className="recordsEmpty">
+                    <ClipboardList />
+                    <h3>لا توجد طلبات مسجّلة</h3>
+                    <p>ستظهر هنا جميع طلبات التبرع التي أنشأتها.</p>
+                  </div>
+                ) : (
+                  <div className="cardsGrid">
+                    {cases.map((c) => {
+                      const { title, meta } = getCaseCardLines(c);
+                      return (
+                        <article key={c.id} className="caseCard">
+                          <div className="caseCardTop">
+                            <span className="badge lg" dir="ltr">
+                              {c.type}
+                            </span>
+                            <div className="caseInfo">
+                              <h4>{title}</h4>
+                              <p className="caseMeta">
+                                <MapPin /> {meta}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="caseMeta">الاحتياج: {c.bags}</p>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )
+              ) : history.length === 0 ? (
                 <div className="recordsEmpty">
                   <ClipboardList />
                   <h3>سجلك نظيف ومشرّف</h3>
@@ -816,36 +1480,148 @@ export default function App() {
           )}
         </div>
 
+        <p className="mobileFooterNote">© {new Date().getFullYear()} تطبيق وصل</p>
         <footer className="appFooter">
           © {new Date().getFullYear()} تطبيق وصل. جميع الحقوق محفوظة.
         </footer>
       </div>
 
-      <nav className="bottomNav">
-        <button
-          type="button"
-          className={activeTab === 'home' ? 'active' : ''}
-          onClick={() => setActiveTab('home')}
+      {donateTarget && (
+        <div
+          className="modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="donate-title"
+          onClick={() => !donateLoading && setDonateTarget(null)}
         >
+          <div className="modalBox" onClick={(e) => e.stopPropagation()}>
+            <h3 id="donate-title">حجز موعد تبرع</h3>
+            <p className="modalSub">
+              {donateTarget.hospital} — {donateTarget.city}
+            </p>
+            {donateError && <div className="errBox">{donateError}</div>}
+            <input
+              className="inp"
+              type="date"
+              value={booking.date}
+              onChange={(e) => setBooking((b) => ({ ...b, date: e.target.value }))}
+            />
+            <input
+              className="inp"
+              type="time"
+              value={booking.time}
+              onChange={(e) => setBooking((b) => ({ ...b, time: e.target.value }))}
+            />
+            <div className="modalBtns">
+              <button
+                type="button"
+                className="outlineBtn gray"
+                onClick={() => setDonateTarget(null)}
+                disabled={donateLoading}
+              >
+                إلغاء
+              </button>
+              <button type="button" className="authBtn" onClick={submitDonate} disabled={donateLoading}>
+                {donateLoading ? 'جاري الحجز...' : 'تأكيد الحجز'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRequestModal && (
+        <div
+          className="modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="new-request-title"
+          onClick={() => !requestLoading && setShowRequestModal(false)}
+        >
+          <div className="modalBox" onClick={(e) => e.stopPropagation()}>
+            <h3 id="new-request-title">طلب تبرع جديد</h3>
+            {requestError && <div className="errBox">{requestError}</div>}
+            <input
+              className="inp"
+              placeholder="اسم المريض *"
+              value={requestForm.patient_name}
+              onChange={(e) => setRequestForm((f) => ({ ...f, patient_name: e.target.value }))}
+            />
+            <select
+              className="inp"
+              value={requestForm.hospital_id}
+              onChange={(e) => setRequestForm((f) => ({ ...f, hospital_id: e.target.value }))}
+            >
+              <option value="">
+                {hospitals.length === 0 ? 'جاري تحميل المستشفيات...' : 'اختر المستشفى *'}
+              </option>
+              {hospitals.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.name} — {h.city}
+                </option>
+              ))}
+            </select>
+            {hospitals.length === 0 && (
+              <p className="modalHint">تأكد أن back-end يعمل. إن استمرت المشكلة، سجّل خروجاً وأعد الدخول بعد اختيار المدينة.</p>
+            )}
+            <select
+              className="inp"
+              value={requestForm.blood_type}
+              onChange={(e) => setRequestForm((f) => ({ ...f, blood_type: e.target.value }))}
+              dir="ltr"
+            >
+              {SIGNUP_BLOOD_TYPES.map((bt) => (
+                <option key={bt} value={bt}>
+                  {apiBloodToUi(bt)}
+                </option>
+              ))}
+            </select>
+            <select
+              className="inp"
+              value={requestForm.urgency}
+              onChange={(e) => setRequestForm((f) => ({ ...f, urgency: e.target.value }))}
+            >
+              <option value="عادي">عادي</option>
+              <option value="عاجل">عاجل</option>
+            </select>
+            <input
+              className="inp"
+              type="number"
+              min={1}
+              max={10}
+              placeholder="عدد الأكياس المطلوبة"
+              value={requestForm.bags_needed}
+              onChange={(e) => setRequestForm((f) => ({ ...f, bags_needed: e.target.value }))}
+            />
+            <div className="modalBtns">
+              <button
+                type="button"
+                className="outlineBtn gray"
+                onClick={() => setShowRequestModal(false)}
+                disabled={requestLoading}
+              >
+                إلغاء
+              </button>
+              <button type="button" className="authBtn" onClick={submitNewRequest} disabled={requestLoading}>
+                {requestLoading ? 'جاري الإرسال...' : 'إرسال الطلب'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <nav className="bottomNav">
+        <NavLink to="/app/home" className={({ isActive }) => (isActive ? 'active' : '')}>
           <Home />
           <span>الرئيسية</span>
-        </button>
-        <button
-          type="button"
-          className={activeTab === 'records' ? 'active' : ''}
-          onClick={() => setActiveTab('records')}
-        >
+        </NavLink>
+        <NavLink to="/app/records" className={({ isActive }) => (isActive ? 'active' : '')}>
           <ClipboardList />
           <span>سجلاتي</span>
-        </button>
-        <button
-          type="button"
-          className={activeTab === 'account' ? 'active' : ''}
-          onClick={() => setActiveTab('account')}
-        >
+        </NavLink>
+        <NavLink to="/app/account" className={({ isActive }) => (isActive ? 'active' : '')}>
           <User />
           <span>حسابي</span>
-        </button>
+        </NavLink>
       </nav>
     </div>
   );
