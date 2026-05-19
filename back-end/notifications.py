@@ -4,6 +4,29 @@ import re
 import smtplib
 from email.mime.text import MIMEText
 
+# Donor blood type -> request blood types they can satisfy
+BLOOD_COMPATIBLE = {
+    "+O": ["+O", "+A", "+B", "+AB"],
+    "-O": ["+O", "-O", "+A", "-A", "+B", "-B", "+AB", "-AB"],
+    "+A": ["+A", "+AB"],
+    "-A": ["+A", "-A", "+AB", "-AB"],
+    "+B": ["+B", "+AB"],
+    "-B": ["+B", "-B", "+AB", "-AB"],
+    "+AB": ["+AB"],
+    "-AB": ["+AB", "-AB"],
+}
+
+
+def donor_types_for_request(request_blood):
+    """Return donor blood types compatible with a request."""
+    if not request_blood:
+        return []
+    return [
+        donor_type
+        for donor_type, can_give in BLOOD_COMPATIBLE.items()
+        if request_blood in can_give
+    ]
+
 _EMOJI_RE = re.compile(
     "["
     "\U0001F600-\U0001F64F"
@@ -68,3 +91,69 @@ def notify_user(cur, user_id, message, subject="إشعار من وصل"):
     email = row["email"] if isinstance(row, dict) else row[0]
     if email:
         send_email(email, subject, message)
+
+
+def _donor_already_notified(cur, user_id, request_id):
+    cur.execute(
+        "SELECT 1 FROM notifications WHERE user_id=%s AND message LIKE %s LIMIT 1",
+        (user_id, f"%#{request_id}%"),
+    )
+    return cur.fetchone() is not None
+
+
+def notify_matching_donors(cur, request_id):
+    """Notify donors whose blood type and city match an active request."""
+    cur.execute(
+        """
+        SELECT br.blood_type, br.urgency, br.bags_needed, br.bags_received,
+               h.name AS hospital_name, h.city
+        FROM blood_requests br
+        JOIN hospitals h ON br.hospital_id = h.id
+        WHERE br.id = %s AND br.status = 'نشط'
+        """,
+        (request_id,),
+    )
+    req = cur.fetchone()
+    if not req:
+        return
+
+    eligible = donor_types_for_request(req["blood_type"])
+    if not eligible:
+        return
+
+    placeholders = ",".join(["%s"] * len(eligible))
+    cur.execute(
+        f"""
+        SELECT id, name FROM users
+        WHERE role = 'donor'
+          AND account_status = 'approved'
+          AND blood_type IN ({placeholders})
+          AND (city IS NULL OR city = '' OR city = %s)
+        """,
+        (*eligible, req["city"]),
+    )
+    donors = cur.fetchall()
+
+    urgency = req.get("urgency") or "عادي"
+    need = max(0, int(req.get("bags_needed") or 1) - int(req.get("bags_received") or 0))
+    hospital = req.get("hospital_name") or "مستشفى"
+    city = req.get("city") or ""
+    blood = req.get("blood_type") or ""
+
+    if urgency == "عاجل":
+        subject = "حالة عاجلة محتاجة متبرع — وصل"
+        intro = "حالة عاجلة محتاجة متبرع"
+    else:
+        subject = "حالة محتاجة متبرع — وصل"
+        intro = "حالة جديدة محتاجة متبرع"
+
+    for donor in donors:
+        donor_id = donor["id"] if isinstance(donor, dict) else donor[0]
+        if _donor_already_notified(cur, donor_id, request_id):
+            continue
+        message = (
+            f"{intro} — فصيلة {blood} في {city} ({hospital}) "
+            f"— الاحتياج {need} كيس — طلب #{request_id}. "
+            f"سجّل دخولك في وصل لحجز موعد التبرع."
+        )
+        notify_user(cur, donor_id, message, subject=subject)

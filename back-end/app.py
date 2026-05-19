@@ -9,7 +9,7 @@ import mysql.connector
 import os
 from datetime import timedelta
 from pathlib import Path
-from notifications import notify_user, strip_emojis
+from notifications import notify_user, notify_matching_donors, strip_emojis
 
 
 def _load_env_file():
@@ -324,6 +324,7 @@ def create_request():
             hosp["id"],
             f"طلب تبرع جديد — فصيلة {d['blood_type']} بانتظار المتابعة",
         )
+    notify_matching_donors(cur, rid)
     conn.commit()
     cur.close(); conn.close()
     return jsonify({"message": "تم إنشاء الطلب، بانتظار تأكيد المستشفى", "id": rid}), 201
@@ -470,6 +471,7 @@ def confirm_request(rid):
             f"تم تأكيد طلبك كحالة {label} — بانتظار المتبرعين",
         )
 
+    notify_matching_donors(cur, rid)
     conn.commit(); cur.close(); conn.close()
     return jsonify({"message": "تم تأكيد الحالة"})
 
