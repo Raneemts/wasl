@@ -781,61 +781,25 @@ The following screenshots provide evidence of testing and implementation.
 
 #### Home Page
 
-> Add screenshot here:
-
-```text
-evidence/homepage.png
-```
-
 ![Home Page](evidence/homepage.png)
 
 #### Registration Page
-
-> Add screenshot here:
-
-```text
-evidence/register.png
-```
 
 ![Registration](evidence/register.png)
 
 #### Login Page
 
-> Add screenshot here:
-
-```text
-evidence/login.png
-```
-
 ![Login](evidence/login.png)
 
 #### Donor Dashboard
-
-> Add screenshot here:
-
-```text
-evidence/Donor-Dashboard.png
-```
 
 ![Donor Dashboard](evidence/Donor-Dashboard.png)
 
 #### Search and Filter Functionality
 
-> Add screenshot here:
-
-```text
-evidence/filter.png
-```
-
 ![Search and Filter](evidence/filter.png)
 
 #### Database Verification
-
-> Add screenshot here:
-
-```text
-evidence/database.png
-```
 
 ![Database Records](evidence/database.png)
 
@@ -890,7 +854,7 @@ Sprint planning activities are documented in Section 1 of this README.
 
 ### Bug Tracking
 
-Issues and bugs were identified during meetings, development activities, and testing sessions, then resolved through collaborative development and GitHub commits.
+Issues and bugs were tracked during development meetings and testing sessions. Identified issues were resolved through team collaboration and updates pushed to GitHub repository
 
 ### Testing Evidence & Results
 
