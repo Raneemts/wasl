@@ -15,7 +15,7 @@ CREATE TABLE users (
   email         VARCHAR(150) UNIQUE NOT NULL,
   phone         VARCHAR(20),
   password_hash VARCHAR(255) NOT NULL,
-  role          ENUM('donor','patient','hospital') NOT NULL,
+  role          ENUM('donor','patient','hospital','admin') NOT NULL,
   blood_type    VARCHAR(5),
   city          VARCHAR(100),
   region        VARCHAR(100),
@@ -35,7 +35,7 @@ CREATE TABLE blood_requests (
   bags_needed   INT NOT NULL DEFAULT 1,
   bags_received INT DEFAULT 0,
   urgency       ENUM('عاجل','عادي') DEFAULT 'عادي',
-  status        ENUM('نشط','مكتمل','ملغي') DEFAULT 'نشط',
+  status        ENUM('بانتظار التأكيد','نشط','مكتمل','ملغي') DEFAULT 'بانتظار التأكيد',
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id)     REFERENCES users(id),
   FOREIGN KEY (hospital_id) REFERENCES hospitals(id)
@@ -81,5 +81,9 @@ INSERT INTO hospitals (name, city, region) VALUES
 ('مستشفى نجران العام',         'نجران',    'نجران'),
 ('مستشفى الباحة العام',        'الباحة',   'الباحة'),
 ('مستشفى الجوف العام',         'سكاكا',    'الجوف');
+
+-- مشرف النظام (تسجيل دخول فقط — لا تسجيل عام)
+INSERT INTO users (name, email, password_hash, role, account_status) VALUES
+('مشرف وصل', 'admin@wasl.com', '$2b$12$9xkFPVE5nZYpYAd2YO/nxuC7bEwFZtwUGSZ/z1mIQImj6xOXc/7i6', 'admin', 'approved');
 
 

@@ -76,6 +76,20 @@ def _ensure_schema():
     except mysql.connector.Error:
         pass
 
+    try:
+        conn = db()
+        cur = conn.cursor()
+        cur.execute("""
+            ALTER TABLE blood_requests
+            MODIFY status ENUM('بانتظار التأكيد','نشط','مكتمل','ملغي')
+            DEFAULT 'بانتظار التأكيد'
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+    except mysql.connector.Error:
+        pass
+
 
 def _account_status_message(user):
     status = (user or {}).get("account_status") or "approved"
@@ -98,6 +112,55 @@ def _user_payload(user):
         "account_status": user.get("account_status") or "approved",
     }
 
+
+_ADMIN_SEED_EMAIL = "admin@wasl.com"
+_ADMIN_SEED_HASH = "$2b$12$9xkFPVE5nZYpYAd2YO/nxuC7bEwFZtwUGSZ/z1mIQImj6xOXc/7i6"
+
+
+def _ensure_admin_role():
+    """Extend role ENUM and seed default admin (admin@wasl.com / admin123)."""
+    try:
+        conn = db()
+        cur = conn.cursor()
+        cur.execute("""
+            ALTER TABLE users
+            MODIFY role ENUM('donor','patient','hospital','admin') NOT NULL
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+    except mysql.connector.Error:
+        pass
+
+    try:
+        conn = db()
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM users WHERE role='admin' LIMIT 1")
+        if not cur.fetchone():
+            cur.execute("""
+                INSERT INTO users (name, email, password_hash, role, account_status)
+                VALUES ('مشرف وصل', %s, %s, 'admin', 'approved')
+            """, (_ADMIN_SEED_EMAIL, _ADMIN_SEED_HASH))
+            conn.commit()
+        cur.close()
+        conn.close()
+    except mysql.connector.Error:
+        pass
+
+
+def _admin_forbidden():
+    uid = get_jwt_identity()
+    conn = db()
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT role FROM users WHERE id=%s", (uid,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    if not row or row.get("role") != "admin":
+        return jsonify({"error": "غير مصرح — للمشرف فقط"}), 403
+    return None
+
+
 # ══════════════════════════════
 #  AUTH
 # ══════════════════════════════
@@ -109,24 +172,28 @@ def register():
         if not d.get(f):
             return jsonify({"error": f"حقل مطلوب: {f}"}), 400
 
+    if d.get("role") == "admin":
+        return jsonify({"error": "لا يمكن التسجيل كمشرف"}), 403
+
     hashed = bcrypt.generate_password_hash(d["password"]).decode()
     conn = db(); cur = conn.cursor()
 
-    # ══ إذا المستخدم مستشفى، أضفه لجدول hospitals تلقائياً ══
+    hospital_id = None
     if d["role"] == "hospital":
         cur.execute("""
             INSERT INTO hospitals (name, city, region)
             VALUES (%s, %s, %s)
         """, (d["name"], d.get("city"), d.get("region")))
+        hospital_id = cur.lastrowid
         conn.commit()
 
     account_status = "pending" if d["role"] == "hospital" else "approved"
     try:
         cur.execute("""
-            INSERT INTO users (name,email,phone,password_hash,role,blood_type,city,region,account_status)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            INSERT INTO users (name,email,phone,password_hash,role,blood_type,city,region,hospital_id,account_status)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (d["name"], d["email"], d.get("phone"), hashed, d["role"],
-              d.get("blood_type"), d.get("city"), d.get("region"), account_status))
+              d.get("blood_type"), d.get("city"), d.get("region"), hospital_id, account_status))
         conn.commit()
         uid = cur.lastrowid
     except mysql.connector.IntegrityError:
@@ -219,8 +286,49 @@ def get_stats():
 #  HOSPITALS
 # ══════════════════════════════
 
+def _ensure_user_hospital_row(cur, user_id):
+    """Ensure approved hospital user has a hospitals row linked via hospital_id."""
+    cur.execute(
+        "SELECT id, name, city, region, hospital_id FROM users WHERE id=%s AND role='hospital'",
+        (user_id,),
+    )
+    user = cur.fetchone()
+    if not user:
+        return None
+    if user.get("hospital_id"):
+        return user["hospital_id"]
+    region = user.get("region") or user.get("city") or ""
+    city = user.get("city") or ""
+    cur.execute(
+        "INSERT INTO hospitals (name, city, region) VALUES (%s, %s, %s)",
+        (user["name"], city, region),
+    )
+    hospital_id = cur.lastrowid
+    cur.execute("UPDATE users SET hospital_id=%s WHERE id=%s", (hospital_id, user_id))
+    return hospital_id
+
+
+def _link_approved_hospital_accounts():
+    """Backfill hospital_id for older approved hospital accounts."""
+    try:
+        conn = db()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("""
+            SELECT id FROM users
+            WHERE role='hospital' AND account_status='approved' AND hospital_id IS NULL
+        """)
+        for row in cur.fetchall():
+            _ensure_user_hospital_row(cur, row["id"])
+        conn.commit()
+        cur.close()
+        conn.close()
+    except mysql.connector.Error:
+        pass
+
+
 @app.get("/api/hospitals")
 def get_hospitals():
+    """Legacy catalog — prefer /api/hospitals/approved for patient requests."""
     region = request.args.get("region")
     city = request.args.get("city")
     conn = db(); cur = conn.cursor(dictionary=True)
@@ -232,6 +340,32 @@ def get_hospitals():
         cur.execute("SELECT * FROM hospitals")
     rows = cur.fetchall()
     cur.close(); conn.close()
+    return jsonify(rows)
+
+
+@app.get("/api/hospitals/approved")
+def get_approved_hospitals():
+    """مستشفيات مسجّلة ومعتمدة من المشرف — للقائمة عند قريب المريض."""
+    city = request.args.get("city")
+    conn = db()
+    cur = conn.cursor(dictionary=True)
+    _link_approved_hospital_accounts()
+    sql = """
+        SELECT u.hospital_id AS id, u.name, u.city, u.region
+        FROM users u
+        WHERE u.role = 'hospital'
+          AND u.account_status = 'approved'
+          AND u.hospital_id IS NOT NULL
+    """
+    vals = []
+    if city:
+        sql += " AND u.city = %s"
+        vals.append(city)
+    sql += " ORDER BY u.name ASC"
+    cur.execute(sql, tuple(vals))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
     return jsonify(rows)
 
 # ══════════════════════════════
@@ -300,31 +434,38 @@ def create_request():
         if not d.get(f):
             return jsonify({"error": f"حقل مطلوب: {f}"}), 400
 
+    hospital_id = int(d["hospital_id"])
     conn = db(); cur = conn.cursor(dictionary=True)
+    cur.execute("""
+        SELECT u.id, u.name FROM users u
+        WHERE u.role = 'hospital' AND u.account_status = 'approved'
+          AND u.hospital_id = %s
+    """, (hospital_id,))
+    hospital_users = cur.fetchall()
+    if not hospital_users:
+        cur.close()
+        conn.close()
+        return jsonify({
+            "error": "المستشفى غير متاح — اختر مستشفى معتمد من القائمة",
+        }), 400
+
     cur.execute("""
         INSERT INTO blood_requests
         (user_id,patient_name,hospital_id,blood_type,bags_needed,urgency,status)
-        VALUES (%s,%s,%s,%s,%s,%s,%s)
-    """, (uid, d["patient_name"], d["hospital_id"],
-          d["blood_type"], int(d.get("bags_needed") or 1),
-          d.get("urgency") or "عادي", "نشط"))
+        VALUES (%s,%s,%s,%s,1,'عادي','بانتظار التأكيد')
+    """, (uid, d["patient_name"], hospital_id, d["blood_type"]))
     rid = cur.lastrowid
     notify_user(
         cur,
         uid,
-        "تم إنشاء طلبك بنجاح — ستصلك إشعارات عند حجز المواعيد أو اكتمال الحالة",
+        "تم إرسال طلبك للمستشفى — بانتظار تأكيد الحالة (عاجل/عادي وعدد الأكياس)",
     )
-    cur.execute("""
-        SELECT id FROM users
-        WHERE role='hospital' AND hospital_id=%s AND account_status='approved'
-    """, (d["hospital_id"],))
-    for hosp in cur.fetchall():
+    for hosp in hospital_users:
         notify_user(
             cur,
             hosp["id"],
-            f"طلب تبرع جديد — فصيلة {d['blood_type']} بانتظار المتابعة",
+            f"طلب تبرع جديد — فصيلة {d['blood_type']} بانتظار تأكيدكم",
         )
-    notify_matching_donors(cur, rid)
     conn.commit()
     cur.close(); conn.close()
     return jsonify({"message": "تم إنشاء الطلب، بانتظار تأكيد المستشفى", "id": rid}), 201
@@ -333,34 +474,59 @@ def create_request():
 #  HOSPITAL — GET ALL REQUESTS
 # ══════════════════════════════
 
+def _resolve_hospital_id(uid):
+    """Return hospital_id for logged-in hospital user; backfill if missing."""
+    conn = db()
+    cur = conn.cursor(dictionary=True)
+    cur.execute(
+        "SELECT id, hospital_id FROM users WHERE id=%s AND role='hospital'",
+        (uid,),
+    )
+    user = cur.fetchone()
+    if not user:
+        cur.close()
+        conn.close()
+        return None
+    if not user.get("hospital_id"):
+        _ensure_user_hospital_row(cur, user["id"])
+        conn.commit()
+        cur.execute("SELECT hospital_id FROM users WHERE id=%s", (uid,))
+        user = cur.fetchone()
+    hid = user.get("hospital_id") if user else None
+    cur.close()
+    conn.close()
+    return hid
+
+
+def _hospital_scope_sql(uid):
+    """طلبات ومواعيد هذا المستشفى فقط."""
+    hid = _resolve_hospital_id(uid)
+    if not hid:
+        return None, None
+    return "br.hospital_id = %s", [hid]
+
+
 @app.get("/api/hospital/requests")
 @jwt_required()
 def hospital_requests():
     uid = get_jwt_identity()
-    conn = db(); cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT city FROM users WHERE id=%s", (uid,))
-    user = cur.fetchone()
-    city = user.get("city") if user else None
+    scope, vals = _hospital_scope_sql(uid)
+    if scope is None:
+        return jsonify({"error": "غير مصرح"}), 403
 
-    if city:
-        cur.execute("""
-            SELECT br.*, h.name AS hospital_name, h.city,
-                   u.name AS requester_name
-            FROM blood_requests br
-            JOIN hospitals h ON br.hospital_id = h.id
-            JOIN users u ON br.user_id = u.id
-            WHERE h.city = %s
-            ORDER BY br.urgency DESC, br.created_at DESC
-        """, (city,))
-    else:
-        cur.execute("""
-            SELECT br.*, h.name AS hospital_name, h.city,
-                   u.name AS requester_name
-            FROM blood_requests br
-            JOIN hospitals h ON br.hospital_id = h.id
-            JOIN users u ON br.user_id = u.id
-            ORDER BY br.urgency DESC, br.created_at DESC
-        """)
+    conn = db(); cur = conn.cursor(dictionary=True)
+    cur.execute(f"""
+        SELECT br.*, h.name AS hospital_name, h.city,
+               u.name AS requester_name
+        FROM blood_requests br
+        JOIN hospitals h ON br.hospital_id = h.id
+        JOIN users u ON br.user_id = u.id
+        WHERE {scope}
+        ORDER BY
+          CASE br.status WHEN 'بانتظار التأكيد' THEN 0 ELSE 1 END,
+          br.urgency DESC,
+          br.created_at DESC
+    """, tuple(vals))
     rows = cur.fetchall()
     for r in rows:
         r["created_at"] = str(r["created_at"])
@@ -376,36 +542,23 @@ def hospital_requests():
 @jwt_required()
 def hospital_appointments():
     uid = get_jwt_identity()
-    conn = db(); cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT city FROM users WHERE id=%s", (uid,))
-    user = cur.fetchone()
-    city = user.get("city") if user else None
+    scope, vals = _hospital_scope_sql(uid)
+    if scope is None:
+        return jsonify({"error": "غير مصرح"}), 403
 
-    if city:
-        cur.execute("""
-            SELECT d.id, d.appointment_date, d.appointment_time, d.status,
-                   u.name AS donor_name, u.blood_type,
-                   br.patient_name, br.id AS request_id,
-                   h.name AS hospital_name
-            FROM donations d
-            JOIN users u ON d.donor_id = u.id
-            JOIN blood_requests br ON d.request_id = br.id
-            JOIN hospitals h ON br.hospital_id = h.id
-            WHERE h.city = %s
-            ORDER BY d.appointment_date ASC, d.appointment_time ASC
-        """, (city,))
-    else:
-        cur.execute("""
-            SELECT d.id, d.appointment_date, d.appointment_time, d.status,
-                   u.name AS donor_name, u.blood_type,
-                   br.patient_name, br.id AS request_id,
-                   h.name AS hospital_name
-            FROM donations d
-            JOIN users u ON d.donor_id = u.id
-            JOIN blood_requests br ON d.request_id = br.id
-            JOIN hospitals h ON br.hospital_id = h.id
-            ORDER BY d.appointment_date ASC, d.appointment_time ASC
-        """)
+    conn = db(); cur = conn.cursor(dictionary=True)
+    cur.execute(f"""
+        SELECT d.id, d.appointment_date, d.appointment_time, d.status,
+               u.name AS donor_name, u.blood_type,
+               br.patient_name, br.blood_type AS request_blood_type,
+               br.id AS request_id, h.name AS hospital_name, h.city
+        FROM donations d
+        JOIN users u ON d.donor_id = u.id
+        JOIN blood_requests br ON d.request_id = br.id
+        JOIN hospitals h ON br.hospital_id = h.id
+        WHERE {scope} AND d.status = 'معلق'
+        ORDER BY d.appointment_date ASC, d.appointment_time ASC
+    """, tuple(vals))
     rows = cur.fetchall()
     for r in rows:
         if r.get("appointment_date"):
@@ -421,46 +574,72 @@ def hospital_appointments():
 @app.post("/api/donations/<int:did>/confirm")
 @jwt_required()
 def confirm_donation(did):
-    conn = db(); cur = conn.cursor(dictionary=True)
+    uid = get_jwt_identity()
+    scope, vals = _hospital_scope_sql(uid)
+    if scope is None:
+        return jsonify({"error": "غير مصرح"}), 403
 
-    cur.execute("SELECT * FROM donations WHERE id=%s", (did,))
+    conn = db(); cur = conn.cursor(dictionary=True)
+    cur.execute(f"""
+        SELECT d.*, br.user_id AS patient_user_id, br.hospital_id
+        FROM donations d
+        JOIN blood_requests br ON d.request_id = br.id
+        JOIN hospitals h ON br.hospital_id = h.id
+        WHERE d.id=%s AND d.status='معلق' AND {scope}
+    """, (did, *vals))
     donation = cur.fetchone()
     if not donation:
         cur.close(); conn.close()
-        return jsonify({"error": "الحجز غير موجود"}), 404
+        return jsonify({"error": "الحجز غير موجود أو تم تأكيده"}), 404
 
     cur.execute("UPDATE donations SET status='مؤكد' WHERE id=%s", (did,))
-
-    cur.execute("SELECT * FROM blood_requests WHERE id=%s", (donation["request_id"],))
-    req = cur.fetchone()
+    cur.execute("""
+        UPDATE blood_requests SET bags_received = bags_received + 1 WHERE id=%s
+    """, (donation["request_id"],))
 
     cur.execute("""
-        SELECT bags_received, bags_needed FROM blood_requests WHERE id=%s
+        SELECT bags_received, bags_needed, user_id FROM blood_requests WHERE id=%s
     """, (donation["request_id"],))
     bags = cur.fetchone()
     if bags and bags["bags_received"] >= bags["bags_needed"]:
         cur.execute("UPDATE blood_requests SET status='مكتمل' WHERE id=%s", (donation["request_id"],))
-        if req:
-            notify_user(cur, req["user_id"], "اكتملت أكياس الدم المطلوبة لطلبك")
+        notify_user(cur, bags["user_id"], "اكتملت أكياس الدم المطلوبة لطلبك")
 
-    notify_user(cur, donation["donor_id"], "تم تأكيد تبرعك من قبل المستشفى — شكراً لك")
+    notify_user(cur, donation["donor_id"], "تم التبرع — شكراً لك على إنقاذ حياة")
 
     conn.commit(); cur.close(); conn.close()
-    return jsonify({"message": "تم تأكيد التبرع"})
+    return jsonify({"message": "تم التبرع"})
 
 
 @app.post("/api/requests/<int:rid>/confirm")
 @jwt_required()
 def confirm_request(rid):
-    d = request.json
+    uid = get_jwt_identity()
+    scope, vals = _hospital_scope_sql(uid)
+    if scope is None:
+        return jsonify({"error": "غير مصرح"}), 403
+
+    d = request.json or {}
     urgency = d.get("urgency", "عادي")
-    bags_needed = int(d.get("bags_needed", 1))
+    if urgency not in ("عاجل", "عادي"):
+        urgency = "عادي"
+    bags_needed = max(1, min(10, int(d.get("bags_needed") or 1)))
+
     conn = db(); cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT user_id FROM blood_requests WHERE id=%s", (rid,))
+    cur.execute(f"""
+        SELECT br.user_id FROM blood_requests br
+        JOIN hospitals h ON br.hospital_id = h.id
+        WHERE br.id=%s AND br.status='بانتظار التأكيد' AND {scope}
+    """, (rid, *vals))
     req = cur.fetchone()
+    if not req:
+        cur.close(); conn.close()
+        return jsonify({"error": "الطلب غير موجود أو تم تأكيده مسبقاً"}), 404
 
     cur.execute("""
-        UPDATE blood_requests SET status='نشط', urgency=%s, bags_needed=%s WHERE id=%s
+        UPDATE blood_requests
+        SET status='نشط', urgency=%s, bags_needed=%s, bags_received=0
+        WHERE id=%s
     """, (urgency, bags_needed, rid))
 
     if req:
@@ -548,7 +727,6 @@ def donate(rid):
         VALUES (%s,%s,%s,%s)
     """, (rid, uid, d.get("date"), d.get("time")))
 
-    cur.execute("UPDATE blood_requests SET bags_received = bags_received+1 WHERE id=%s", (rid,))
     cur.execute("UPDATE users SET points = points+20 WHERE id=%s", (uid,))
 
     donor_name = donor["name"]
@@ -639,7 +817,10 @@ def mark_notifications_read():
 @app.get("/api/users/pending")
 @jwt_required()
 def pending_hospital_users():
-    """قائمة حسابات المستشفيات بانتظار الاعتماد."""
+    """قائمة حسابات المستشفيات بانتظار الاعتماد (للمشرف)."""
+    denied = _admin_forbidden()
+    if denied:
+        return denied
     conn = db()
     cur = conn.cursor(dictionary=True)
     cur.execute("""
@@ -659,26 +840,43 @@ def pending_hospital_users():
 @app.post("/api/users/<int:uid>/approve")
 @jwt_required()
 def approve_user(uid):
-    """Hospital/admin: approve pending account (hospital role)."""
+    """Admin: approve pending hospital account."""
+    denied = _admin_forbidden()
+    if denied:
+        return denied
     conn = db()
     cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT id, email, account_status FROM users WHERE id=%s", (uid,))
+    cur.execute(
+        "SELECT id, email, account_status, role FROM users WHERE id=%s AND role='hospital'",
+        (uid,),
+    )
     target = cur.fetchone()
     if not target:
         cur.close()
         conn.close()
         return jsonify({"error": "المستخدم غير موجود"}), 404
-    cur.execute("UPDATE users SET account_status='approved' WHERE id=%s", (uid,))
+    _ensure_user_hospital_row(cur, uid)
+    cur.execute(
+        "UPDATE users SET account_status='approved' WHERE id=%s AND role='hospital'",
+        (uid,),
+    )
+    if cur.rowcount == 0:
+        cur.close()
+        conn.close()
+        return jsonify({"error": "المستخدم غير موجود"}), 404
     notify_user(cur, uid, "تم اعتماد حسابك — يمكنك تسجيل الدخول الآن", subject="تم اعتماد حسابك — وصل")
     conn.commit()
     cur.close()
     conn.close()
-    return jsonify({"message": "تم اعتماد الحساب"})
+    return jsonify({"message": "تم التاكيد"})
 
 
 @app.post("/api/users/<int:uid>/reject")
 @jwt_required()
 def reject_user(uid):
+    denied = _admin_forbidden()
+    if denied:
+        return denied
     conn = db()
     cur = conn.cursor(dictionary=True)
     cur.execute("SELECT id FROM users WHERE id=%s AND role='hospital'", (uid,))
@@ -691,11 +889,13 @@ def reject_user(uid):
     conn.commit()
     cur.close()
     conn.close()
-    return jsonify({"message": "تم رفض الحساب"})
+    return jsonify({"message": "تم الإلغاء"})
 
 
 if __name__ == "__main__":
     _ensure_schema()
+    _ensure_admin_role()
+    _link_approved_hospital_accounts()
     try:
         _conn = db()
         _conn.close()

@@ -27,6 +27,8 @@ import {
   Bell,
   Check,
   X,
+  Shield,
+  Calendar,
 } from 'lucide-react';
 import './App.css';
 
@@ -309,10 +311,14 @@ function AuthPanel({ initialRole, authMode, setAuthMode, onSuccess }) {
         return 'مستشفى';
       case 'donor':
         return 'متبرع';
+      case 'admin':
+        return 'المشرف';
       default:
         return '';
     }
   };
+
+  const isAdminRole = (initialRole || form.role) === 'admin';
 
   const submit = async () => {
     setLoading(true);
@@ -334,7 +340,7 @@ function AuthPanel({ initialRole, authMode, setAuthMode, onSuccess }) {
       return;
     }
 
-    if (!isLogin) {
+    if (!isLogin && !isAdminRole) {
       if (!form.name?.trim()) {
         setError('الاسم الكامل مطلوب');
         setLoading(false);
@@ -486,20 +492,22 @@ function AuthPanel({ initialRole, authMode, setAuthMode, onSuccess }) {
         {loading ? 'جاري المعالجة...' : isLogin ? 'دخول' : 'إنشاء الحساب'}
       </button>
 
-      <p className="switchTxt">
-        {isLogin ? 'ليس لديك حساب؟' : 'لديك حساب؟'}{' '}
-        <button
-          type="button"
-          className="switchLink"
-          onClick={() => {
-            setError('');
-            const r = initialRole || 'donor';
-            navigate(isLogin ? `/signup/${r}` : `/login/${r}`);
-          }}
-        >
-          {isLogin ? 'سجل الآن' : 'تسجيل الدخول'}
-        </button>
-      </p>
+      {!isAdminRole && (
+        <p className="switchTxt">
+          {isLogin ? 'ليس لديك حساب؟' : 'لديك حساب؟'}{' '}
+          <button
+            type="button"
+            className="switchLink"
+            onClick={() => {
+              setError('');
+              const r = initialRole || 'donor';
+              navigate(isLogin ? `/signup/${r}` : `/login/${r}`);
+            }}
+          >
+            {isLogin ? 'سجل الآن' : 'تسجيل الدخول'}
+          </button>
+        </p>
+      )}
     </>
   );
 }
@@ -539,6 +547,15 @@ function LandingPage() {
             <span>مستشفى</span>
           </div>
         </div>
+
+        <button type="button" className="roleCard roleCardAdmin" onClick={() => navigate('/login/admin')}>
+          <Shield className="rIcon" />
+          <div>
+            <strong>تسجيل دخول المشرف</strong>
+            <p>اعتماد حسابات المستشفيات الجديدة</p>
+          </div>
+          <ChevronLeft className="rArrow" />
+        </button>
 
         <p className="whoAreYou">من أنت؟</p>
         <div className="roleCards">
@@ -582,10 +599,16 @@ function AuthPage({ mode }) {
   const { token, login } = useAuth();
   const role = roleParam || 'donor';
 
+  if (role === 'admin' && mode === 'signup') {
+    return <Navigate to="/login/admin" replace />;
+  }
+
   if (token) {
     return <Navigate to="/app/home" replace />;
   }
-  const [authMode, setAuthMode] = useState(mode === 'signup' ? 'signup' : 'login');
+  const [authMode, setAuthMode] = useState(
+    role === 'admin' ? 'login' : mode === 'signup' ? 'signup' : 'login',
+  );
 
   useEffect(() => {
     setAuthMode(mode === 'signup' ? 'signup' : 'login');
@@ -656,7 +679,13 @@ function DashboardApp() {
   const role = user?.role ?? null;
   const appSegment = location.pathname.split('/')[2] || '';
   const activeTab =
-    appSegment === 'records' ? 'records' : appSegment === 'account' ? 'account' : 'home';
+    appSegment === 'records'
+      ? 'records'
+      : appSegment === 'account'
+        ? 'account'
+        : appSegment === 'appointments'
+          ? 'appointments'
+          : 'home';
   const [selectedFilter, setSelectedFilter] = useState('الكل');
   const [isFiltering, setIsFiltering] = useState(false);
   const [cases, setCases] = useState([]);
@@ -674,8 +703,6 @@ function DashboardApp() {
     patient_name: '',
     hospital_id: '',
     blood_type: '+O',
-    bags_needed: 1,
-    urgency: 'عادي',
   });
   const [requestError, setRequestError] = useState('');
   const [requestLoading, setRequestLoading] = useState(false);
@@ -683,11 +710,15 @@ function DashboardApp() {
   const [dismissedBannerId, setDismissedBannerId] = useState(null);
   const [showNotifHistory, setShowNotifHistory] = useState(false);
   const [pendingHospitals, setPendingHospitals] = useState([]);
+  const [hospitalAppointments, setHospitalAppointments] = useState([]);
+  const [confirmTarget, setConfirmTarget] = useState(null);
+  const [confirmForm, setConfirmForm] = useState({ urgency: 'عادي', bags_needed: 1 });
+  const [confirmLoading, setConfirmLoading] = useState(false);
   const latestNotif = notifications[0] ?? null;
   const showLatestBanner = latestNotif && latestNotif.id !== dismissedBannerId;
 
   const loadHomeCases = async (filterValue) => {
-    if (!token) return;
+    if (!token || role === 'admin') return;
     setIsFiltering(true);
     setCases([]);
     try {
@@ -747,11 +778,25 @@ function DashboardApp() {
     hospital: r.hospital_name,
     city: r.city,
     patientName: r.patient_name || null,
-    bags: `${r.bags_received ?? 0}/${r.bags_needed ?? 0}`,
+    bags:
+      r.status === 'بانتظار التأكيد'
+        ? 'بانتظار التأكيد'
+        : `${r.bags_received ?? 0}/${r.bags_needed ?? 0}`,
     urgent: r.urgency === 'عاجل',
-    status: r.status === 'مكتمل' ? 'done' : 'active',
+    status:
+      r.status === 'مكتمل'
+        ? 'done'
+        : r.status === 'بانتظار التأكيد'
+          ? 'pending'
+          : 'active',
     rawStatus: r.status,
   });
+
+  const formatDonationStatus = (status) => {
+    if (status === 'مؤكد') return 'تم التبرع';
+    if (status === 'معلق') return 'بانتظار تأكيد المستشفى';
+    return status || '—';
+  };
 
   const getCaseCardLines = (c) => {
     if (role === 'patient') {
@@ -808,20 +853,74 @@ function DashboardApp() {
     }
   };
 
-  const hospitalConfirm = async (requestId, urgency) => {
-    const bags = window.prompt('كم عدد الأكياس المطلوبة؟', '1');
-    if (bags === null) return;
+  const openHospitalConfirm = (caseItem) => {
+    setConfirmForm({ urgency: 'عادي', bags_needed: 1 });
+    setConfirmTarget(caseItem);
+  };
+
+  const submitHospitalConfirm = async () => {
+    if (!confirmTarget) return;
+    setConfirmLoading(true);
     try {
-      const res = await fetch(`${API}/requests/${requestId}/confirm`, {
+      const res = await fetch(`${API}/requests/${confirmTarget.id}/confirm`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ urgency, bags_needed: Number(bags) || 1 }),
+        body: JSON.stringify({
+          urgency: confirmForm.urgency,
+          bags_needed: Number(confirmForm.bags_needed) || 1,
+        }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        setActionMsg(data.error || 'تعذر تأكيد الحالة');
+        return;
+      }
+      setConfirmTarget(null);
       setActionMsg(data.message || 'تم تأكيد الحالة');
+      loadHomeCases(selectedFilter);
+      fetchNotifications();
+    } catch {
+      setActionMsg('تعذر تنفيذ العملية');
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  const fetchHospitalAppointments = async () => {
+    if (!token || role !== 'hospital') return;
+    try {
+      const res = await fetch(`${API}/hospital/appointments`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setActionMsg(data.error || 'تعذر تحميل المواعيد');
+        setHospitalAppointments([]);
+        return;
+      }
+      setHospitalAppointments(Array.isArray(data) ? data : []);
+    } catch {
+      setActionMsg('تعذر الاتصال بالخادم');
+      setHospitalAppointments([]);
+    }
+  };
+
+  const confirmAppointment = async (donationId) => {
+    try {
+      const res = await fetch(`${API}/donations/${donationId}/confirm`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setActionMsg(data.error || 'تعذر التأكيد');
+        return;
+      }
+      setActionMsg(data.message || 'تم التبرع');
+      fetchHospitalAppointments();
       loadHomeCases(selectedFilter);
       fetchNotifications();
     } catch {
@@ -845,7 +944,7 @@ function DashboardApp() {
   };
 
   const fetchPendingHospitals = async () => {
-    if (!token || role !== 'hospital') return;
+    if (!token || role !== 'admin') return;
     try {
       const res = await fetch(`${API}/users/pending`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -864,7 +963,11 @@ function DashboardApp() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      setActionMsg(data.message || 'تم');
+      if (!res.ok) {
+        setActionMsg(data.error || 'تعذر تنفيذ العملية');
+        return;
+      }
+      setActionMsg(action === 'approve' ? 'تم التاكيد' : data.message || 'تم الإلغاء');
       fetchPendingHospitals();
       fetchNotifications();
     } catch {
@@ -898,14 +1001,13 @@ function DashboardApp() {
 
   const loadHospitals = async () => {
     try {
-      let list = [];
-      if (user?.city) {
-        const cityRes = await fetch(`${API}/hospitals?city=${encodeURIComponent(user.city)}`);
-        const cityData = await cityRes.json();
-        list = Array.isArray(cityData) ? cityData : [];
-      }
-      if (list.length === 0) {
-        const allRes = await fetch(`${API}/hospitals`);
+      let url = `${API}/hospitals/approved`;
+      if (user?.city) url += `?city=${encodeURIComponent(user.city)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      let list = Array.isArray(data) ? data : [];
+      if (list.length === 0 && user?.city) {
+        const allRes = await fetch(`${API}/hospitals/approved`);
         const allData = await allRes.json();
         list = Array.isArray(allData) ? allData : [];
       }
@@ -921,8 +1023,6 @@ function DashboardApp() {
       patient_name: '',
       hospital_id: '',
       blood_type: '+O',
-      bags_needed: 1,
-      urgency: 'عادي',
     });
     setShowRequestModal(true);
     loadHospitals();
@@ -955,8 +1055,6 @@ function DashboardApp() {
           patient_name: requestForm.patient_name.trim(),
           hospital_id: Number(requestForm.hospital_id),
           blood_type: requestForm.blood_type,
-          bags_needed: Number(requestForm.bags_needed) || 1,
-          urgency: requestForm.urgency,
         }),
       });
       const data = await res.json();
@@ -975,10 +1073,12 @@ function DashboardApp() {
   };
 
   useEffect(() => {
-    if (!['home', 'records', 'account'].includes(appSegment)) {
+    const allowed = ['home', 'records', 'account'];
+    if (role === 'hospital') allowed.push('appointments');
+    if (!allowed.includes(appSegment)) {
       navigate('/app/home', { replace: true });
     }
-  }, [appSegment, navigate]);
+  }, [appSegment, navigate, role]);
 
   useEffect(() => {
     if (role === 'patient' && token) loadHospitals();
@@ -1005,11 +1105,23 @@ function DashboardApp() {
   }, [token, activeTab]);
 
   useEffect(() => {
-    if (activeTab !== 'home' || !token) return;
-    loadHomeCases(selectedFilter);
-    if (role === 'donor') fetchDonorHistory();
-    if (role === 'hospital') fetchPendingHospitals();
+    if (!token) return;
+    if (activeTab === 'home') {
+      loadHomeCases(selectedFilter);
+      if (role === 'donor') fetchDonorHistory();
+      if (role === 'admin') fetchPendingHospitals();
+    }
+    if (activeTab === 'appointments' && role === 'hospital') {
+      fetchHospitalAppointments();
+      loadHomeCases(selectedFilter);
+    }
   }, [activeTab, role, token, user?.city]);
+
+  useEffect(() => {
+    if (!token || role !== 'hospital' || activeTab !== 'appointments') return;
+    const timer = setInterval(fetchHospitalAppointments, 15000);
+    return () => clearInterval(timer);
+  }, [activeTab, role, token]);
 
   const fetchProfile = async () => {
     if (!token) return;
@@ -1041,12 +1153,18 @@ function DashboardApp() {
         return 'مستشفى';
       case 'donor':
         return 'متبرع';
+      case 'admin':
+        return 'المشرف';
       default:
         return '';
     }
   };
 
   const filteredCases = cases;
+  const pendingCaseRequests =
+    role === 'hospital'
+      ? hospitalRequests.filter((c) => c.status === 'pending')
+      : [];
   const patientActiveCount = cases.filter((c) => c.status !== 'done').length;
   const hospitalActiveCount = hospitalRequests.filter((c) => c.status !== 'done').length;
   const hospitalDoneCount = hospitalRequests.filter((c) => c.status === 'done').length;
@@ -1076,6 +1194,7 @@ function DashboardApp() {
               {role === 'patient' && <Users />}
               {role === 'hospital' && <Building2 />}
               {role === 'donor' && <HandHeart />}
+              {role === 'admin' && <Shield />}
             </div>
             <div>
               <p>مرحباً بك</p>
@@ -1094,8 +1213,13 @@ function DashboardApp() {
           <NavLink to="/app/home" end className={({ isActive }) => (isActive ? 'active' : '')}>
             <Home /> الرئيسية
           </NavLink>
+          {role === 'hospital' && (
+            <NavLink to="/app/appointments" end className={({ isActive }) => (isActive ? 'active' : '')}>
+              <Calendar /> المواعيد
+            </NavLink>
+          )}
           <NavLink to="/app/records" end className={({ isActive }) => (isActive ? 'active' : '')}>
-            <ClipboardList /> سجلاتي
+            <ClipboardList /> {role === 'hospital' ? 'الحالات' : 'سجلاتي'}
           </NavLink>
           <NavLink to="/app/account" end className={({ isActive }) => (isActive ? 'active' : '')}>
             <User /> حسابي
@@ -1203,37 +1327,66 @@ function DashboardApp() {
                 </div>
               )}
 
-              {actionMsg && role === 'hospital' && (
-                <div className="successBox">{actionMsg}</div>
-              )}
-
-              {role === 'hospital' && pendingHospitals.length > 0 && (
-                <div className="pendingBox">
-                  <h3 className="sectionTitle">مستشفيات بانتظار الاعتماد</h3>
-                  <div className="cardsGrid">
-                    {pendingHospitals.map((h) => (
-                      <article key={h.id} className="caseCard">
-                        <div className="caseInfo">
-                          <h4>{h.name}</h4>
-                          <p className="caseMeta">
-                            <MapPin /> {h.city}
-                          </p>
-                          <p className="caseMeta">{h.email}</p>
-                        </div>
-                        <div className="hospitalActions">
-                          <button type="button" className="outlineBtn" onClick={() => reviewHospital(h.id, 'approve')}>
-                            <Check /> اعتماد
-                          </button>
-                          <button type="button" className="outlineBtn gray" onClick={() => reviewHospital(h.id, 'reject')}>
-                            <X /> رفض
-                          </button>
-                        </div>
-                      </article>
-                    ))}
+              {role === 'admin' && (
+                <div className="hero adminHero">
+                  <div>
+                    <h2>لوحة المشرف</h2>
+                    <p>مراجعة طلبات تسجيل المستشفيات واعتمادها أو إلغاؤها</p>
+                  </div>
+                  <div className="heroStats">
+                    <div className="heroStatBox">
+                      <b>{pendingHospitals.length}</b>
+                      <span>بانتظار التأكيد</span>
+                    </div>
                   </div>
                 </div>
               )}
 
+              {actionMsg && (role === 'admin' || role === 'hospital') && (
+                <div className="successBox">{actionMsg}</div>
+              )}
+
+              {role === 'admin' && (
+                <div className="pendingBox">
+                  <h3 className="sectionTitle">مستشفيات تحتاج تأكيد</h3>
+                  {pendingHospitals.length > 0 ? (
+                    <div className="cardsGrid">
+                      {pendingHospitals.map((h) => (
+                        <article key={h.id} className="caseCard">
+                          <div className="caseInfo">
+                            <h4>{h.name}</h4>
+                            <p className="caseMeta">
+                              <MapPin /> {h.city}
+                            </p>
+                            <p className="caseMeta">{h.email}</p>
+                          </div>
+                          <div className="hospitalActions">
+                            <button
+                              type="button"
+                              className="outlineBtn"
+                              onClick={() => reviewHospital(h.id, 'approve')}
+                            >
+                              <Check /> تأكيد
+                            </button>
+                            <button
+                              type="button"
+                              className="outlineBtn gray"
+                              onClick={() => reviewHospital(h.id, 'reject')}
+                            >
+                              <X /> إلغاء
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="adminEmptyHint">لا توجد مستشفيات بانتظار التأكيد حالياً.</p>
+                  )}
+                </div>
+              )}
+
+              {role !== 'admin' && (
+              <>
               <div className={`filterHead ${isFiltering ? 'filterHeadLoading' : ''}`}>
                 <Filter /> فصائل الدم
                 {isFiltering && <span className="filterLoadingLabel">جاري التحميل...</span>}
@@ -1257,9 +1410,12 @@ function DashboardApp() {
               ) : filteredCases.length > 0 ? (
                 <div className={`cardsGrid ${isFiltering ? 'loading-pulse' : ''}`}>
                   {filteredCases.map((c) => {
-                    const isUrgent = c.urgent && c.status !== 'done';
+                    const isPending = c.status === 'pending';
+                    const isUrgent = c.urgent && c.status === 'active';
                     const isDone = c.status === 'done';
-                    const cardClass = ['caseCard', isUrgent && 'urgent', isDone && 'done'].filter(Boolean).join(' ');
+                    const cardClass = ['caseCard', isUrgent && 'urgent', isDone && 'done', isPending && 'pending']
+                      .filter(Boolean)
+                      .join(' ');
                     const { title, meta, sub } = getCaseCardLines(c);
 
                     return (
@@ -1271,6 +1427,9 @@ function DashboardApp() {
                           <div className="caseInfo">
                             <h4>
                               {title}
+                              {isPending && (
+                                <span className="pendingPill">بانتظار تأكيد المستشفى</span>
+                              )}
                               {isUrgent && (
                                 <span className="urgentPill">
                                   <AlertCircle /> حالة عاجلة
@@ -1308,27 +1467,24 @@ function DashboardApp() {
                           )}
                           {!isDone && role === 'hospital' && (
                             <div className="hospitalActions">
-                              <button
-                                type="button"
-                                className="outlineBtn"
-                                onClick={() => hospitalConfirm(c.id, 'عادي')}
-                              >
-                                تأكيد عادي
-                              </button>
-                              <button
-                                type="button"
-                                className="donateBtn lg"
-                                onClick={() => hospitalConfirm(c.id, 'عاجل')}
-                              >
-                                تأكيد عاجل
-                              </button>
-                              <button
-                                type="button"
-                                className="outlineBtn gray"
-                                onClick={() => hospitalComplete(c.id)}
-                              >
-                                إغلاق الطلب
-                              </button>
+                              {isPending && (
+                                <button
+                                  type="button"
+                                  className="donateBtn lg"
+                                  onClick={() => openHospitalConfirm(c)}
+                                >
+                                  تأكيد الحالة
+                                </button>
+                              )}
+                              {!isPending && (
+                                <button
+                                  type="button"
+                                  className="outlineBtn gray"
+                                  onClick={() => hospitalComplete(c.id)}
+                                >
+                                  إغلاق الطلب
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1347,6 +1503,82 @@ function DashboardApp() {
                         : `لا توجد طلبات لفصيلة ${selectedFilter}`
                       : `لم يتم العثور على حالات مطابقة لفصيلة ${selectedFilter}`}
                   </p>
+                </div>
+              )}
+              </>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'appointments' && role === 'hospital' && (
+            <div className="tabPanel">
+              <h2 className="pageTitle">لوحة المستشفى</h2>
+
+              {pendingCaseRequests.length > 0 && (
+                <div className="pendingBox">
+                  <h3 className="sectionTitle">طلبات بانتظار تأكيد الحالة</h3>
+                  <p className="pageSub">حدّد عاجل/عادي وعدد الأكياس لتظهر للمتبرعين</p>
+                  <div className="cardsGrid">
+                    {pendingCaseRequests.map((c) => {
+                      const { title, meta } = getCaseCardLines(c);
+                      return (
+                        <article key={c.id} className="caseCard pending">
+                          <div className="caseInfo">
+                            <h4>{title}</h4>
+                            <p className="caseMeta">
+                              <MapPin /> {meta}
+                            </p>
+                            <span className="badge lg" dir="ltr">
+                              {c.type}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="donateBtn lg"
+                            onClick={() => openHospitalConfirm(c)}
+                          >
+                            تأكيد الحالة
+                          </button>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <h3 className="sectionTitle">مواعيد المتبرعين</h3>
+              <p className="pageSub">أكّد التبرع بعد حضور المتبرع — سيظهر عنده «تم التبرع»</p>
+              {hospitalAppointments.length === 0 ? (
+                <div className="recordsEmpty">
+                  <Calendar />
+                  <h3>لا توجد مواعيد معلّقة</h3>
+                  <p>بعد تأكيد الحالة وحجز متبرع موعداً، سيظهر هنا.</p>
+                </div>
+              ) : (
+                <div className="cardsGrid">
+                  {hospitalAppointments.map((a) => (
+                    <article key={a.id} className="caseCard">
+                      <div className="caseInfo">
+                        <h4>{a.donor_name}</h4>
+                        <p className="caseMeta">
+                          فصيلة المتبرع: <span dir="ltr">{apiBloodToUi(a.blood_type)}</span>
+                        </p>
+                        <p className="caseMeta">
+                          المريض: {a.patient_name} — فصيلة الطلب:{' '}
+                          <span dir="ltr">{apiBloodToUi(a.request_blood_type)}</span>
+                        </p>
+                        <p className="caseMeta">
+                          <MapPin /> {a.hospital_name} — {a.city}
+                        </p>
+                        <p className="caseMeta">
+                          الموعد: {a.appointment_date || '—'} {a.appointment_time || ''}
+                        </p>
+                      </div>
+                      <button type="button" className="donateBtn lg" onClick={() => confirmAppointment(a.id)}>
+                        <Check /> تأكيد التبرع
+                      </button>
+                    </article>
+                  ))}
                 </div>
               )}
             </div>
@@ -1492,7 +1724,7 @@ function DashboardApp() {
                           </p>
                         </div>
                       </div>
-                      <p className="caseMeta">{h.status}</p>
+                      <p className="caseMeta">{formatDonationStatus(h.status)}</p>
                     </article>
                   ))}
                 </div>
@@ -1573,7 +1805,9 @@ function DashboardApp() {
               onChange={(e) => setRequestForm((f) => ({ ...f, hospital_id: e.target.value }))}
             >
               <option value="">
-                {hospitals.length === 0 ? 'جاري تحميل المستشفيات...' : 'اختر المستشفى *'}
+                {hospitals.length === 0
+                  ? 'لا توجد مستشفيات معتمدة — انتظر اعتماد المشرف'
+                  : 'اختر المستشفى المعتمد *'}
               </option>
               {hospitals.map((h) => (
                 <option key={h.id} value={h.id}>
@@ -1582,7 +1816,10 @@ function DashboardApp() {
               ))}
             </select>
             {hospitals.length === 0 && (
-              <p className="modalHint">تأكد أن back-end يعمل. إن استمرت المشكلة، سجّل خروجاً وأعد الدخول بعد اختيار المدينة.</p>
+              <p className="modalHint">
+                تظهر هنا فقط المستشفيات التي سجّلت حساباً واعتمدها المشرف. سجّل المستشفى ثم اعتمده من لوحة
+                المشرف.
+              </p>
             )}
             <select
               className="inp"
@@ -1596,23 +1833,9 @@ function DashboardApp() {
                 </option>
               ))}
             </select>
-            <select
-              className="inp"
-              value={requestForm.urgency}
-              onChange={(e) => setRequestForm((f) => ({ ...f, urgency: e.target.value }))}
-            >
-              <option value="عادي">عادي</option>
-              <option value="عاجل">عاجل</option>
-            </select>
-            <input
-              className="inp"
-              type="number"
-              min={1}
-              max={10}
-              placeholder="عدد الأكياس المطلوبة"
-              value={requestForm.bags_needed}
-              onChange={(e) => setRequestForm((f) => ({ ...f, bags_needed: e.target.value }))}
-            />
+            <p className="modalHint">
+              سيراجع المستشفى طلبك ويحدد إن كانت الحالة عاجلة وعدد الأكياس قبل ظهورها للمتبرعين.
+            </p>
             <div className="modalBtns">
               <button
                 type="button"
@@ -1630,14 +1853,68 @@ function DashboardApp() {
         </div>
       )}
 
+      {confirmTarget && (
+        <div
+          className="modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-case-title"
+          onClick={() => !confirmLoading && setConfirmTarget(null)}
+        >
+          <div className="modalBox" onClick={(e) => e.stopPropagation()}>
+            <h3 id="confirm-case-title">تأكيد الحالة</h3>
+            <p className="modalHint">
+              {confirmTarget.patientName || 'مريض'} — فصيلة{' '}
+              <span dir="ltr">{confirmTarget.type}</span>
+            </p>
+            <select
+              className="inp"
+              value={confirmForm.urgency}
+              onChange={(e) => setConfirmForm((f) => ({ ...f, urgency: e.target.value }))}
+            >
+              <option value="عادي">عادي</option>
+              <option value="عاجل">عاجل</option>
+            </select>
+            <input
+              className="inp"
+              type="number"
+              min={1}
+              max={10}
+              placeholder="عدد الأكياس المطلوبة *"
+              value={confirmForm.bags_needed}
+              onChange={(e) => setConfirmForm((f) => ({ ...f, bags_needed: e.target.value }))}
+            />
+            <div className="modalBtns">
+              <button
+                type="button"
+                className="outlineBtn gray"
+                onClick={() => setConfirmTarget(null)}
+                disabled={confirmLoading}
+              >
+                إلغاء
+              </button>
+              <button type="button" className="authBtn" onClick={submitHospitalConfirm} disabled={confirmLoading}>
+                {confirmLoading ? 'جاري التأكيد...' : 'تأكيد ونشر للمتبرعين'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <nav className="bottomNav">
         <NavLink to="/app/home" end className={({ isActive }) => (isActive ? 'active' : '')}>
           <Home />
           <span>الرئيسية</span>
         </NavLink>
+        {role === 'hospital' && (
+          <NavLink to="/app/appointments" end className={({ isActive }) => (isActive ? 'active' : '')}>
+            <Calendar />
+            <span>المواعيد</span>
+          </NavLink>
+        )}
         <NavLink to="/app/records" end className={({ isActive }) => (isActive ? 'active' : '')}>
           <ClipboardList />
-          <span>سجلاتي</span>
+          <span>{role === 'hospital' ? 'الحالات' : 'سجلاتي'}</span>
         </NavLink>
         <NavLink to="/app/account" end className={({ isActive }) => (isActive ? 'active' : '')}>
           <User />
