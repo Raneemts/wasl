@@ -809,6 +809,16 @@ evidence/login.png
 
 ![Login](evidence/login.png)
 
+#### Donor Dashboard
+
+> Add screenshot here:
+
+```text
+evidence/Donor-Dashboard.png
+```
+
+![Donor Dashboard](evidence/Donor-Dashboard.png)
+
 #### Search and Filter Functionality
 
 > Add screenshot here:
