@@ -538,6 +538,9 @@ For easier navigation and evaluation, all required technical diagrams and suppor
 These files provide complete visual documentation for system structure, workflow, and database design as required for Stage 3.
 
 
+<!-- ===================== Stage 4 ===================== -->
+<!-- Sprint Planning & Development Execution -->
+
 # Stage 4 — Sprint Planning & Development Execution
 
 ## 1. Sprint Planning (Task 0)
@@ -547,6 +550,7 @@ These files provide complete visual documentation for system structure, workflow
 To manage development effectively, the team divided the MVP work into two main sprints.
 
 ### Sprint Duration
+
 - Each sprint duration: **2 weeks**
 
 ---
@@ -563,7 +567,7 @@ To manage development effectively, the team divided the MVP work into two main s
 | Setup backend project (Flask) | Must Have | Backend Developer |
 | Implement authentication APIs | Must Have | Backend Developer |
 | Define API endpoints | Must Have | Backend Developer |
-| Test APIs (Postman - basic) | Should Have | QA |
+| API Testing | Should Have | QA |
 
 ---
 
@@ -578,7 +582,7 @@ To manage development effectively, the team divided the MVP work into two main s
 | Design UI mockups | Must Have | UI/UX |
 | Build React structure | Must Have | Frontend |
 | Connect frontend to APIs | Should Have | Frontend + Backend |
-| Notification logic (Firebase) | Should Have | Backend |
+| Notification logic | Should Have | Backend |
 | Integration testing | Should Have | QA |
 
 ---
@@ -589,9 +593,9 @@ To manage development effectively, the team divided the MVP work into two main s
 
 The team used the **MoSCoW method**:
 
-- **Must Have:** Registration, requests, donations  
-- **Should Have:** Filters, notifications  
-- **Could Have:** Extra features  
+- **Must Have:** Registration, requests, donations
+- **Should Have:** Filters, notifications
+- **Could Have:** Extra features
 
 ---
 
@@ -603,13 +607,13 @@ During this stage, the team focused on **initial implementation and setup**.
 
 ### Work Completed
 
-- Flask backend project initialized  
-- React frontend initialized  
-- MySQL database schema designed  
-- Initial API routes created  
-- Authentication structure prepared  
-- UI mockups created  
-- API testing performed using Postman  
+- Flask backend project initialized
+- React frontend initialized
+- MySQL database schema designed
+- Initial API routes created
+- Authentication structure prepared
+- UI mockups created
+- Manual functionality testing performed
 
 ---
 
@@ -617,9 +621,9 @@ During this stage, the team focused on **initial implementation and setup**.
 
 <!-- Git workflow -->
 
-- GitHub repository created  
-- Feature branching strategy applied  
-- Pull request workflow defined  
+- GitHub repository created
+- Feature branching strategy applied
+- Pull request workflow defined
 
 ---
 
@@ -627,9 +631,9 @@ During this stage, the team focused on **initial implementation and setup**.
 
 <!-- Testing plan -->
 
-- Manual testing strategy defined  
-- API testing using Postman  
-- Integration testing plan prepared  
+- Manual testing strategy defined
+- Manual functionality testing
+- Integration testing plan prepared
 
 ---
 
@@ -640,7 +644,7 @@ During this stage, the team focused on **initial implementation and setup**.
 Due to time constraints:
 
 - Full implementation was **partially completed**
-- However, **core setup + architecture + planning were successfully achieved**
+- However, **core setup, architecture, and planning were successfully achieved**
 
 ---
 
@@ -648,24 +652,26 @@ Due to time constraints:
 
 <!-- Tracking progress -->
 
-To track progress:
-
-- Regular team check-ins were conducted  
-- Tasks were monitored using tools (e.g., Trello)  
+To monitor project progress, the team conducted regular meetings and reviewed development tasks throughout the sprint.
 
 ### Metrics Used
 
-- Task completion rate  
-- Progress vs planned tasks  
-- Bug tracking (basic)
-
----
+- Completion of planned features
+- Progress against sprint objectives
+- Resolution of identified issues
+- Team feedback and meeting discussions
 
 ### Adjustments
 
-- Tasks were reassigned when needed  
-- Sprint goals were adjusted  
-- Focus shifted to core setup  
+Based on meeting feedback, several improvements and feature changes were identified:
+
+- Improved email validation in registration
+- Replaced region input with a dropdown list
+- Added email notification requirements
+- Enhanced UI/UX design and responsiveness
+- Improved filtering experience with loading animations
+- Added hospital verification requirements
+- Clarified donation restrictions and user guidance
 
 ---
 
@@ -673,30 +679,83 @@ To track progress:
 
 <!-- Review + reflection -->
 
-At the end of the sprint:
+### Sprint Reviews
 
-### Review
+#### Meeting 1
 
-- Demonstrated:
-  - Backend setup  
-  - Database design  
-  - API structure  
+Features and improvements discussed:
+
+- Add hospitals to the system
+- Implement donor points and rewards
+- Automatically close fulfilled requests
+- Add notification functionality
+
+#### Meeting 2
+
+No formal meeting notes were recorded.
+
+#### Meeting 3
+
+Requested improvements:
+
+- Improve email validation in Sign Up
+- Replace region text field with a dropdown list
+- Display requests based on hospital city
+- Send email notifications when hospitals approve requests
+- Improve overall UI design
+
+#### Meeting 4
+
+Development feedback and enhancements:
+
+- Keep users logged in after backend integration
+- Expand page layouts
+- Move navigation tabs to a side menu
+- Improve text readability using black font color
+- Add loading animations during filtering
+- Enable email notifications
+- Implement routing and footer
+- Hide patient names and display hospital and location only
+- Store authentication tokens
+- Clarify donation limitations for users
+- Improve UI/UX clarity
+- Design a project logo
+- Improve mobile responsiveness
+- Disable blood type editing after registration
+
+#### Meeting 5
+
+Additional requirements:
+
+- Improve labels in patient request forms
+- Send notifications after donation confirmation
+- Perform Gorilla Testing
+- Add an Admin page for hospital verification
 
 ---
 
-### Retrospective
+### Sprint Retrospective
 
-**What went well:**
-- Clear planning and roles  
-- Good system design  
+#### What Went Well
 
-**Challenges:**
-- Limited time  
-- Integration complexity  
+- Effective collaboration among team members
+- Successful frontend and backend initialization
+- Database design completed successfully
+- Continuous feedback helped refine requirements
 
-**Improvements:**
-- Better time management  
-- Start implementation earlier  
+#### Challenges
+
+- Limited development time
+- Frontend-backend integration complexity
+- Additional effort required for notification features
+- Several UI improvements identified during development
+
+#### Improvements for Future Iterations
+
+- Begin implementation earlier
+- Allocate more time for integration testing
+- Finalize UI requirements before development
+- Increase testing coverage before deployment
 
 ---
 
@@ -706,16 +765,75 @@ At the end of the sprint:
 
 ### Testing Performed
 
-- API testing using Postman  
-- Basic integration validation  
+The system was tested manually throughout development.
 
----
+Testing included:
+
+- Registration functionality
+- Login functionality
+- Search and filtering features
+- User interface validation
+- Database record verification
+
+### Testing Evidence & Results
+
+The following screenshots provide evidence of testing and implementation.
+
+#### Home Page
+
+> Add screenshot here:
+
+```text
+evidence/homepage.png
+```
+
+![Home Page](evidence/homepage.png)
+
+#### Registration Page
+
+> Add screenshot here:
+
+```text
+evidence/register.png
+```
+
+![Registration](evidence/register.png)
+
+#### Login Page
+
+> Add screenshot here:
+
+```text
+evidence/login.png
+```
+
+![Login](evidence/login.png)
+
+#### Search and Filter Functionality
+
+> Add screenshot here:
+
+```text
+evidence/filter.png
+```
+
+![Search and Filter](evidence/filter.png)
+
+#### Database Verification
+
+> Add screenshot here:
+
+```text
+evidence/database.png
+```
+
+![Database Records](evidence/database.png)
 
 ### Not Fully Completed
 
-- Full frontend-backend integration  
-- Complete database connection  
-- Firebase integration  
+- Full production deployment
+- Advanced automated testing
+- Complete notification integration
 
 ---
 
@@ -723,13 +841,13 @@ At the end of the sprint:
 
 <!-- Final outputs -->
 
-- ✅ Sprint Planning Documentation  
-- ✅ GitHub Repository  
-- ✅ Database Schema (ERD)  
-- ✅ API Design  
-- ✅ Frontend & Backend Setup  
-- ✅ SCM Strategy  
-- ✅ QA Plan  
+- ✅ Sprint Planning Documentation
+- ✅ GitHub Repository
+- ✅ Database Schema (ERD)
+- ✅ API Design
+- ✅ Frontend & Backend Setup
+- ✅ SCM Strategy
+- ✅ QA Plan
 
 ---
 
@@ -739,11 +857,41 @@ At the end of the sprint:
 
 The project successfully achieved:
 
-- Agile sprint planning  
-- Clear task distribution  
-- System architecture design  
-- Backend & frontend initialization  
-- Database design  
-- Development workflow (SCM + QA)
+- Agile sprint planning
+- Clear task distribution
+- System architecture design
+- Backend and frontend initialization
+- Database design
+- Development workflow (SCM and QA)
 
-Although the MVP was not fully implemented, the team demonstrated **strong planning and technical foundation**.
+Although the MVP was not fully implemented, the team demonstrated a strong planning process and technical foundation.
+
+---
+
+## 8. Project Resources
+
+### Sprint Planning
+
+Sprint planning activities are documented in Section 1 of this README.
+
+### Source Repository
+
+- [GitHub Repository](https://github.com/Raneemts/wasl)
+
+### Bug Tracking
+
+Issues and bugs were identified during meetings, development activities, and testing sessions, then resolved through collaborative development and GitHub commits.
+
+### Testing Evidence & Results
+
+Testing screenshots are available in the `evidence` folder.
+
+### Production Environment
+
+The application currently runs in a local development environment using:
+
+- React (Frontend)
+- Flask (Backend)
+- MySQL (Database)
+
+The system has not yet been deployed to a public production server.
