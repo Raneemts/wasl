@@ -665,7 +665,7 @@ export default function App() {
         <Route path="/" element={token ? <Navigate to="/app/home" replace /> : <LandingPage />} />
         <Route path="/login/:role" element={<AuthPage mode="login" />} />
         <Route path="/signup/:role" element={<AuthPage mode="signup" />} />
-        <Route path="/app/*" element={token ? <DashboardApp /> : <Navigate to="/login/donor" replace />} />
+        <Route path="/app/*" element={token ? <DashboardApp /> : <Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthContext.Provider>
@@ -769,7 +769,7 @@ function DashboardApp() {
     setProfile(null);
     setHistory([]);
     setCases([]);
-    navigate(`/login/${role || 'donor'}`, { replace: true });
+    navigate('/', { replace: true });
   };
 
   const mapRequestToCase = (r) => ({
