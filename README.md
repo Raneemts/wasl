@@ -541,7 +541,7 @@ For easier navigation and evaluation, all required technical diagrams and suppor
 
 ### Entity Relationship Diagram (ERD)
 
-![ERD](./wasl_erd.png)
+![ERD](./wasl_erd.jpeg)
 
 ### Sequence Diagram 1 — Patient Family Posts Request
 
@@ -553,7 +553,7 @@ For easier navigation and evaluation, all required technical diagrams and suppor
 
 ### Sequence Diagram 3 — Hospital Confirms Donation
 
-![Sequence Diagram 3](./sequence_diagram3.jpeg)
+![Sequence Diagram 3](./sequence%20diagram3.jpeg)
 
 These files provide complete visual documentation for system structure, workflow, and database design as required for Stage 3.
 
