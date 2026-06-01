@@ -220,28 +220,35 @@ body,
 
 /* ── AUTH ── */
 .authPage {
-  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: max(20px, env(safe-area-inset-top)) 20px max(16px, env(safe-area-inset-bottom));
   background:
     radial-gradient(circle at 20% 25%, rgba(255, 45, 85, 0.18), transparent 25%),
     radial-gradient(circle at 85% 65%, rgba(255, 255, 255, 0.08), transparent 22%),
     linear-gradient(135deg, #2f0308 0%, #51090f 45%, #200006 100%);
-  position: relative;
-  padding: 20px;
 }
 
 .authCard {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: calc(100% - 40px);
+  position: relative;
+  width: 100%;
   max-width: 400px;
-  max-height: calc(100vh - 40px);
-  overflow-y: auto;
+  flex-shrink: 0;
+  margin: auto 0;
   background: white;
   border-radius: 20px;
-  padding: 24px;
+  padding: 22px 22px 18px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.authCard .formField {
+  margin-bottom: 12px;
 }
 
 select.inp {
@@ -254,12 +261,13 @@ select.inp {
 }
 
 .authPage .footer {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 40px);
+  position: static;
+  transform: none;
+  width: 100%;
   max-width: 400px;
+  flex-shrink: 0;
+  padding: 8px 12px 4px;
+  margin-top: 0;
 }
 
 .backBtn {
@@ -340,6 +348,7 @@ select.inp {
   cursor: pointer;
   font-family: 'Cairo', Tahoma, Arial, sans-serif;
   transition: 0.2s;
+  margin-top: 4px;
 }
 
 .authBtn:hover:not(:disabled) {
@@ -353,15 +362,19 @@ select.inp {
 
 .switchTxt {
   text-align: center;
-  margin-top: 14px;
+  margin-top: 16px;
+  margin-bottom: 0;
+  padding-bottom: 4px;
   font-size: 14px;
   color: #7a7080;
+  position: relative;
+  z-index: 1;
 }
 
 .switchTxt .switchLink {
   background: none;
   border: none;
-  padding: 0;
+  padding: 6px 4px;
   margin: 0;
   font: inherit;
   font-size: inherit;
@@ -369,6 +382,7 @@ select.inp {
   font-weight: bold;
   cursor: pointer;
   text-decoration: underline;
+  touch-action: manipulation;
 }
 
 /* ── APP SHELL ── */
@@ -1555,7 +1569,7 @@ select.inp {
 }
 
 .authFooter {
-  margin-top: auto;
+  margin-top: 0;
 }
 
 .modalSub {
@@ -1568,6 +1582,22 @@ select.inp {
   color: #a0001c;
   font-size: 13px;
   margin: -4px 0 8px;
+}
+
+.formField {
+  margin-bottom: 14px;
+}
+
+.formField label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #3a3040;
+  margin-bottom: 8px;
+}
+
+.formField .inp {
+  margin-bottom: 0;
 }
 
 .tabPanel {
@@ -2362,11 +2392,6 @@ select.inp {
     font-size: 11px;
   }
 
-  .authPage {
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-  }
 }
 
 .mobileFooterNote {

@@ -423,67 +423,88 @@ function AuthPanel({ initialRole, authMode, setAuthMode, onSuccess }) {
       {error && <div className="errBox">{error}</div>}
 
       {!isLogin && (
-        <input
-          className="inp"
-          placeholder="الاسم الكامل"
-          value={form.name}
-          onChange={(e) => set('name', e.target.value)}
-        />
+        <div className="formField">
+          <label htmlFor="signup-name">الاسم الكامل</label>
+          <input
+            id="signup-name"
+            className="inp"
+            value={form.name}
+            onChange={(e) => set('name', e.target.value)}
+          />
+        </div>
       )}
 
-      <input
-        className="inp"
-        type="email"
-        placeholder="البريد الإلكتروني *"
-        value={form.email}
-        onChange={(e) => set('email', e.target.value)}
-        dir="ltr"
-      />
+      <div className="formField">
+        <label htmlFor="auth-email">البريد الإلكتروني *</label>
+        <input
+          id="auth-email"
+          className="inp"
+          type="email"
+          value={form.email}
+          onChange={(e) => set('email', e.target.value)}
+          dir="ltr"
+        />
+      </div>
 
-      <input
-        className="inp"
-        type="password"
-        placeholder="كلمة المرور *"
-        value={form.password}
-        onChange={(e) => set('password', e.target.value)}
-      />
+      <div className="formField">
+        <label htmlFor="auth-password">كلمة المرور *</label>
+        <input
+          id="auth-password"
+          className="inp"
+          type="password"
+          value={form.password}
+          onChange={(e) => set('password', e.target.value)}
+        />
+      </div>
 
       {!isLogin && (
         <>
-          <select className="inp" value={form.role} onChange={(e) => set('role', e.target.value)}>
-            <option value="donor">متبرع</option>
-            <option value="patient">قريب المريض</option>
-            <option value="hospital">مستشفى</option>
-          </select>
+          <div className="formField">
+            <label htmlFor="signup-role">نوع الحساب</label>
+            <select id="signup-role" className="inp" value={form.role} onChange={(e) => set('role', e.target.value)}>
+              <option value="donor">متبرع</option>
+              <option value="patient">قريب المريض</option>
+              <option value="hospital">مستشفى</option>
+            </select>
+          </div>
 
-          <select
-            className="inp"
-            value={form.city}
-            onChange={(e) => {
-              set('city', e.target.value);
-              set('region', e.target.value);
-            }}
-          >
-            <option value="">— اختر المدينة —</option>
-            {REGIONS.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-
-          {form.role === 'donor' && (
+          <div className="formField">
+            <label htmlFor="signup-city">المدينة</label>
             <select
+              id="signup-city"
               className="inp"
-              value={form.blood_type}
-              onChange={(e) => set('blood_type', e.target.value)}
+              value={form.city}
+              onChange={(e) => {
+                set('city', e.target.value);
+                set('region', e.target.value);
+              }}
             >
-              {SIGNUP_BLOOD_TYPES.map((b) => (
-                <option key={b} value={b}>
-                  {b}
+              <option value="">— اختر المدينة —</option>
+              {REGIONS.map((r) => (
+                <option key={r} value={r}>
+                  {r}
                 </option>
               ))}
             </select>
+          </div>
+
+          {form.role === 'donor' && (
+            <div className="formField">
+              <label htmlFor="signup-blood">فصيلة الدم</label>
+              <select
+                id="signup-blood"
+                className="inp"
+                value={form.blood_type}
+                onChange={(e) => set('blood_type', e.target.value)}
+                dir="ltr"
+              >
+                {SIGNUP_BLOOD_TYPES.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
         </>
       )}
@@ -1793,46 +1814,57 @@ function DashboardApp() {
           <div className="modalBox" onClick={(e) => e.stopPropagation()}>
             <h3 id="new-request-title">طلب تبرع جديد</h3>
             {requestError && <div className="errBox">{requestError}</div>}
-            <input
-              className="inp"
-              placeholder="اسم المريض *"
-              value={requestForm.patient_name}
-              onChange={(e) => setRequestForm((f) => ({ ...f, patient_name: e.target.value }))}
-            />
-            <select
-              className="inp"
-              value={requestForm.hospital_id}
-              onChange={(e) => setRequestForm((f) => ({ ...f, hospital_id: e.target.value }))}
-            >
-              <option value="">
-                {hospitals.length === 0
-                  ? 'لا توجد مستشفيات معتمدة — انتظر اعتماد المشرف'
-                  : 'اختر المستشفى المعتمد *'}
-              </option>
-              {hospitals.map((h) => (
-                <option key={h.id} value={h.id}>
-                  {h.name} — {h.city}
+            <div className="formField">
+              <label htmlFor="request-patient">اسم المريض</label>
+              <input
+                id="request-patient"
+                className="inp"
+                value={requestForm.patient_name}
+                onChange={(e) => setRequestForm((f) => ({ ...f, patient_name: e.target.value }))}
+              />
+            </div>
+            <div className="formField">
+              <label htmlFor="request-hospital">المستشفى </label>
+              <select
+                id="request-hospital"
+                className="inp"
+                value={requestForm.hospital_id}
+                onChange={(e) => setRequestForm((f) => ({ ...f, hospital_id: e.target.value }))}
+              >
+                <option value="">
+                  {hospitals.length === 0
+                    ? 'لا توجد مستشفيات معتمدة — انتظر اعتماد المشرف'
+                    : '— اختر المستشفى —'}
                 </option>
-              ))}
-            </select>
+                {hospitals.map((h) => (
+                  <option key={h.id} value={h.id}>
+                    {h.name} — {h.city}
+                  </option>
+                ))}
+              </select>
+            </div>
             {hospitals.length === 0 && (
               <p className="modalHint">
                 تظهر هنا فقط المستشفيات التي سجّلت حساباً واعتمدها المشرف. سجّل المستشفى ثم اعتمده من لوحة
                 المشرف.
               </p>
             )}
-            <select
-              className="inp"
-              value={requestForm.blood_type}
-              onChange={(e) => setRequestForm((f) => ({ ...f, blood_type: e.target.value }))}
-              dir="ltr"
-            >
-              {SIGNUP_BLOOD_TYPES.map((bt) => (
-                <option key={bt} value={bt}>
-                  {apiBloodToUi(bt)}
-                </option>
-              ))}
-            </select>
+            <div className="formField">
+              <label htmlFor="request-blood">فصيلة الدم</label>
+              <select
+                id="request-blood"
+                className="inp"
+                value={requestForm.blood_type}
+                onChange={(e) => setRequestForm((f) => ({ ...f, blood_type: e.target.value }))}
+                dir="ltr"
+              >
+                {SIGNUP_BLOOD_TYPES.map((bt) => (
+                  <option key={bt} value={bt}>
+                    {apiBloodToUi(bt)}
+                  </option>
+                ))}
+              </select>
+            </div>
             <p className="modalHint">
               سيراجع المستشفى طلبك ويحدد إن كانت الحالة عاجلة وعدد الأكياس قبل ظهورها للمتبرعين.
             </p>
@@ -1867,23 +1899,30 @@ function DashboardApp() {
               {confirmTarget.patientName || 'مريض'} — فصيلة{' '}
               <span dir="ltr">{confirmTarget.type}</span>
             </p>
-            <select
-              className="inp"
-              value={confirmForm.urgency}
-              onChange={(e) => setConfirmForm((f) => ({ ...f, urgency: e.target.value }))}
-            >
-              <option value="عادي">عادي</option>
-              <option value="عاجل">عاجل</option>
-            </select>
-            <input
-              className="inp"
-              type="number"
-              min={1}
-              max={10}
-              placeholder="عدد الأكياس المطلوبة *"
-              value={confirmForm.bags_needed}
-              onChange={(e) => setConfirmForm((f) => ({ ...f, bags_needed: e.target.value }))}
-            />
+            <div className="formField">
+              <label htmlFor="confirm-urgency">الحالة</label>
+              <select
+                id="confirm-urgency"
+                className="inp"
+                value={confirmForm.urgency}
+                onChange={(e) => setConfirmForm((f) => ({ ...f, urgency: e.target.value }))}
+              >
+                <option value="عادي">عادي</option>
+                <option value="عاجل">عاجل</option>
+              </select>
+            </div>
+            <div className="formField">
+              <label htmlFor="confirm-bags">عدد الأكياس المطلوبة</label>
+              <input
+                id="confirm-bags"
+                className="inp"
+                type="number"
+                min={1}
+                max={10}
+                value={confirmForm.bags_needed}
+                onChange={(e) => setConfirmForm((f) => ({ ...f, bags_needed: e.target.value }))}
+              />
+            </div>
             <div className="modalBtns">
               <button
                 type="button"
