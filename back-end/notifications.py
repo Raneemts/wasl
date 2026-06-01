@@ -157,3 +157,24 @@ def notify_matching_donors(cur, request_id):
             f"سجّل دخولك في وصل لحجز موعد التبرع."
         )
         notify_user(cur, donor_id, message, subject=subject)
+
+
+def notify_donors_case_closed(cur, request_id, patient_name, skip_user_ids=None):
+    """Notify donors who were alerted about this request that it is closed."""
+    skip = set(skip_user_ids or [])
+    label = (patient_name or "المريض").strip()
+    message = f"تم إغلاق حالة {label} — لم يعد الطلب متاحاً للتبرع"
+    cur.execute(
+        """
+        SELECT DISTINCT n.user_id
+        FROM notifications n
+        JOIN users u ON u.id = n.user_id
+        WHERE u.role = 'donor' AND n.message LIKE %s
+        """,
+        (f"%#{request_id}%",),
+    )
+    for row in cur.fetchall():
+        uid = row["user_id"]
+        if uid in skip:
+            continue
+        notify_user(cur, uid, message, subject="تم إغلاق الحالة — وصل")

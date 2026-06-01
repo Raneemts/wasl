@@ -140,6 +140,10 @@ function getNotificationMeta(message) {
   if (m.includes('رفض')) {
     return { kind: 'alert', label: 'تنبيه', Icon: AlertCircle };
   }
+  if (m.includes('تم إغلاق حالة')) {
+    const short = m.split('—')[0].trim();
+    return { kind: 'closed', label: short || 'إغلاق حالة', Icon: CheckCircle2 };
+  }
   return { kind: 'default', label: 'إشعار', Icon: Bell };
 }
 
@@ -735,6 +739,8 @@ function DashboardApp() {
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [confirmForm, setConfirmForm] = useState({ urgency: 'عادي', bags_needed: 1 });
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [closeTarget, setCloseTarget] = useState(null);
+  const [closeLoading, setCloseLoading] = useState(false);
   const latestNotif = notifications[0] ?? null;
   const showLatestBanner = latestNotif && latestNotif.id !== dismissedBannerId;
 
@@ -758,6 +764,7 @@ function DashboardApp() {
         ]);
         const data = await res.json();
         let list = Array.isArray(data) ? data.map(mapRequestToCase) : [];
+        list = list.filter((c) => c.rawStatus !== 'ملغي');
         if (filterValue !== 'الكل') list = list.filter((c) => c.type === filterValue);
         setCases(list);
       } else if (role === 'hospital') {
@@ -767,6 +774,7 @@ function DashboardApp() {
         ]);
         const data = await res.json();
         let list = Array.isArray(data) ? data.map(mapRequestToCase) : [];
+        list = list.filter((c) => c.rawStatus !== 'ملغي');
         if (filterValue !== 'الكل') list = list.filter((c) => c.type === filterValue);
         setHospitalRequests(list);
         setCases(list);
@@ -949,18 +957,30 @@ function DashboardApp() {
     }
   };
 
-  const hospitalComplete = async (requestId) => {
+  const submitHospitalClose = async () => {
+    if (!closeTarget) return;
+    setCloseLoading(true);
     try {
-      const res = await fetch(`${API}/requests/${requestId}/complete`, {
+      const res = await fetch(`${API}/requests/${closeTarget.id}/close`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      setActionMsg(data.message || 'تم');
+      if (!res.ok) {
+        setActionMsg(data.error || 'تعذر إغلاق الحالة');
+        return;
+      }
+      setCloseTarget(null);
+      setActionMsg(
+        data.message ||
+          `تم إغلاق حالة ${closeTarget.patientName || 'المريض'}`,
+      );
       loadHomeCases(selectedFilter);
       fetchNotifications();
     } catch {
       setActionMsg('تعذر تنفيذ العملية');
+    } finally {
+      setCloseLoading(false);
     }
   };
 
@@ -1134,7 +1154,6 @@ function DashboardApp() {
     }
     if (activeTab === 'appointments' && role === 'hospital') {
       fetchHospitalAppointments();
-      loadHomeCases(selectedFilter);
     }
   }, [activeTab, role, token, user?.city]);
 
@@ -1164,6 +1183,7 @@ function DashboardApp() {
     if (activeTab !== 'records' || !token) return;
     if (role === 'donor') fetchDonorHistory();
     if (role === 'patient') fetchPatientCases();
+    if (role === 'hospital') fetchHospitalRequests();
   }, [activeTab, token, role]);
 
   const getRoleName = (r) => {
@@ -1486,7 +1506,7 @@ function DashboardApp() {
                               أريد التبرع
                             </button>
                           )}
-                          {!isDone && role === 'hospital' && (
+                          {role === 'hospital' && (
                             <div className="hospitalActions">
                               {isPending && (
                                 <button
@@ -1501,7 +1521,7 @@ function DashboardApp() {
                                 <button
                                   type="button"
                                   className="outlineBtn gray"
-                                  onClick={() => hospitalComplete(c.id)}
+                                  onClick={() => setCloseTarget(c)}
                                 >
                                   إغلاق الطلب
                                 </button>
@@ -1533,42 +1553,10 @@ function DashboardApp() {
 
           {activeTab === 'appointments' && role === 'hospital' && (
             <div className="tabPanel">
-              <h2 className="pageTitle">لوحة المستشفى</h2>
+              <h2 className="pageTitle">مواعيد المتبرعين</h2>
+              <p className="pageSub pageSubTop">أكّد التبرع بعد حضور المتبرع — سيظهر عنده «تم التبرع»</p>
 
-              {pendingCaseRequests.length > 0 && (
-                <div className="pendingBox">
-                  <h3 className="sectionTitle">طلبات بانتظار تأكيد الحالة</h3>
-                  <p className="pageSub">حدّد عاجل/عادي وعدد الأكياس لتظهر للمتبرعين</p>
-                  <div className="cardsGrid">
-                    {pendingCaseRequests.map((c) => {
-                      const { title, meta } = getCaseCardLines(c);
-                      return (
-                        <article key={c.id} className="caseCard pending">
-                          <div className="caseInfo">
-                            <h4>{title}</h4>
-                            <p className="caseMeta">
-                              <MapPin /> {meta}
-                            </p>
-                            <span className="badge lg" dir="ltr">
-                              {c.type}
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            className="donateBtn lg"
-                            onClick={() => openHospitalConfirm(c)}
-                          >
-                            تأكيد الحالة
-                          </button>
-                        </article>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <h3 className="sectionTitle">مواعيد المتبرعين</h3>
-              <p className="pageSub">أكّد التبرع بعد حضور المتبرع — سيظهر عنده «تم التبرع»</p>
+              <h3 className="sectionTitle sectionTitleSpaced">المواعيد المعلّقة</h3>
               {hospitalAppointments.length === 0 ? (
                 <div className="recordsEmpty">
                   <Calendar />
@@ -1693,8 +1681,63 @@ function DashboardApp() {
 
           {activeTab === 'records' && (
             <div className="tabPanel">
-              <h2 className="pageTitle">سجلاتي</h2>
-              {role === 'patient' ? (
+              <h2 className="pageTitle">{role === 'hospital' ? 'الحالات' : 'سجلاتي'}</h2>
+              {role === 'hospital' ? (
+                <section className="pendingSection">
+                  <header className="pendingSectionHead">
+                    <div className="pendingSectionTitleRow">
+                      <h3 className="sectionTitle sectionTitleFlush">طلبات بانتظار تأكيد الحالة</h3>
+                      {pendingCaseRequests.length > 0 && (
+                        <span className="pendingCount">{pendingCaseRequests.length}</span>
+                      )}
+                    </div>
+                    <p className="pageSub pageSubFlush">
+                      حدّد عاجل/عادي وعدد الأكياس لتظهر للمتبرعين في الصفحة الرئيسية
+                    </p>
+                  </header>
+
+                  {pendingCaseRequests.length === 0 ? (
+                    <div className="recordsEmpty">
+                      <ClipboardList />
+                      <h3>لا توجد طلبات بانتظار التأكيد</h3>
+                      <p>عندما ينشئ قريب المريض طلباً جديداً سيظهر هنا للمراجعة.</p>
+                    </div>
+                  ) : (
+                    <div className="pendingCasesList">
+                      {pendingCaseRequests.map((c) => {
+                        const { title, meta } = getCaseCardLines(c);
+                        return (
+                          <article key={c.id} className="caseCard pending pendingCaseRow">
+                            <div className="caseCardTop">
+                              <span className="badge lg" dir="ltr">
+                                {c.type}
+                              </span>
+                              <div className="caseInfo">
+                                <h4>
+                                  {title}
+                                  <span className="pendingPill">بانتظار التأكيد</span>
+                                </h4>
+                                <p className="caseMeta">
+                                  <MapPin /> {meta}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="caseCardFoot pendingCaseFoot">
+                              <button
+                                type="button"
+                                className="donateBtn lg pendingConfirmBtn"
+                                onClick={() => openHospitalConfirm(c)}
+                              >
+                                تأكيد الحالة
+                              </button>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              ) : role === 'patient' ? (
                 cases.length === 0 ? (
                   <div className="recordsEmpty">
                     <ClipboardList />
@@ -1879,6 +1922,38 @@ function DashboardApp() {
               </button>
               <button type="button" className="authBtn" onClick={submitNewRequest} disabled={requestLoading}>
                 {requestLoading ? 'جاري الإرسال...' : 'إرسال الطلب'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {closeTarget && (
+        <div
+          className="modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="close-case-title"
+          onClick={() => !closeLoading && setCloseTarget(null)}
+        >
+          <div className="modalBox" onClick={(e) => e.stopPropagation()}>
+            <h3 id="close-case-title">إغلاق الحالة</h3>
+            <p className="modalSub">
+              {closeTarget.patientName || 'مريض'} — فصيلة{' '}
+              <span dir="ltr">{closeTarget.type}</span>
+            </p>
+            <p className="modalHint">هل أنت متأكد؟ لن تظهر الحالة للمتبرعين ولا لقريب المريض بعد الإغلاق.</p>
+            <div className="modalBtns">
+              <button
+                type="button"
+                className="outlineBtn gray"
+                onClick={() => setCloseTarget(null)}
+                disabled={closeLoading}
+              >
+                لا
+              </button>
+              <button type="button" className="authBtn" onClick={submitHospitalClose} disabled={closeLoading}>
+                {closeLoading ? 'جاري الإغلاق...' : 'نعم، إغلاق'}
               </button>
             </div>
           </div>

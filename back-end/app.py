@@ -9,7 +9,7 @@ import mysql.connector
 import os
 from datetime import timedelta
 from pathlib import Path
-from notifications import notify_user, notify_matching_donors, strip_emojis
+from notifications import notify_user, notify_matching_donors, notify_donors_case_closed, strip_emojis
 
 
 def _load_env_file():
@@ -415,7 +415,7 @@ def my_requests():
         SELECT br.*, h.name AS hospital_name, h.city
         FROM blood_requests br
         JOIN hospitals h ON br.hospital_id = h.id
-        WHERE br.user_id = %s
+        WHERE br.user_id = %s AND br.status != 'ملغي'
         ORDER BY br.created_at DESC
     """, (uid,))
     rows = cur.fetchall()
@@ -521,7 +521,7 @@ def hospital_requests():
         FROM blood_requests br
         JOIN hospitals h ON br.hospital_id = h.id
         JOIN users u ON br.user_id = u.id
-        WHERE {scope}
+        WHERE {scope} AND br.status != 'ملغي'
         ORDER BY
           CASE br.status WHEN 'بانتظار التأكيد' THEN 0 ELSE 1 END,
           br.urgency DESC,
@@ -655,17 +655,55 @@ def confirm_request(rid):
     return jsonify({"message": "تم تأكيد الحالة"})
 
 
-@app.post("/api/requests/<int:rid>/complete")
+@app.post("/api/requests/<int:rid>/close")
 @jwt_required()
-def complete_request(rid):
+def close_request(rid):
+    uid = get_jwt_identity()
+    scope, vals = _hospital_scope_sql(uid)
+    if scope is None:
+        return jsonify({"error": "غير مصرح"}), 403
+
     conn = db(); cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT user_id FROM blood_requests WHERE id=%s", (rid,))
+    cur.execute(f"""
+        SELECT br.user_id, br.status, br.patient_name
+        FROM blood_requests br
+        JOIN hospitals h ON br.hospital_id = h.id
+        WHERE br.id=%s AND {scope} AND br.status != 'ملغي'
+    """, (rid, *vals))
     req = cur.fetchone()
-    cur.execute("UPDATE blood_requests SET status='مكتمل' WHERE id=%s", (rid,))
-    if req:
-        notify_user(cur, req["user_id"], "تم اكتمال طلبك — شكراً لثقتك بوصل")
+    if not req:
+        cur.close(); conn.close()
+        return jsonify({"error": "الحالة غير موجودة أو أُغلقت مسبقاً"}), 404
+    if req["status"] == "بانتظار التأكيد":
+        cur.close(); conn.close()
+        return jsonify({"error": "أكّد الحالة أولاً قبل الإغلاق"}), 400
+
+    patient_name = (req.get("patient_name") or "المريض").strip()
+    close_msg = f"تم إغلاق حالة {patient_name}"
+
+    cur.execute("""
+        SELECT donor_id FROM donations
+        WHERE request_id=%s AND status='معلق'
+    """, (rid,))
+    pending_donors = cur.fetchall()
+
+    cur.execute("UPDATE blood_requests SET status='ملغي' WHERE id=%s", (rid,))
+    cur.execute("""
+        UPDATE donations SET status='ملغي'
+        WHERE request_id=%s AND status='معلق'
+    """, (rid,))
+
+    notified_donors = set()
+    donor_close_msg = f"{close_msg} — لم يعد الطلب متاحاً للتبرع"
+    for row in pending_donors:
+        notified_donors.add(row["donor_id"])
+        notify_user(cur, row["donor_id"], donor_close_msg, subject="تم إغلاق الحالة — وصل")
+
+    notify_user(cur, req["user_id"], close_msg, subject="تم إغلاق الحالة — وصل")
+    notify_donors_case_closed(cur, rid, patient_name, skip_user_ids=notified_donors)
+
     conn.commit(); cur.close(); conn.close()
-    return jsonify({"message": "تم إغلاق الحالة"})
+    return jsonify({"message": close_msg})
 
 # ══════════════════════════════
 #  DONATIONS (DONOR)

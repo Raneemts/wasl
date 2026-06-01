@@ -189,6 +189,7 @@ body,
   transition: 0.2s;
   text-align: right;
   color: white;
+  font-family: 'Cairo', Tahoma, Arial, sans-serif;
 }
 
 .roleCard:hover {
@@ -201,15 +202,23 @@ body,
   flex-shrink: 0;
 }
 
-.roleCard strong {
+.roleCard strong,
+.roleCardAdmin strong {
+  font-family: 'Cairo', Tahoma, Arial, sans-serif;
+  font-weight: 900;
   font-size: 17px;
-  color: #ff8fa3;
+  line-height: 1.35;
   display: block;
   margin-bottom: 3px;
 }
 
+.roleCard strong {
+  color: #ff8fa3;
+}
+
 .roleCard p {
   font-size: 12px;
+  font-weight: 400;
   color: rgba(255, 255, 255, 0.85);
   line-height: 1.4;
 }
@@ -1639,6 +1648,73 @@ select.inp {
 
 .pendingBox {
   margin-bottom: 24px;
+}
+
+.pendingSection {
+  max-width: 720px;
+}
+
+.pendingSectionHead {
+  margin-bottom: 20px;
+}
+
+.pendingSectionTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.sectionTitleFlush {
+  margin-bottom: 0;
+}
+
+.pageSubFlush {
+  margin: 0;
+}
+
+.pageSubTop {
+  margin-top: -4px;
+}
+
+.sectionTitleSpaced {
+  margin-top: 8px;
+}
+
+.pendingCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #fff3cd;
+  color: #856404;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.pendingCasesList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pendingCaseRow .caseCardTop {
+  margin-bottom: 0;
+}
+
+.pendingCaseFoot {
+  border-top-color: #f5e6c8;
+  padding-top: 14px;
+  margin-top: 16px;
+}
+
+.pendingConfirmBtn {
+  width: 100%;
+  justify-content: center;
 }
 
 .caseCard.pending {
