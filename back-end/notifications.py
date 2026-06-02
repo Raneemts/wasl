@@ -2,6 +2,7 @@
 import os
 import re
 import smtplib
+import threading
 from email.mime.text import MIMEText
 
 # Donor blood type -> request blood types they can satisfy
@@ -51,7 +52,14 @@ def email_enabled():
     return os.getenv("MAIL_ENABLED", "").strip().lower() in ("1", "true", "yes")
 
 
-def send_email(to_addr, subject, body):
+def _smtp_timeout():
+    try:
+        return max(3, int(os.getenv("MAIL_TIMEOUT", "10")))
+    except ValueError:
+        return 10
+
+
+def _send_email_sync(to_addr, subject, body):
     if not email_enabled() or not to_addr:
         return False
     host = os.getenv("MAIL_HOST", "")
@@ -67,7 +75,7 @@ def send_email(to_addr, subject, body):
         msg["Subject"] = subject
         msg["From"] = sender
         msg["To"] = to_addr
-        with smtplib.SMTP(host, port) as server:
+        with smtplib.SMTP(host, port, timeout=_smtp_timeout()) as server:
             server.starttls()
             server.login(user, password)
             server.send_message(msg)
@@ -77,7 +85,19 @@ def send_email(to_addr, subject, body):
         return False
 
 
-def notify_user(cur, user_id, message, subject="إشعار من وصل", also_email=True):
+def send_email(to_addr, subject, body):
+    """Queue SMTP in a background thread so API requests do not hang."""
+    if not email_enabled() or not to_addr:
+        return False
+    threading.Thread(
+        target=_send_email_sync,
+        args=(to_addr, subject, body),
+        daemon=True,
+    ).start()
+    return True
+
+
+def notify_user(cur, user_id, message, subject="إشعار من وصل", also_email=False):
     """Save notification in DB; optionally send email when MAIL_ENABLED=true."""
     message = strip_emojis(message)
     cur.execute(
