@@ -1,8 +1,11 @@
-"""In-app notifications + optional email (SMTP via .env)."""
+"""In-app notifications + email (Resend API on Railway; SMTP for local dev)."""
+import json
 import os
 import re
 import smtplib
 import threading
+import urllib.error
+import urllib.request
 from email.mime.text import MIMEText
 
 # Donor blood type -> request blood types they can satisfy
@@ -55,15 +58,66 @@ def _env(name, default=""):
     return str(value).strip().strip('"').strip("'")
 
 
+def _on_railway():
+    return bool(_env("RAILWAY_ENVIRONMENT") or _env("RAILWAY_SERVICE_NAME"))
+
+
 def email_enabled():
-    return _env("MAIL_ENABLED", "").lower() in ("1", "true", "yes")
+    if _env("MAIL_ENABLED", "").lower() in ("1", "true", "yes"):
+        return True
+    return bool(_env("RESEND_API_KEY", ""))
 
 
 def _smtp_timeout():
+    if _on_railway():
+        return 3
     try:
-        return max(3, int(os.getenv("MAIL_TIMEOUT", "10")))
+        return max(3, int(_env("MAIL_TIMEOUT", "10")))
     except ValueError:
         return 10
+
+
+def _from_address():
+    raw = _env("MAIL_FROM", _env("MAIL_USER", "onboarding@resend.dev"))
+    match = re.search(r"<([^>]+)>", raw)
+    if match:
+        name = raw.split("<")[0].strip().strip('"') or "Wasl"
+        return f"{name} <{match.group(1)}>"
+    if "@" in raw:
+        return f"Wasl <{raw}>"
+    return "Wasl <onboarding@resend.dev>"
+
+
+def _send_via_resend(to_addr, subject, body):
+    api_key = _env("RESEND_API_KEY", "")
+    if not api_key:
+        return False
+    payload = json.dumps({
+        "from": _from_address(),
+        "to": [to_addr],
+        "subject": subject,
+        "text": body,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            print(f"Resend sent to {to_addr} (HTTP {resp.status})", flush=True)
+            return True
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        print(f"Resend failed {to_addr}: HTTP {exc.code} {detail}", flush=True)
+        return False
+    except Exception as exc:
+        print(f"Resend failed {to_addr}: {exc}", flush=True)
+        return False
 
 
 def _build_message(to_addr, subject, body):
@@ -75,7 +129,7 @@ def _build_message(to_addr, subject, body):
     return msg
 
 
-def _deliver_message(msg, host, port, user, password):
+def _deliver_smtp(msg, host, port, user, password):
     timeout = _smtp_timeout()
     use_ssl = _env("MAIL_USE_SSL", "").lower() in ("1", "true", "yes")
     if use_ssl or port == 465:
@@ -91,35 +145,47 @@ def _deliver_message(msg, host, port, user, password):
         server.send_message(msg)
 
 
-def _send_email_sync(to_addr, subject, body):
-    if not email_enabled() or not to_addr:
-        return False
+def _send_via_smtp(to_addr, subject, body):
     host = _env("MAIL_HOST", "")
     port = int(_env("MAIL_PORT", "587") or "587")
     user = _env("MAIL_USER", "")
     password = _env("MAIL_PASS", "").replace(" ", "")
     if not host or not user or not password:
-        print("Email skipped: set MAIL_HOST, MAIL_USER, MAIL_PASS", flush=True)
+        print("SMTP skipped: set MAIL_HOST, MAIL_USER, MAIL_PASS", flush=True)
         return False
     msg = _build_message(to_addr, subject, body)
     try:
-        _deliver_message(msg, host, port, user, password)
-        print(f"Email sent to {to_addr}", flush=True)
+        _deliver_smtp(msg, host, port, user, password)
+        print(f"SMTP sent to {to_addr}", flush=True)
         return True
     except Exception as exc:
-        print(f"Email failed ({port}): {to_addr} — {exc}", flush=True)
+        print(f"SMTP failed ({port}) {to_addr}: {exc}", flush=True)
         if port == 587:
             try:
-                _deliver_message(msg, host, 465, user, password)
-                print(f"Email sent to {to_addr} (SSL 465)", flush=True)
+                _deliver_smtp(msg, host, 465, user, password)
+                print(f"SMTP sent to {to_addr} (465)", flush=True)
                 return True
             except Exception as exc2:
-                print(f"Email failed (465): {to_addr} — {exc2}", flush=True)
+                print(f"SMTP failed (465) {to_addr}: {exc2}", flush=True)
         return False
 
 
+def _send_email_sync(to_addr, subject, body):
+    if not email_enabled() or not to_addr:
+        return False
+    if _env("RESEND_API_KEY", ""):
+        return _send_via_resend(to_addr, subject, body)
+    if _on_railway():
+        print(
+            "Email blocked on Railway: SMTP ports are closed. "
+            "Add RESEND_API_KEY — https://resend.com/api-keys",
+            flush=True,
+        )
+        return False
+    return _send_via_smtp(to_addr, subject, body)
+
+
 def send_email_async(to_addr, subject, body):
-    """Background send — avoid for urgent alerts; prefer flush_urgent_emails."""
     if not email_enabled() or not to_addr:
         return False
     threading.Thread(
@@ -131,19 +197,19 @@ def send_email_async(to_addr, subject, body):
 
 
 def flush_urgent_emails(jobs):
-    """Send urgent donor emails after DB commit (reliable on Railway/gunicorn)."""
+    """Send urgent donor emails after DB commit."""
     if not jobs:
         return
     if not email_enabled():
         print(f"flush_urgent_emails: skipped {len(jobs)} (MAIL_ENABLED=false)", flush=True)
         return
-    print(f"flush_urgent_emails: sending {len(jobs)}", flush=True)
+    print(f"flush_urgent_emails: sending {len(jobs)} via Resend/SMTP", flush=True)
     for to_addr, subject, body in jobs:
         _send_email_sync(to_addr, subject, body)
 
 
 def notify_user(cur, user_id, message, subject="إشعار من وصل", also_email=False):
-    """Save notification in DB; optionally send email when MAIL_ENABLED=true."""
+    """Save notification in DB; optionally send email when enabled."""
     message = strip_emojis(message)
     cur.execute(
         "INSERT INTO notifications (user_id, message) VALUES (%s, %s)",
@@ -211,7 +277,8 @@ def notify_matching_donors(cur, request_id):
     donors = cur.fetchall()
     print(
         f"Urgent request #{request_id}: blood={req.get('blood_type')} city={city} "
-        f"donors_to_email={len(donors)} mail_enabled={email_enabled()}",
+        f"donors_to_email={len(donors)} resend={bool(_env('RESEND_API_KEY'))} "
+        f"railway={_on_railway()}",
         flush=True,
     )
 
