@@ -77,13 +77,15 @@ def send_email(to_addr, subject, body):
         return False
 
 
-def notify_user(cur, user_id, message, subject="إشعار من وصل"):
-    """Save notification in DB and send email when MAIL_ENABLED=true."""
+def notify_user(cur, user_id, message, subject="إشعار من وصل", send_email=True):
+    """Save notification in DB; optionally send email when MAIL_ENABLED=true."""
     message = strip_emojis(message)
     cur.execute(
         "INSERT INTO notifications (user_id, message) VALUES (%s, %s)",
         (user_id, message),
     )
+    if not send_email:
+        return
     cur.execute("SELECT email FROM users WHERE id=%s", (user_id,))
     row = cur.fetchone()
     if not row:
@@ -102,7 +104,7 @@ def _donor_already_notified(cur, user_id, request_id):
 
 
 def notify_matching_donors(cur, request_id):
-    """Notify donors whose blood type and city match an active request."""
+    """Notify compatible approved donors in the hospital city (in-app + email) when urgent."""
     cur.execute(
         """
         SELECT br.blood_type, br.urgency, br.bags_needed, br.bags_received,
@@ -117,46 +119,61 @@ def notify_matching_donors(cur, request_id):
     if not req:
         return
 
+    urgency = req.get("urgency") or "عادي"
+    if urgency != "عاجل":
+        return
+
     eligible = donor_types_for_request(req["blood_type"])
     if not eligible:
+        return
+
+    city = (req.get("city") or "").strip()
+    if not city:
         return
 
     placeholders = ",".join(["%s"] * len(eligible))
     cur.execute(
         f"""
-        SELECT id, name FROM users
+        SELECT id, name, email FROM users
         WHERE role = 'donor'
           AND account_status = 'approved'
           AND blood_type IN ({placeholders})
-          AND (city IS NULL OR city = '' OR city = %s)
+          AND city = %s
+          AND email IS NOT NULL AND email != ''
         """,
-        (*eligible, req["city"]),
+        (*eligible, city),
     )
     donors = cur.fetchall()
 
-    urgency = req.get("urgency") or "عادي"
     need = max(0, int(req.get("bags_needed") or 1) - int(req.get("bags_received") or 0))
     hospital = req.get("hospital_name") or "مستشفى"
-    city = req.get("city") or ""
     blood = req.get("blood_type") or ""
-
-    if urgency == "عاجل":
-        subject = "حالة عاجلة محتاجة متبرع — وصل"
-        intro = "حالة عاجلة محتاجة متبرع"
-    else:
-        subject = "حالة محتاجة متبرع — وصل"
-        intro = "حالة جديدة محتاجة متبرع"
+    subject = "حالة عاجلة محتاجة متبرع — وصل"
+    intro = "حالة عاجلة محتاجة متبرع"
 
     for donor in donors:
         donor_id = donor["id"] if isinstance(donor, dict) else donor[0]
         if _donor_already_notified(cur, donor_id, request_id):
             continue
+        donor_name = donor.get("name") or "متبرع"
         message = (
             f"{intro} — فصيلة {blood} في {city} ({hospital}) "
             f"— الاحتياج {need} كيس — طلب #{request_id}. "
             f"سجّل دخولك في وصل لحجز موعد التبرع."
         )
-        notify_user(cur, donor_id, message, subject=subject)
+        email_body = (
+            f"مرحباً {donor_name},\n\n"
+            f"حالة عاجلة تحتاج تبرعاً بفصيلة {blood}.\n"
+            f"المستشفى: {hospital}\n"
+            f"المدينة: {city}\n"
+            f"الاحتياج: {need} كيس\n"
+            f"رقم الطلب: #{request_id}\n\n"
+            f"سجّل دخولك في منصة وصل في أقرب وقت لحجز موعد التبرع.\n"
+        )
+        notify_user(cur, donor_id, message, subject=subject, send_email=False)
+        email = donor.get("email")
+        if email:
+            send_email(email, subject, email_body)
 
 
 def notify_donors_case_closed(cur, request_id, patient_name, skip_user_ids=None):

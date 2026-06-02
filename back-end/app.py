@@ -735,7 +735,8 @@ def confirm_request(rid):
             f"تم تأكيد طلبك كحالة {label} — بانتظار المتبرعين",
         )
 
-    notify_matching_donors(cur, rid)
+    if urgency == "عاجل":
+        notify_matching_donors(cur, rid)
     conn.commit(); cur.close(); conn.close()
     return jsonify({"message": "تم تأكيد الحالة"})
 
