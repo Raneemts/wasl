@@ -48,8 +48,15 @@ def strip_emojis(text):
     return re.sub(r"\s+", " ", cleaned).strip()
 
 
+def _env(name, default=""):
+    value = os.getenv(name, default)
+    if value is None:
+        return default
+    return str(value).strip().strip('"').strip("'")
+
+
 def email_enabled():
-    return os.getenv("MAIL_ENABLED", "").strip().lower() in ("1", "true", "yes")
+    return _env("MAIL_ENABLED", "").lower() in ("1", "true", "yes")
 
 
 def _smtp_timeout():
@@ -62,11 +69,11 @@ def _smtp_timeout():
 def _send_email_sync(to_addr, subject, body):
     if not email_enabled() or not to_addr:
         return False
-    host = os.getenv("MAIL_HOST", "")
-    port = int(os.getenv("MAIL_PORT", "587"))
-    user = os.getenv("MAIL_USER", "")
-    password = os.getenv("MAIL_PASS", "")
-    sender = os.getenv("MAIL_FROM", user)
+    host = _env("MAIL_HOST", "")
+    port = int(_env("MAIL_PORT", "587") or "587")
+    user = _env("MAIL_USER", "")
+    password = _env("MAIL_PASS", "").replace(" ", "")
+    sender = _env("MAIL_FROM", user)
     if not host or not user or not password:
         print("Email skipped: set MAIL_HOST, MAIL_USER, MAIL_PASS in .env")
         return False
@@ -79,9 +86,10 @@ def _send_email_sync(to_addr, subject, body):
             server.starttls()
             server.login(user, password)
             server.send_message(msg)
+        print("Email sent to", to_addr)
         return True
     except Exception as exc:
-        print("Email failed:", exc)
+        print("Email failed:", to_addr, exc)
         return False
 
 
@@ -164,6 +172,10 @@ def notify_matching_donors(cur, request_id):
         (*eligible, city),
     )
     donors = cur.fetchall()
+    print(
+        f"Urgent request #{request_id}: blood={req.get('blood_type')} city={city} "
+        f"donors_to_email={len(donors)} mail_enabled={email_enabled()}",
+    )
 
     need = max(0, int(req.get("bags_needed") or 1) - int(req.get("bags_received") or 0))
     hospital = req.get("hospital_name") or "مستشفى"
