@@ -33,7 +33,7 @@ except ImportError:
     pass
 
 app = Flask(__name__)
-app.config['JSON_AS_ASCII'] = False
+app.json.ensure_ascii = False
 CORS(app, origins=["https://profound-motivation-production-73bc.up.railway.app"])
 app.config["JWT_SECRET_KEY"] = "wasl-secret-2026"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
