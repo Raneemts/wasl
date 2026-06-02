@@ -77,14 +77,14 @@ def send_email(to_addr, subject, body):
         return False
 
 
-def notify_user(cur, user_id, message, subject="إشعار من وصل", send_email=True):
+def notify_user(cur, user_id, message, subject="إشعار من وصل", also_email=True):
     """Save notification in DB; optionally send email when MAIL_ENABLED=true."""
     message = strip_emojis(message)
     cur.execute(
         "INSERT INTO notifications (user_id, message) VALUES (%s, %s)",
         (user_id, message),
     )
-    if not send_email:
+    if not also_email:
         return
     cur.execute("SELECT email FROM users WHERE id=%s", (user_id,))
     row = cur.fetchone()
@@ -170,7 +170,7 @@ def notify_matching_donors(cur, request_id):
             f"رقم الطلب: #{request_id}\n\n"
             f"سجّل دخولك في منصة وصل في أقرب وقت لحجز موعد التبرع.\n"
         )
-        notify_user(cur, donor_id, message, subject=subject, send_email=False)
+        notify_user(cur, donor_id, message, subject=subject, also_email=False)
         email = donor.get("email")
         if email:
             send_email(email, subject, email_body)
