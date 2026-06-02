@@ -337,7 +337,9 @@ def _ensure_user_hospital_row(cur, user_id):
     if not user:
         return None
     if user.get("hospital_id"):
-        return user["hospital_id"]
+        cur.execute("SELECT id FROM hospitals WHERE id=%s", (user["hospital_id"],))
+        if cur.fetchone():
+            return user["hospital_id"]
     region = user.get("region") or user.get("city") or ""
     city = user.get("city") or ""
     cur.execute(
@@ -392,11 +394,11 @@ def get_approved_hospitals():
     cur = conn.cursor(dictionary=True)
     _link_approved_hospital_accounts()
     sql = """
-        SELECT u.hospital_id AS id, u.name, u.city, u.region
+        SELECT h.id, u.name, COALESCE(h.city, u.city) AS city, COALESCE(h.region, u.region) AS region
         FROM users u
+        INNER JOIN hospitals h ON h.id = u.hospital_id
         WHERE u.role = 'hospital'
           AND u.account_status = 'approved'
-          AND u.hospital_id IS NOT NULL
     """
     vals = []
     if city:
@@ -495,12 +497,22 @@ def create_request():
             "error": "المستشفى غير متاح — اختر مستشفى معتمد من القائمة",
         }), 400
 
+    cur.execute("SELECT id FROM hospitals WHERE id=%s", (hospital_id,))
+    if not cur.fetchone():
+        hospital_id = _ensure_user_hospital_row(cur, hospital_users[0]["id"])
+        if not hospital_id:
+            cur.close()
+            conn.close()
+            return jsonify({
+                "error": "المستشفى غير مربوط بقاعدة البيانات — تواصل مع الدعم",
+            }), 400
+
     try:
         cur.execute("""
             INSERT INTO blood_requests
             (user_id,patient_name,hospital_id,blood_type,bags_needed,urgency,status)
             VALUES (%s,%s,%s,%s,1,'عادي','بانتظار التأكيد')
-        """, (uid, d["patient_name"], hospital_id, d["blood_type"]))
+        """, (int(uid), d["patient_name"], hospital_id, d["blood_type"]))
         rid = cur.lastrowid
         try:
             notify_user(
@@ -517,10 +529,11 @@ def create_request():
         except Exception:
             pass
         conn.commit()
-    except mysql.connector.Error:
+    except mysql.connector.Error as err:
         conn.rollback()
         cur.close()
         conn.close()
+        app.logger.error("create_request failed: %s", err)
         return jsonify({"error": "تعذر حفظ الطلب — تحقق من بيانات المستشفى"}), 400
     cur.close()
     conn.close()
@@ -1022,10 +1035,20 @@ def handle_unexpected_error(err):
     return jsonify({"error": "خطأ داخلي في الخادم"}), 500
 
 
+def _startup_migrations():
+    """Run on import so Railway/gunicorn gets schema updates too."""
+    try:
+        _ensure_schema()
+        _ensure_admin_role()
+        _link_approved_hospital_accounts()
+    except mysql.connector.Error as err:
+        app.logger.warning("startup migrations skipped: %s", err)
+
+
+_startup_migrations()
+
+
 if __name__ == "__main__":
-    _ensure_schema()
-    _ensure_admin_role()
-    _link_approved_hospital_accounts()
     try:
         _conn = db()
         _conn.close()
