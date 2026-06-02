@@ -104,6 +104,8 @@ def _send_via_resend(to_addr, subject, body):
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "wasl-blood-donation/1.0",
         },
         method="POST",
     )
