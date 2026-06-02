@@ -32,7 +32,26 @@ import {
 } from 'lucide-react';
 import './App.css';
 
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api';
+const PRODUCTION_API = 'https://wasl-production-05b9.up.railway.app/api';
+
+function resolveApiBase() {
+  let fromEnv = (import.meta.env.VITE_API_URL || '').trim();
+  if (fromEnv) {
+    fromEnv = fromEnv.replace(/^['"]|['"]$/g, '');
+    if (!fromEnv.includes('127.0.0.1') && !fromEnv.includes('localhost')) {
+      return fromEnv;
+    }
+  }
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host.includes('railway.app') && !host.startsWith('wasl-production')) {
+      return PRODUCTION_API;
+    }
+  }
+  return import.meta.env.DEV ? 'http://127.0.0.1:5000/api' : PRODUCTION_API;
+}
+
+const API = resolveApiBase();
 
 async function parseApiJson(res) {
   const text = await res.text();

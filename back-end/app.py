@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from werkzeug.exceptions import HTTPException
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import (
@@ -34,16 +35,30 @@ except ImportError:
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
+def _strip_quotes(value):
+    return value.strip().strip('"').strip("'")
+
+
 frontend_origins = os.getenv("FRONTEND_ORIGINS", "").strip()
 if frontend_origins:
-    cors_origins = [origin.strip() for origin in frontend_origins.split(",") if origin.strip()]
+    cors_origins = [
+        _strip_quotes(origin)
+        for origin in frontend_origins.split(",")
+        if _strip_quotes(origin)
+    ]
 else:
     cors_origins = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "https://profound-motivation-production-73bc.up.railway.app",
     ]
-CORS(app, origins=cors_origins)
+CORS(
+    app,
+    origins=cors_origins,
+    supports_credentials=True,
+    allow_headers=["Content-Type", "Authorization"],
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+)
 app.config["JWT_SECRET_KEY"] = "wasl-secret-2026"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
 bcrypt = Bcrypt(app)
@@ -95,6 +110,20 @@ def _ensure_schema():
             ALTER TABLE blood_requests
             MODIFY status ENUM('بانتظار التأكيد','نشط','مكتمل','ملغي')
             DEFAULT 'بانتظار التأكيد'
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+    except mysql.connector.Error:
+        pass
+
+    try:
+        conn = db()
+        cur = conn.cursor()
+        cur.execute("""
+            ALTER TABLE blood_requests
+            ADD COLUMN patient_name VARCHAR(100) NOT NULL DEFAULT ''
+            AFTER user_id
         """)
         conn.commit()
         cur.close()
@@ -441,13 +470,18 @@ def my_requests():
 @jwt_required()
 def create_request():
     uid = get_jwt_identity()
-    d = request.json
+    d = request.json or {}
     for f in ["patient_name","hospital_id","blood_type"]:
         if not d.get(f):
             return jsonify({"error": f"حقل مطلوب: {f}"}), 400
 
     hospital_id = int(d["hospital_id"])
-    conn = db(); cur = conn.cursor(dictionary=True)
+    try:
+        conn = db()
+    except mysql.connector.Error:
+        return jsonify({"error": "تعذر الاتصال بقاعدة البيانات"}), 503
+
+    cur = conn.cursor(dictionary=True)
     cur.execute("""
         SELECT u.id, u.name FROM users u
         WHERE u.role = 'hospital' AND u.account_status = 'approved'
@@ -461,28 +495,35 @@ def create_request():
             "error": "المستشفى غير متاح — اختر مستشفى معتمد من القائمة",
         }), 400
 
-    cur.execute("""
-        INSERT INTO blood_requests
-        (user_id,patient_name,hospital_id,blood_type,bags_needed,urgency,status)
-        VALUES (%s,%s,%s,%s,1,'عادي','بانتظار التأكيد')
-    """, (uid, d["patient_name"], hospital_id, d["blood_type"]))
-    rid = cur.lastrowid
     try:
-        notify_user(
-            cur,
-            uid,
-            "تم إرسال طلبك للمستشفى — بانتظار تأكيد الحالة (عاجل/عادي وعدد الأكياس)",
-        )
-        for hosp in hospital_users:
+        cur.execute("""
+            INSERT INTO blood_requests
+            (user_id,patient_name,hospital_id,blood_type,bags_needed,urgency,status)
+            VALUES (%s,%s,%s,%s,1,'عادي','بانتظار التأكيد')
+        """, (uid, d["patient_name"], hospital_id, d["blood_type"]))
+        rid = cur.lastrowid
+        try:
             notify_user(
                 cur,
-                hosp["id"],
-                f"طلب تبرع جديد — فصيلة {d['blood_type']} بانتظار تأكيدكم",
+                uid,
+                "تم إرسال طلبك للمستشفى — بانتظار تأكيد الحالة (عاجل/عادي وعدد الأكياس)",
             )
-    except Exception:
-        pass
-    conn.commit()
-    cur.close(); conn.close()
+            for hosp in hospital_users:
+                notify_user(
+                    cur,
+                    hosp["id"],
+                    f"طلب تبرع جديد — فصيلة {d['blood_type']} بانتظار تأكيدكم",
+                )
+        except Exception:
+            pass
+        conn.commit()
+    except mysql.connector.Error:
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return jsonify({"error": "تعذر حفظ الطلب — تحقق من بيانات المستشفى"}), 400
+    cur.close()
+    conn.close()
     return jsonify({"message": "تم إنشاء الطلب، بانتظار تأكيد المستشفى", "id": rid}), 201
 
 # ══════════════════════════════
@@ -971,6 +1012,14 @@ def seed_hospitals():
     cur.executemany("INSERT INTO hospitals (name, city, region) VALUES (%s, %s, %s)", hospitals)
     conn.commit(); cur.close(); conn.close()
     return jsonify({"message": "done", "count": len(hospitals)})
+
+
+@app.errorhandler(Exception)
+def handle_unexpected_error(err):
+    if isinstance(err, HTTPException):
+        return err
+    app.logger.exception(err)
+    return jsonify({"error": "خطأ داخلي في الخادم"}), 500
 
 
 if __name__ == "__main__":
