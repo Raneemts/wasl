@@ -57,6 +57,8 @@ def db():
         user=os.getenv("DB_USER", "root"),
         password=_db_password(),
         database=os.getenv("DB_NAME", "wasl_db"),
+        charset='utf8mb4',
+        collation='utf8mb4_unicode_ci',
     )
 
 
