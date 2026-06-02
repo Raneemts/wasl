@@ -32,8 +32,17 @@ import {
 } from 'lucide-react';
 import './App.css';
 
-const API = import.meta.env.VITE_API_URL
-  || (import.meta.env.PROD ? `${window.location.origin}/api` : 'http://127.0.0.1:5000/api');
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000/api';
+
+async function parseApiJson(res) {
+  const text = await res.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('bad_json');
+  }
+}
 
 const REGIONS = [
   'الرياض',
@@ -1099,7 +1108,7 @@ function DashboardApp() {
           blood_type: requestForm.blood_type,
         }),
       });
-      const data = await res.json();
+      const data = await parseApiJson(res);
       if (!res.ok) {
         setRequestError(data.error || 'تعذر إنشاء الطلب');
         return;
@@ -1107,8 +1116,12 @@ function DashboardApp() {
       setShowRequestModal(false);
       fetchPatientCases();
       fetchNotifications();
-    } catch {
-      setRequestError('تعذر الاتصال بالخادم');
+    } catch (err) {
+      setRequestError(
+        err?.message === 'bad_json'
+          ? 'استجابة غير متوقعة من الخادم'
+          : 'تعذر الاتصال بالخادم — تحقق من إعداد VITE_API_URL',
+      );
     } finally {
       setRequestLoading(false);
     }

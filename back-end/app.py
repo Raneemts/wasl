@@ -467,17 +467,20 @@ def create_request():
         VALUES (%s,%s,%s,%s,1,'عادي','بانتظار التأكيد')
     """, (uid, d["patient_name"], hospital_id, d["blood_type"]))
     rid = cur.lastrowid
-    notify_user(
-        cur,
-        uid,
-        "تم إرسال طلبك للمستشفى — بانتظار تأكيد الحالة (عاجل/عادي وعدد الأكياس)",
-    )
-    for hosp in hospital_users:
+    try:
         notify_user(
             cur,
-            hosp["id"],
-            f"طلب تبرع جديد — فصيلة {d['blood_type']} بانتظار تأكيدكم",
+            uid,
+            "تم إرسال طلبك للمستشفى — بانتظار تأكيد الحالة (عاجل/عادي وعدد الأكياس)",
         )
+        for hosp in hospital_users:
+            notify_user(
+                cur,
+                hosp["id"],
+                f"طلب تبرع جديد — فصيلة {d['blood_type']} بانتظار تأكيدكم",
+            )
+    except Exception:
+        pass
     conn.commit()
     cur.close(); conn.close()
     return jsonify({"message": "تم إنشاء الطلب، بانتظار تأكيد المستشفى", "id": rid}), 201
