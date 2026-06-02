@@ -34,7 +34,16 @@ except ImportError:
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
-CORS(app, origins=["https://profound-motivation-production-73bc.up.railway.app"])
+frontend_origins = os.getenv("FRONTEND_ORIGINS", "").strip()
+if frontend_origins:
+    cors_origins = [origin.strip() for origin in frontend_origins.split(",") if origin.strip()]
+else:
+    cors_origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://profound-motivation-production-73bc.up.railway.app",
+    ]
+CORS(app, origins=cors_origins)
 app.config["JWT_SECRET_KEY"] = "wasl-secret-2026"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=7)
 bcrypt = Bcrypt(app)
