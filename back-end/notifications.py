@@ -66,6 +66,31 @@ def _smtp_timeout():
         return 10
 
 
+def _build_message(to_addr, subject, body):
+    sender = _env("MAIL_FROM", _env("MAIL_USER", ""))
+    msg = MIMEText(body, "plain", "utf-8")
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = to_addr
+    return msg
+
+
+def _deliver_message(msg, host, port, user, password):
+    timeout = _smtp_timeout()
+    use_ssl = _env("MAIL_USE_SSL", "").lower() in ("1", "true", "yes")
+    if use_ssl or port == 465:
+        with smtplib.SMTP_SSL(host, port or 465, timeout=timeout) as server:
+            server.login(user, password)
+            server.send_message(msg)
+        return
+    with smtplib.SMTP(host, port, timeout=timeout) as server:
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(user, password)
+        server.send_message(msg)
+
+
 def _send_email_sync(to_addr, subject, body):
     if not email_enabled() or not to_addr:
         return False
@@ -73,36 +98,48 @@ def _send_email_sync(to_addr, subject, body):
     port = int(_env("MAIL_PORT", "587") or "587")
     user = _env("MAIL_USER", "")
     password = _env("MAIL_PASS", "").replace(" ", "")
-    sender = _env("MAIL_FROM", user)
     if not host or not user or not password:
-        print("Email skipped: set MAIL_HOST, MAIL_USER, MAIL_PASS in .env")
+        print("Email skipped: set MAIL_HOST, MAIL_USER, MAIL_PASS", flush=True)
         return False
+    msg = _build_message(to_addr, subject, body)
     try:
-        msg = MIMEText(body, "plain", "utf-8")
-        msg["Subject"] = subject
-        msg["From"] = sender
-        msg["To"] = to_addr
-        with smtplib.SMTP(host, port, timeout=_smtp_timeout()) as server:
-            server.starttls()
-            server.login(user, password)
-            server.send_message(msg)
-        print("Email sent to", to_addr)
+        _deliver_message(msg, host, port, user, password)
+        print(f"Email sent to {to_addr}", flush=True)
         return True
     except Exception as exc:
-        print("Email failed:", to_addr, exc)
+        print(f"Email failed ({port}): {to_addr} — {exc}", flush=True)
+        if port == 587:
+            try:
+                _deliver_message(msg, host, 465, user, password)
+                print(f"Email sent to {to_addr} (SSL 465)", flush=True)
+                return True
+            except Exception as exc2:
+                print(f"Email failed (465): {to_addr} — {exc2}", flush=True)
         return False
 
 
-def send_email(to_addr, subject, body):
-    """Queue SMTP in a background thread so API requests do not hang."""
+def send_email_async(to_addr, subject, body):
+    """Background send — avoid for urgent alerts; prefer flush_urgent_emails."""
     if not email_enabled() or not to_addr:
         return False
     threading.Thread(
         target=_send_email_sync,
         args=(to_addr, subject, body),
-        daemon=True,
+        daemon=False,
     ).start()
     return True
+
+
+def flush_urgent_emails(jobs):
+    """Send urgent donor emails after DB commit (reliable on Railway/gunicorn)."""
+    if not jobs:
+        return
+    if not email_enabled():
+        print(f"flush_urgent_emails: skipped {len(jobs)} (MAIL_ENABLED=false)", flush=True)
+        return
+    print(f"flush_urgent_emails: sending {len(jobs)}", flush=True)
+    for to_addr, subject, body in jobs:
+        _send_email_sync(to_addr, subject, body)
 
 
 def notify_user(cur, user_id, message, subject="إشعار من وصل", also_email=False):
@@ -120,7 +157,7 @@ def notify_user(cur, user_id, message, subject="إشعار من وصل", also_em
         return
     email = row["email"] if isinstance(row, dict) else row[0]
     if email:
-        send_email(email, subject, message)
+        send_email_async(email, subject, message)
 
 
 def _donor_already_notified(cur, user_id, request_id):
@@ -132,7 +169,7 @@ def _donor_already_notified(cur, user_id, request_id):
 
 
 def notify_matching_donors(cur, request_id):
-    """Notify compatible approved donors in the hospital city (in-app + email) when urgent."""
+    """In-app notify + return email jobs for compatible donors (same city) when urgent."""
     cur.execute(
         """
         SELECT br.blood_type, br.urgency, br.bags_needed, br.bags_received,
@@ -145,19 +182,19 @@ def notify_matching_donors(cur, request_id):
     )
     req = cur.fetchone()
     if not req:
-        return
+        return []
 
     urgency = req.get("urgency") or "عادي"
     if urgency != "عاجل":
-        return
+        return []
 
     eligible = donor_types_for_request(req["blood_type"])
     if not eligible:
-        return
+        return []
 
     city = (req.get("city") or "").strip()
     if not city:
-        return
+        return []
 
     placeholders = ",".join(["%s"] * len(eligible))
     cur.execute(
@@ -175,8 +212,10 @@ def notify_matching_donors(cur, request_id):
     print(
         f"Urgent request #{request_id}: blood={req.get('blood_type')} city={city} "
         f"donors_to_email={len(donors)} mail_enabled={email_enabled()}",
+        flush=True,
     )
 
+    pending_emails = []
     need = max(0, int(req.get("bags_needed") or 1) - int(req.get("bags_received") or 0))
     hospital = req.get("hospital_name") or "مستشفى"
     blood = req.get("blood_type") or ""
@@ -205,7 +244,9 @@ def notify_matching_donors(cur, request_id):
         notify_user(cur, donor_id, message, subject=subject, also_email=False)
         email = donor.get("email")
         if email:
-            send_email(email, subject, email_body)
+            pending_emails.append((email, subject, email_body))
+
+    return pending_emails
 
 
 def notify_donors_case_closed(cur, request_id, patient_name, skip_user_ids=None):

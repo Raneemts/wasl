@@ -10,7 +10,13 @@ import mysql.connector
 import os
 from datetime import timedelta
 from pathlib import Path
-from notifications import notify_user, notify_matching_donors, notify_donors_case_closed, strip_emojis
+from notifications import (
+    notify_user,
+    notify_matching_donors,
+    notify_donors_case_closed,
+    flush_urgent_emails,
+    strip_emojis,
+)
 
 
 def _load_env_file():
@@ -735,9 +741,13 @@ def confirm_request(rid):
             f"تم تأكيد طلبك كحالة {label} — بانتظار المتبرعين",
         )
 
+    urgent_emails = []
     if urgency == "عاجل":
-        notify_matching_donors(cur, rid)
-    conn.commit(); cur.close(); conn.close()
+        urgent_emails = notify_matching_donors(cur, rid) or []
+    conn.commit()
+    cur.close()
+    conn.close()
+    flush_urgent_emails(urgent_emails)
     return jsonify({"message": "تم تأكيد الحالة"})
 
 
