@@ -852,7 +852,9 @@ function DashboardApp() {
 
   const formatDonationStatus = (status) => {
     if (status === 'مؤكد') return 'تم التبرع';
-    if (status === 'معلق') return 'بانتظار تأكيد المستشفى';
+    if (status === 'معلق' || status === 'pending' || status === 'Pending') {
+      return 'بانتظار تأكيد المستشفى';
+    }
     return status || '—';
   };
 

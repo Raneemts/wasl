@@ -35,6 +35,7 @@ except ImportError:
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
+
 def _strip_quotes(value):
     return value.strip().strip('"').strip("'")
 
@@ -124,6 +125,19 @@ def _ensure_schema():
             ALTER TABLE blood_requests
             ADD COLUMN patient_name VARCHAR(100) NOT NULL DEFAULT ''
             AFTER user_id
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+    except mysql.connector.Error:
+        pass
+
+    try:
+        conn = db()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE donations SET status='معلق'
+            WHERE status IS NULL OR status IN ('pending', 'Pending', '')
         """)
         conn.commit()
         cur.close()
@@ -625,11 +639,13 @@ def hospital_appointments():
         JOIN users u ON d.donor_id = u.id
         JOIN blood_requests br ON d.request_id = br.id
         JOIN hospitals h ON br.hospital_id = h.id
-        WHERE {scope} AND d.status = 'معلق'
+        WHERE {scope} AND d.status IN ('معلق', 'pending', 'Pending')
         ORDER BY d.appointment_date ASC, d.appointment_time ASC
     """, tuple(vals))
     rows = cur.fetchall()
     for r in rows:
+        if r.get("status") in ("pending", "Pending"):
+            r["status"] = "معلق"
         if r.get("appointment_date"):
             r["appointment_date"] = str(r["appointment_date"])
     cur.close(); conn.close()
@@ -654,7 +670,7 @@ def confirm_donation(did):
         FROM donations d
         JOIN blood_requests br ON d.request_id = br.id
         JOIN hospitals h ON br.hospital_id = h.id
-        WHERE d.id=%s AND d.status='معلق' AND {scope}
+        WHERE d.id=%s AND d.status IN ('معلق', 'pending', 'Pending') AND {scope}
     """, (did, *vals))
     donation = cur.fetchone()
     if not donation:
@@ -830,8 +846,8 @@ def donate(rid):
         }), 400
 
     cur.execute("""
-        INSERT INTO donations (request_id, donor_id, appointment_date, appointment_time)
-        VALUES (%s,%s,%s,%s)
+        INSERT INTO donations (request_id, donor_id, appointment_date, appointment_time, status)
+        VALUES (%s,%s,%s,%s,'معلق')
     """, (rid, uid, d.get("date"), d.get("time")))
 
     cur.execute("UPDATE users SET points = points+20 WHERE id=%s", (uid,))
