@@ -1,0 +1,10 @@
+{
+  "name": "wasl-landing",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "npx --yes serve@14 . -l ${PORT:-3000}"
+  }
+}
