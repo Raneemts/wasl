@@ -4,6 +4,7 @@ import os
 import re
 import smtplib
 import threading
+import time
 import urllib.error
 import urllib.request
 from email.mime.text import MIMEText
@@ -88,7 +89,7 @@ def _from_address():
     return "Wasl <onboarding@resend.dev>"
 
 
-def _send_via_resend(to_addr, subject, body):
+def _send_via_resend(to_addr, subject, body, retries=3):
     api_key = _env("RESEND_API_KEY", "")
     if not api_key:
         return False
@@ -98,28 +99,35 @@ def _send_via_resend(to_addr, subject, body):
         "subject": subject,
         "text": body,
     }).encode("utf-8")
-    req = urllib.request.Request(
-        "https://api.resend.com/emails",
-        data=payload,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "User-Agent": "wasl-blood-donation/1.0",
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            print(f"Resend sent to {to_addr} (HTTP {resp.status})", flush=True)
-            return True
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        print(f"Resend failed {to_addr}: HTTP {exc.code} {detail}", flush=True)
-        return False
-    except Exception as exc:
-        print(f"Resend failed {to_addr}: {exc}", flush=True)
-        return False
+    for attempt in range(retries):
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "User-Agent": "wasl-blood-donation/1.0",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                print(f"Resend sent to {to_addr} (HTTP {resp.status})", flush=True)
+                return True
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            if exc.code == 429 and attempt < retries - 1:
+                wait = 0.6 * (attempt + 1)
+                print(f"Resend rate limit {to_addr}, retry in {wait}s", flush=True)
+                time.sleep(wait)
+                continue
+            print(f"Resend failed {to_addr}: HTTP {exc.code} {detail}", flush=True)
+            return False
+        except Exception as exc:
+            print(f"Resend failed {to_addr}: {exc}", flush=True)
+            return False
+    return False
 
 
 def _build_message(to_addr, subject, body):
@@ -206,7 +214,10 @@ def flush_urgent_emails(jobs):
         print(f"flush_urgent_emails: skipped {len(jobs)} (MAIL_ENABLED=false)", flush=True)
         return
     print(f"flush_urgent_emails: sending {len(jobs)} via Resend/SMTP", flush=True)
-    for to_addr, subject, body in jobs:
+    use_resend = bool(_env("RESEND_API_KEY", ""))
+    for i, (to_addr, subject, body) in enumerate(jobs):
+        if use_resend and i > 0:
+            time.sleep(0.6)
         _send_email_sync(to_addr, subject, body)
 
 
