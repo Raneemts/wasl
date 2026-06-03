@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Wasl (وصل) — منصة تربط المتبرعين بالدم مع أسر المرضى والمستشفيات في الأوقات الطارئة." />
+  <title>وصل — Wasl | Blood Donation Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header" id="top">
+    <div class="container nav">
+      <a class="wasl-logo wasl-logo--brand" href="#top">
+        <div class="wasl-logo-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+          </svg>
+        </div>
+        <span class="wasl-logo-text">وصل</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">المميزات</a></li>
+        <li><a href="#about">عن المشروع</a></li>
+        <li><a href="#team">الفريق</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="hero-label">منصة لتبرع بالدم</p>
+          <h1 class="hero-headline" id="hero-title">
+            كل قطرة دم <em>تفرق</em>
+          </h1>
+          <p class="hero-tagline">
+            وصل تربط المتبرعين بأسر المرضى والمستشفيات — لتسريع الوصول إلى فصيلة الدم المناسبة عند الحاجة العاجلة.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://profound-motivation-production-73bc.up.railway.app/" target="_blank" rel="noopener noreferrer">
+              Visit Live Website
+            </a>
+            <a class="btn btn-secondary" href="https://github.com/Raneemts/wasl" target="_blank" rel="noopener noreferrer">
+              GitHub Repository
+            </a>
+          </div>
+          <p class="hero-credit">
+            Portfolio Project —
+            <a href="https://www.holbertonschool.com/" target="_blank" rel="noopener noreferrer">Holberton School</a>
+          </p>
+        </div>
+
+        <aside class="hero-panel" aria-label="إحصائيات المنصة">
+          <div class="hero-panel-inner">
+            <p class="hero-panel-title">إحصائيات المنصة</p>
+            <div class="hero-stats">
+              <div class="hero-stat">
+                <b id="stat-donors">…</b>
+                <span>متبرع مسجّل</span>
+              </div>
+              <div class="hero-stat">
+                <b id="stat-donations">…</b>
+                <span>عملية تبرع</span>
+              </div>
+              <div class="hero-stat">
+                <b id="stat-hospitals">…</b>
+                <span>مستشفى</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section section-users">
+      <div class="container">
+        <header class="section-header">
+          <h2>لمن صممت وصل؟</h2>
+          <p>ثلاث فئات تستخدم المنصة — كل واحدة لها دور في إيصال التبرع بالدم للمحتاج</p>
+        </header>
+        <div class="user-cards">
+          <article class="user-card">
+            <div class="user-card-icon user-card-icon--donor" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+            </div>
+            <h3>المتبرع</h3>
+            <p>يسجّل فصيلة دمه ومدينته، يتصفّح الطلبات المطابقة، ويستجيب بضغطة "أريد التبرع".</p>
+          </article>
+          <article class="user-card">
+            <div class="user-card-icon user-card-icon--patient" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <h3>قريب المريض</h3>
+            <p>ينشئ طلب دم بفصيلة الدم وعدد الأكياس والمستشفى ومستوى الأولوية خلال دقائق.</p>
+          </article>
+          <article class="user-card">
+            <div class="user-card-icon user-card-icon--hospital" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2M10 6h4M10 10h4M10 14h4M10 18h4"/></svg>
+            </div>
+            <h3>المستشفى</h3>
+            <p>يراقب الطلبات النشطة، يؤكّد اكتمال التبرع، ويحدّث حالة الحالة لجميع المستخدمين.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="features">
+      <div class="container">
+        <header class="section-header">
+          <h2>المميزات الرئيسية</h2>
+          <p>القدرات الأساسية في النسخة الأولى (MVP) من المنصة</p>
+        </header>
+
+        <div class="features-grid">
+          <article class="feature-tile">
+            <div class="feature-visual" aria-hidden="true">
+              <div class="mock-screen">
+                <div class="mock-bar"></div>
+                <div class="mock-field"></div>
+                <div class="mock-blood-grid">
+                  <span class="active">O+</span><span>A+</span><span>B+</span><span>AB+</span>
+                </div>
+                <div class="mock-btn">تسجيل</div>
+              </div>
+            </div>
+            <h3>تسجيل المتبرعين</h3>
+            <p>
+              حسابات للمتبرعين وقريب المريض والمستشفى، مع فصيلة الدم والمدينة —
+              أساس المطابقة بين الطلبات والمتبرعين.
+            </p>
+          </article>
+
+          <article class="feature-tile">
+            <div class="feature-visual" aria-hidden="true">
+              <div class="mock-screen mock-screen--list">
+                <div class="mock-case">
+                  <span class="mock-blood">O+</span>
+                  <div class="mock-case-text"><i></i><i></i></div>
+                  <span class="mock-urg">عاجل</span>
+                </div>
+                <div class="mock-filter">تصفية: الرياض · O+</div>
+              </div>
+            </div>
+            <h3>البحث حسب فصيلة الدم</h3>
+            <p>
+              إنشاء طلبات دم مع تحديد الفصيلة والمدينة والأولوية،
+              وتصفّح المتبرعين للطلبات المطابقة.
+            </p>
+          </article>
+
+          <article class="feature-tile">
+            <div class="feature-visual" aria-hidden="true">
+              <div class="mock-screen mock-screen--notify">
+                <div class="mock-notif">
+                  <span class="mock-notif-icon">🔔</span>
+                  <div>
+                    <strong>طلب دم عاجل — O+</strong>
+                    <small>الرياض</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <h3>إشعارات الطوارئ</h3>
+            <p>
+              إشعار فوري وبريد إلكتروني للمتبرعين المطابقين عند نشر طلب عاجل.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="about">
+      <div class="container about-grid">
+        <div class="about-story">
+          <header class="section-header section-header-left">
+            <h2>قصة المشروع</h2>
+          </header>
+          <p>
+            <strong>المشكلة:</strong> أحياناً يحتاج المستشفى فصيلة دم محددة بشكل عاجل،
+            لكن العثور على متبرعين متاحين يستغرق وقتاً — وهذا التأخير قد يؤثر على المرضى
+            الذين يحتاجون نقل دم.
+          </p>
+          <p>
+            <strong>فكرة وصل:</strong> منصة ويب (React + Flask + MySQL) تجمع المتبرعين
+            وأسر المرضى والمستشفيات في مكان واحد. يسجّل المتبرع فصيلته، وعند إنشاء طلب
+            مطابق تُعرَض الحالة للمتبرعين وتُرسل إشعارات للمطابقين منهم.
+          </p>
+          <p>
+            اخترنا هذا المشروع بعد تقييم أفكار أخرى — منصة التبرع بالطعام (رفضناها لصعوبة
+            التنسيق) وحجز المواعيد الطبية (موجودة مسبقاً). وصل تحل مشكلة حقيقية
+            لها أثر اجتماعي، ويمكن بناؤها ضمن وقت المشروع.
+          </p>
+          <p>
+            هذا العمل Portfolio Project في
+            <a href="https://www.holbertonschool.com/" target="_blank" rel="noopener noreferrer">Holberton School</a> —
+            لكن الدافع كان دائماً: <em>تسريع الوصول إلى متبرعي الدم المناسبين وإنقاذ الوقت في الحالات الحرجة.</em>
+          </p>
+          <a class="repo-link" href="https://github.com/Raneemts/wasl" target="_blank" rel="noopener noreferrer">
+            GitHub Repository
+          </a>
+        </div>
+
+        <aside class="about-meta" id="team">
+          <h3>الفريق</h3>
+          <ul class="team-list">
+            <li>
+              <strong>Ahmed Khaled Al-Omani</strong>
+              <div class="socials">
+                <a href="https://github.com/ako11927" target="_blank" rel="noopener noreferrer" title="GitHub">GitHub</a>
+                <span class="social-pending" title="سيُضاف لاحقاً">LinkedIn</span>
+              </div>
+            </li>
+            <li>
+              <strong>Amjad Khalid Al-Omani</strong>
+              <div class="socials">
+                <a href="https://github.com/Amjaadko" target="_blank" rel="noopener noreferrer" title="GitHub">GitHub</a>
+                <a href="https://www.linkedin.com/in/amjad-khalid-" target="_blank" rel="noopener noreferrer" title="LinkedIn">LinkedIn</a>
+              </div>
+            </li>
+            <li>
+              <strong>Lamis Fahad Aljabli</strong>
+              <div class="socials">
+                <a href="https://github.com/xtvkyx" target="_blank" rel="noopener noreferrer" title="GitHub">GitHub</a>
+                <a href="https://www.linkedin.com/in/lamis-aljabli" target="_blank" rel="noopener noreferrer" title="LinkedIn">LinkedIn</a>
+              </div>
+            </li>
+            <li>
+              <strong>Raneem Tarik Alsaqat</strong>
+              <div class="socials">
+                <a href="https://github.com/Raneemts" target="_blank" rel="noopener noreferrer" title="GitHub">GitHub</a>
+                <a href="https://www.linkedin.com/in/raneem-alsaqat-5b315634a" target="_blank" rel="noopener noreferrer" title="LinkedIn">LinkedIn</a>
+              </div>
+            </li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <section class="cta-band">
+      <div class="container cta-band-inner">
+        <div>
+          <h2>جرّب منصة وصل</h2>
+          <p>انتقل إلى الموقع واستكشف التسجيل وطلبات الدم والإشعارات.</p>
+        </div>
+        <a class="btn btn-primary btn-light" href="https://profound-motivation-production-73bc.up.railway.app/" target="_blank" rel="noopener noreferrer">
+          Visit Live Website
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <a class="wasl-logo wasl-logo--light wasl-logo--footer" href="#top">
+        <div class="wasl-logo-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+          </svg>
+        </div>
+        <span class="wasl-logo-text">وصل</span>
+      </a>
+      <p>© 2026 وصل — جميع الحقوق محفوظة</p>
+      <p class="footer-links">
+        <a href="https://github.com/Raneemts/wasl">GitHub Repository</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>
