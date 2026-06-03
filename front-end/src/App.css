@@ -1300,6 +1300,12 @@ select.inp {
   color: #a0001c;
 }
 
+.authCard .waslLogo--brand {
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
 .roleCard .rIcon svg {
   width: 28px;
   height: 28px;
