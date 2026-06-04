@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import HTTPException
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import (
     JWTManager, create_access_token,
@@ -61,19 +61,27 @@ def _strip_quotes(value):
     return value.strip().strip('"').strip("'")
 
 
+_cors_extra = [
+    r"https://.*\.up\.railway\.app",
+    r"https://.*\.github\.io",
+]
+
 frontend_origins = os.getenv("FRONTEND_ORIGINS", "").strip()
 if frontend_origins:
     cors_origins = [
         _strip_quotes(origin)
         for origin in frontend_origins.split(",")
         if _strip_quotes(origin)
-    ]
+    ] + _cors_extra
 else:
     cors_origins = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
         "https://profound-motivation-production-73bc.up.railway.app",
-    ]
+        "https://fulfilling-analysis-production-8311.up.railway.app",
+    ] + _cors_extra
 CORS(
     app,
     origins=cors_origins,
@@ -347,6 +355,7 @@ def profile():
 # ══════════════════════════════
 
 @app.get("/api/stats")
+@cross_origin(origins="*")
 def get_stats():
     conn = db(); cur = conn.cursor(dictionary=True)
     cur.execute("SELECT COUNT(*) AS c FROM users WHERE role='donor'")

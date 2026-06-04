@@ -1,4 +1,27 @@
-const API_STATS = 'https://wasl-production-05b9.up.railway.app/api/stats';
+const PRODUCTION_STATS = 'https://wasl-production-05b9.up.railway.app/api/stats';
+
+function resolveStatsUrl() {
+  const { hostname, protocol } = window.location;
+  if (protocol === 'file:') {
+    return PRODUCTION_STATS;
+  }
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return '/api/stats';
+  }
+  return PRODUCTION_STATS;
+}
+
+function applyStats(els, data) {
+  els.donors.textContent = data.donors ?? 0;
+  els.donations.textContent = data.donations ?? 0;
+  els.hospitals.textContent = data.hospitals ?? 0;
+}
+
+async function fetchJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
 
 async function loadStats() {
   const els = {
@@ -8,18 +31,21 @@ async function loadStats() {
   };
   if (!els.donors) return;
 
-  try {
-    const res = await fetch(API_STATS);
-    if (!res.ok) throw new Error('stats unavailable');
-    const data = await res.json();
-    els.donors.textContent = data.donors ?? 0;
-    els.donations.textContent = data.donations ?? 0;
-    els.hospitals.textContent = data.hospitals ?? 0;
-  } catch {
-    els.donors.textContent = '—';
-    els.donations.textContent = '—';
-    els.hospitals.textContent = '—';
+  const sources = [resolveStatsUrl(), 'stats.json'];
+
+  for (const url of sources) {
+    try {
+      const data = await fetchJson(url);
+      applyStats(els, data);
+      return;
+    } catch {
+      /* try next source */
+    }
   }
+
+  els.donors.textContent = '—';
+  els.donations.textContent = '—';
+  els.hospitals.textContent = '—';
 }
 
 loadStats();
