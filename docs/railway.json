@@ -2,7 +2,7 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "node ../scripts/fetch-stats.mjs"
+    "buildCommand": "node scripts/fetch-stats.mjs"
   },
   "deploy": {
     "startCommand": "npx --yes serve@14 . -l $PORT"

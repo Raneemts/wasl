@@ -5,7 +5,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "node ../scripts/fetch-stats.mjs",
+    "build": "node scripts/fetch-stats.mjs",
     "start": "npx --yes serve@14 . -l ${PORT:-3000}"
   }
 }
