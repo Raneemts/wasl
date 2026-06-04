@@ -2,6 +2,7 @@ import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
+/** @deprecated Use docs/scripts/fetch-stats.mjs (Railway builds from docs/ root). */
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const statsUrl = process.env.STATS_URL || 'https://wasl-production-05b9.up.railway.app/api/stats';
 const outPath = path.join(root, 'docs', 'stats.json');
