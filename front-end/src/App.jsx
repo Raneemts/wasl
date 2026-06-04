@@ -176,17 +176,24 @@ function getNotificationMeta(message) {
   return { kind: 'default', label: 'إشعار', Icon: Bell };
 }
 
+function parseApiDate(createdAt) {
+  if (!createdAt) return null;
+  const s = String(createdAt).trim();
+  if (!s) return null;
+  if (s.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(s)) return new Date(s);
+  return new Date(s.replace(' ', 'T') + 'Z');
+}
+
 function formatNotifTime(createdAt) {
-  if (!createdAt) return '';
-  const d = new Date(createdAt);
-  if (Number.isNaN(d.getTime())) return '';
+  const d = parseApiDate(createdAt);
+  if (!d || Number.isNaN(d.getTime())) return '';
   const now = new Date();
-  const diffMs = now - d;
+  const diffMs = Math.max(0, now - d);
   const mins = Math.floor(diffMs / 60000);
   if (mins < 1) return 'الآن';
-  if (mins < 60) return `منذ ${mins} د`;
+  if (mins < 60) return mins === 1 ? 'منذ دقيقة' : `منذ ${mins} دقيقة`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `منذ ${hours} س`;
+  if (hours < 24) return hours === 1 ? 'منذ ساعة' : `منذ ${hours} ساعة`;
   return d.toLocaleDateString('ar-SA', { day: 'numeric', month: 'short' });
 }
 

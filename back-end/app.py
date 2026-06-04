@@ -33,6 +33,21 @@ def _load_env_file():
 
 _load_env_file()
 
+
+def _json_datetime(value):
+    """MySQL/Railway timestamps are UTC; send ISO with Z for correct browser parsing."""
+    if value is None:
+        return None
+    if hasattr(value, "strftime"):
+        return value.strftime("%Y-%m-%dT%H:%M:%SZ")
+    text = str(value).strip()
+    if not text:
+        return None
+    if text.endswith("Z") or "+" in text[10:]:
+        return text.replace(" ", "T", 1) if " " in text and "T" not in text else text
+    return text.replace(" ", "T", 1) + "Z"
+
+
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -463,7 +478,7 @@ def get_requests():
     cur.execute(sql, vals)
     rows = cur.fetchall()
     for r in rows:
-        r["created_at"] = str(r["created_at"])
+        r["created_at"] = _json_datetime(r["created_at"])
         r.pop("patient_name", None)
     cur.close(); conn.close()
     return jsonify(rows)
@@ -483,7 +498,7 @@ def my_requests():
     """, (uid,))
     rows = cur.fetchall()
     for r in rows:
-        r["created_at"] = str(r["created_at"])
+        r["created_at"] = _json_datetime(r["created_at"])
     cur.close(); conn.close()
     return jsonify(rows)
 
@@ -618,7 +633,7 @@ def hospital_requests():
     """, tuple(vals))
     rows = cur.fetchall()
     for r in rows:
-        r["created_at"] = str(r["created_at"])
+        r["created_at"] = _json_datetime(r["created_at"])
     cur.close(); conn.close()
     return jsonify(rows)
 
@@ -910,7 +925,7 @@ def donation_history():
     """, (uid,))
     rows = cur.fetchall()
     for r in rows:
-        r["created_at"] = str(r["created_at"])
+        r["created_at"] = _json_datetime(r["created_at"])
         if r.get("appointment_date"):
             r["appointment_date"] = str(r["appointment_date"])
     cur.close(); conn.close()
@@ -931,7 +946,7 @@ def get_notifications():
     """, (uid,))
     rows = cur.fetchall()
     for r in rows:
-        r["created_at"] = str(r["created_at"])
+        r["created_at"] = _json_datetime(r["created_at"])
         if r.get("message"):
             r["message"] = strip_emojis(r["message"])
     cur.close(); conn.close()
@@ -965,7 +980,7 @@ def pending_hospital_users():
     """)
     rows = cur.fetchall()
     for r in rows:
-        r["created_at"] = str(r["created_at"])
+        r["created_at"] = _json_datetime(r["created_at"])
     cur.close()
     conn.close()
     return jsonify(rows)
