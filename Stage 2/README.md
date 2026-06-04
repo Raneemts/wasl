@@ -70,11 +70,11 @@ The purpose of this project is to develop a mobile application (Wasl) that conne
 |------|------|----------|
 | Stage 1 | Idea Development | Completed |
 | Stage 2 | Project Charter | Completed |
-| Stage 3 | Technical Documentation | Week 3–4 |
+| Stage 3 | Technical Documentation | Completed |
 |  | - Design ERD (database structure) | |
 |  | - Define system architecture | |
 |  | - Prepare API endpoints | |
-| Stage 4 | MVP Development | Week 5–8 |
+| Stage 4 | MVP Development | Completed |
 |  | - Backend development (API implementation) | |
 |  | - Frontend development (UI screens) | |
 |  | - Database integration | |
