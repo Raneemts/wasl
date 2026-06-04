@@ -557,7 +557,6 @@ For easier navigation and evaluation, all required technical diagrams and suppor
 
 These files provide complete visual documentation for system structure, workflow, and database design as required for Stage 3.
 
-
 <!-- ===================== Stage 4 ===================== -->
 <!-- Sprint Planning & Development Execution -->
 
@@ -665,6 +664,7 @@ Due to time constraints:
 
 - Full implementation was **partially completed**
 - However, **core setup, architecture, and planning were successfully achieved**
+- The MVP is **deployed on Railway** and accessible via public URLs (see Section 8)
 
 ---
 
@@ -823,9 +823,18 @@ The following screenshots provide evidence of testing and implementation.
 
 ![Database Records](evidence/database.png)
 
+### Production Deployment
+
+The application is deployed to a **public production environment** on [Railway](https://railway.app/), with automatic redeploys from the GitHub `main` branch.
+
+| Component | Technology | Production URL |
+|-----------|------------|----------------|
+| Frontend | React (Vite) | [Live app](https://profound-motivation-production-73bc.up.railway.app/) |
+| Backend API | Flask | [API](https://wasl-production-05b9.up.railway.app/api) |
+| Database | MySQL | Railway-managed MySQL |
+
 ### Not Fully Completed
 
-- Full production deployment
 - Advanced automated testing
 - Complete notification integration
 
@@ -842,6 +851,7 @@ The following screenshots provide evidence of testing and implementation.
 - ✅ Frontend & Backend Setup
 - ✅ SCM Strategy
 - ✅ QA Plan
+- ✅ Production Deployment (Railway)
 
 ---
 
@@ -857,8 +867,9 @@ The project successfully achieved:
 - Backend and frontend initialization
 - Database design
 - Development workflow (SCM and QA)
+- Public production deployment on Railway
 
-Although the MVP was not fully implemented, the team demonstrated a strong planning process and technical foundation.
+Although some MVP features remain incomplete, the team delivered a working deployed application with a strong planning process and technical foundation.
 
 ---
 
@@ -882,10 +893,18 @@ Testing screenshots are available in the `evidence` folder.
 
 ### Production Environment
 
-The application currently runs in a local development environment using:
+The application runs in **production on Railway** and in **local development** for ongoing work.
+
+**Production (Railway):**
+
+- React frontend — https://profound-motivation-production-73bc.up.railway.app/
+- Flask backend API — https://wasl-production-05b9.up.railway.app/api
+- MySQL database (Railway-managed)
+
+**Local development:**
 
 - React (Frontend)
 - Flask (Backend)
 - MySQL (Database)
 
-The system has not yet been deployed to a public production server.
+Changes merged to `main` on GitHub are deployed automatically to Railway.
