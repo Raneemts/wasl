@@ -1,183 +1,153 @@
-Stage 5 — Project Closure
+# Stage 5 — Project Closure
 
-1. Results Summary
+## 1. Results Summary
 
-The Wasl Blood Donation Platform successfully delivered a functional Minimum Viable Product (MVP) that addresses the problem identified during the ideation phase: helping hospitals and patients connect with suitable blood donors more efficiently.
+During this stage, the team evaluated the final outcome of the project and compared the delivered MVP against the objectives defined in the Project Charter.
 
-MVP Features Delivered
+### MVP Features Delivered
 
-The final system includes:
+The final version of Wasl includes:
 
-* User registration and authentication
-* Secure login using JWT authentication
-* Blood donor registration with blood type information
-* Blood donor search and filtering
-* Donation history tracking
-* User profile management
-* Email notification functionality
-* Responsive web interface
-* Production deployment on Railway
-* Project landing page for public presentation
+- User registration
+- User login and authentication
+- Blood type registration
+- Blood donor search and filtering
+- Donation history tracking
+- User profile management
+- Email notifications for urgent blood requests
+- Responsive web interface
+- Production deployment on Railway
 
-Comparison with Initial Objectives
+---
 
-Initial Objective	Result
-Connect donors with people in need	Achieved
-Store donor blood type information	Achieved
-Search donors by blood type	Achieved
-Provide secure authentication	Achieved
-Improve accessibility through a web platform	Achieved
-Notify matching donors during urgent cases	Achieved
+### Comparison Against Initial Objectives
 
-The project successfully achieved its primary objectives and demonstrated the core functionality envisioned in the Project Charter.
+| Objective | Status |
+|------------|---------|
+| Connect donors with people in need | Completed |
+| Store donor blood type information | Completed |
+| Search donors by blood type | Completed |
+| Secure user authentication | Completed |
+| Send notifications to matching donors | Completed |
+| Deploy a working MVP | Completed |
 
-Key Outcomes
+---
 
-* Functional full-stack web application developed
-* Frontend and backend successfully integrated
-* MySQL database connected and operational
-* Public deployment completed using Railway
-* Email notifications implemented for urgent blood requests
-* Landing page created for project presentation
-* Project poster designed and completed
-* Final presentation prepared and delivered
+### Key Outcomes
 
-Performance Highlights
+- Full-stack web application completed
+- Frontend and backend successfully integrated
+- MySQL database connected and operational
+- Railway deployment completed
+- Landing page completed
+- Project poster completed
+- Presentation slides completed
 
-When an urgent blood request is created, registered donors with the matching blood type receive email notifications. This feature helps hospitals and patients reach suitable donors more quickly and supports faster response during emergency situations.
+---
 
-⸻
+## 2. Lessons Learned
 
-2. Lessons Learned
+Throughout the project, the team gained practical experience in software development, teamwork, deployment, and version control.
 
-Throughout the project lifecycle, the team gained valuable technical and collaborative experience.
+### What Went Well
 
-What Went Well
+- Team members communicated effectively
+- Tasks were distributed clearly
+- GitHub helped organize development
+- Continuous feedback improved the final product
+- The team successfully deployed the application online
 
-* Strong teamwork and communication throughout the project
-* Clear role distribution among team members
-* Successful use of GitHub for collaboration and version control
-* Continuous feedback helped improve the system
-* Effective problem-solving during development and testing
-* Successful deployment of the application to a public production environment
+---
 
-Challenges Encountered
+### Challenges
 
-GitHub Branch Management
+#### GitHub Branches
 
-One challenge encountered during development was understanding Git branching and keeping track of where changes were being made. This occasionally caused confusion when working on different features simultaneously.
+One challenge was understanding Git branches and tracking where changes were being made. At times this caused confusion when working on separate features.
 
-Solution:
+**Solution**
 
-Team members collaborated and shared knowledge about Git workflows, branches, merging, and pull requests. This helped improve coordination and version control practices.
+Team members helped each other understand branching, merging, and pull requests, which improved collaboration throughout the project.
 
-Deployment to Production
+---
 
-Initially, the application only worked in a local development environment. Deploying the frontend and backend to a public environment was a new experience for the team.
+#### Deployment
 
-Solution:
+Initially, the project only worked in a local development environment. Deploying the system to a public production environment was a new experience for the team.
 
-The team learned how to use Railway, configured deployment settings, connected the application to production services, and successfully published the system online.
+**Solution**
 
-Frontend and Backend Integration
+The team learned how to use Railway and successfully deployed both the frontend and backend online.
 
-Integrating React frontend components with Flask APIs required additional testing and debugging to ensure smooth communication.
+---
 
-Solution:
+#### Frontend and Backend Integration
 
-The team conducted repeated testing sessions and fixed issues related to API requests, authentication, and database interactions.
+Connecting React with Flask APIs required additional debugging and testing.
 
-Time Constraints
+**Solution**
 
-Several features required more implementation and testing time than originally expected.
+Several testing sessions were conducted to ensure successful communication between all system components.
 
-Solution:
+---
 
-The team prioritized MVP requirements and focused on delivering the most important functionality first while documenting future enhancements.
+## 3. Team Retrospective
 
-Future Improvements
+At the end of the project, the team discussed the overall experience and reflected on what was learned.
 
-If development continues beyond the MVP stage, future enhancements may include:
+### What Worked Well
 
-* Mobile application development
-* Real-time notifications
-* Hospital administration dashboard
-* Advanced donor matching system
-* Analytics and reporting features
-* Enhanced automated testing
-* Additional security and verification features
+- Effective communication through Discord
+- Good collaboration between all roles
+- Continuous feedback and improvements
+- Successful completion of all project stages
 
-⸻
+---
 
-3. Team Retrospective
+### Challenges Faced
 
-At the end of the project, the team conducted a retrospective to evaluate the overall project experience.
+- Learning Git workflows
+- Managing deployment
+- Integrating frontend and backend components
+- Managing project deadlines
 
-What Worked Well
+---
 
-* Effective communication through Discord and regular meetings
-* Strong collaboration between frontend, backend, database, and UI/UX roles
-* Successful completion of all project stages
-* Continuous feedback and iterative improvements
-* Team members supported each other when facing technical challenges
+### Future Improvements
 
-Challenges Faced
+For future projects, the team recommends:
 
-* Learning Git branching and collaboration workflows
-* Deploying the project from a local environment to a production environment
-* Managing integration between different system components
-* Balancing project responsibilities with academic commitments
+- Starting integration testing earlier
+- Allocating more time for deployment and QA
+- Increasing familiarity with Git workflows
+- Expanding automated testing coverage
 
-How Challenges Were Addressed
+---
 
-* Regular team discussions and progress meetings
-* Knowledge sharing among team members
-* Collaborative debugging and testing sessions
-* Task redistribution when necessary
-* Learning through documentation, tutorials, and practical experience
+## 4. Final Deliverables
 
-Recommendations for Future Projects
+### Completed Deliverables
 
-* Begin integration testing earlier
-* Allocate additional time for deployment and quality assurance
-* Increase familiarity with Git workflows at the start of the project
-* Expand automated testing coverage
-* Plan production deployment earlier in the development cycle
+- Final Report
+- Lessons Learned Documentation
+- Team Retrospective
+- Presentation Slide Deck
+- MVP Demonstration
+- Project Poster
+- Landing Page
+- GitHub Repository
+- Technical Documentation
+- UML Diagram
+- ERD Diagram
+- System Architecture Diagram
+- Production Deployment on Railway
 
-⸻
+---
 
-4. Final Deliverables
+## 5. Final Summary
 
-Final Report
+The Wasl project successfully progressed through all project stages, from idea development and planning to implementation, deployment, and presentation.
 
-* Results Summary
-* Lessons Learned
-* Team Retrospective Highlights
+The team delivered a functional MVP that demonstrates the core concept of connecting blood donors with people in need. In addition to completing the application, the team gained valuable experience in software engineering, collaboration, deployment, testing, and project management.
 
-Presentation Materials
-
-* Final Presentation Slide Deck
-* MVP Demonstration
-* Project Poster
-
-Project Assets
-
-* GitHub Repository
-* Technical Documentation
-* UML Diagram
-* ERD Diagram
-* System Architecture Diagram
-* Data Flow Diagram
-* Sequence Diagrams
-* Landing Page
-* Production Deployment on Railway
-
-⸻
-
-5. Project Conclusion
-
-Wasl successfully progressed through all project stages, from idea development and planning to technical documentation, implementation, deployment, and final presentation.
-
-The project provided valuable experience in software engineering, teamwork, project management, system design, deployment, and full-stack web development. Most importantly, it demonstrated how technology can be used to support blood donation awareness and improve access to potential donors.
-
-The team successfully delivered a functional MVP, deployed it to a public production environment, prepared all required documentation and presentation materials, and established a strong foundation for future expansion and improvement.
+The project achieved its primary objectives and provides a strong foundation for future improvements and expansion.
