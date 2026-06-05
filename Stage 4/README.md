@@ -270,8 +270,9 @@ The application is deployed to a **public production environment** on [Railway](
 
 | Component | Technology | Production URL |
 |-----------|------------|----------------|
-| Frontend | React (Vite) | [Live app](https://profound-motivation-production-73bc.up.railway.app/) |
-| Backend API | Flask | [API](https://wasl-production-05b9.up.railway.app/api) |
+| Landing page | Static (docs) | [Landing page](https://fulfilling-analysis-production-8311.up.railway.app/) |
+| Live app | React (Vite) | [Live app](https://profound-motivation-production-73bc.up.railway.app/) |
+| Backend API | Flask | [API](https://wasl-production-05b9.up.railway.app/api/stats) |
 | Database | MySQL | Railway-managed MySQL |
 
 ### Not Fully Completed
@@ -338,8 +339,9 @@ The application runs in **production on Railway** and in **local development** f
 
 **Production (Railway):**
 
-- React frontend — https://profound-motivation-production-73bc.up.railway.app/
-- Flask backend API — https://wasl-production-05b9.up.railway.app/api
+- Landing page — https://fulfilling-analysis-production-8311.up.railway.app/
+- Live app (React frontend) — https://profound-motivation-production-73bc.up.railway.app/
+- Flask backend API — https://wasl-production-05b9.up.railway.app/api/stats
 - MySQL database (Railway-managed)
 
 **Local development:**
