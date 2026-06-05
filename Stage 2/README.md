@@ -29,7 +29,7 @@ The purpose of this project is to develop a mobile application (Wasl) that conne
 
 | Name | Role | Responsibilities |
 |----------------------|--------------------|------------------|
-| Ahmed Khaled Alomani | UI/UX Designer | Design user interface and improve user experience |
+| Ahmed Khalid Alomani | UI/UX Designer | Design user interface and improve user experience |
 | Amjad Khalid Alomani | Database Engineer | Design and manage database |
 | Lamis Fahad Aljabli | Frontend Developer | Build UI and connect to backend |
 | Raneem Tarik Alsaqat | Backend Developer | Implement logic and APIs |
