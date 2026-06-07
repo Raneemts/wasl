@@ -1,3 +1,32 @@
+# Wasl (وصل) — Blood Donation Platform
+
+### Live Project Links
+
+🌐 **Landing Page**  
+https://fulfilling-analysis-production-8311.up.railway.app/
+
+🚀 **Live Application**  
+https://profound-motivation-production-73bc.up.railway.app/
+
+📂 **GitHub Repository**  
+https://github.com/Raneemts/wasl
+
+---
+
+## Quick Navigation
+
+- [Stage 1 — Team Formation and Idea Development](#stage-1-report)
+- [Stage 2 — Project Charter](#stage-2-project-charter)
+- [Stage 3 — User Stories & Mockups](#stage-3--user-stories--mockups)
+- [Stage 3 — System Architecture](#stage-3--system-architecture)
+- [Stage 3 — API Specifications](#stage-3--api-specifications)
+- [SCM and QA Plans](#scm-and-qa-plans)
+- [Technical Justifications](#technical-justifications)
+- [Attached Diagrams and Supporting Files](#attached-diagrams-and-supporting-files)
+- [Stage 4 — Sprint Planning & Development Execution](#stage-4--sprint-planning--development-execution)
+- [Stage 5 — Project Closure](#stage-5--project-closure)
+
+---
 # Stage 1 Report
 
 ## Team Formation and Idea Development
@@ -227,7 +256,7 @@ The purpose of this project is to develop a mobile application (Wasl) that conne
 |  | - Backend development (API implementation) | |
 |  | - Frontend development (UI screens) | |
 |  | - Database integration | |
-| Stage 5 | Testing & Final Delivery | Week 9–10 |
+| Stage 5 | Testing & Final Delivery | Completed |
 |  | - System testing | |
 |  | - Bug fixing | |
 |  | - Final presentation | |
@@ -514,10 +543,12 @@ Regular testing ensures the system works as expected and improves overall qualit
 
 The following technologies were selected based on project requirements:
 
-- React Native: Allows building a cross-platform mobile application efficiently
-- Python (Flask or Django): Provides a reliable and scalable backend for handling APIs, business logic, authentication, and request management.
-- MySQL: Suitable for structured relational data such as users, requests, and donations
-- Firebase Cloud Messaging (FCM): Enables real-time push notifications for emergency cases
+- React (Vite): Provides a fast and responsive user interface for the web application.
+- Flask: Lightweight Python framework used to build RESTful APIs and application logic.
+- MySQL: Suitable for structured relational data such as users, requests, and donation records.
+- JWT Authentication: Provides secure user authentication and session management.
+- Email Notifications: Used to notify donors about urgent blood requests that match their blood type.
+- Railway: Used for cloud deployment and public access to the application.
 
 These technologies were chosen because they are reliable, widely used, and suitable for building scalable real-time applications like Wasl.
 
