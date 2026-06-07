@@ -181,7 +181,7 @@ We selected the Wasl platform because it solves a real problem and has a meaning
 ## 1. Project Objectives
 
 ### Purpose
-The purpose of this project is to develop a mobile application (Wasl) that connects patients, hospitals, and blood donors efficiently to support emergency blood donation and help save lives.
+The purpose of this project is to develop a web-based platform (Wasl) that connects patients, hospitals, and blood donors efficiently to support emergency blood donation and help save lives.
 
 ### SMART Objectives
 - Enable patients or hospitals to submit a blood request within less than 2 minutes.
