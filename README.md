@@ -580,11 +580,12 @@ For easier navigation and evaluation, all required technical diagrams and suppor
 
 ### Sequence Diagram 2 — Donor Responds to Request
 
-![Sequence Diagram 2](./seq2_donor_donates_3.jpeg)
+![Sequence Diagram 3](./sequence%20diagram3.jpeg)
 
 ### Sequence Diagram 3 — Hospital Confirms Donation
 
-![Sequence Diagram 3](./sequence%20diagram3.jpeg)
+![Sequence Diagram 2](./seq2_donor_donates_3.jpeg)
+
 
 These files provide complete visual documentation for system structure, workflow, and database design as required for Stage 3.
 
@@ -784,6 +785,14 @@ Additional requirements:
 - Send notifications after donation confirmation
 - Perform Gorilla Testing
 - Add an Admin page for hospital verification
+
+#### Meeting 6
+
+No formal meeting notes were recorded.
+
+#### Meeting 7
+
+ADD LATER
 
 ---
 
