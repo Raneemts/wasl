@@ -2,7 +2,7 @@
 
 ## 1. Results Summary
 
-During this stage, the team evaluated the final outcome of the project and compared the delivered MVP against the objectives defined in the Project Charter.
+During this stage, the team evaluated the final outcome of the project and compared the delivered MVP against the objectives defined in the Project Charter. Work that remained open at the end of Stage 4 was finished before final delivery.
 
 ### MVP Features Delivered
 
@@ -11,7 +11,7 @@ The final version of Wasl includes:
 - User registration
 - User login and authentication
 - Blood type registration
-- Blood donor search and filtering
+- Browse and filter blood requests by blood type
 - Donation history tracking
 - User profile management
 - Email notifications for urgent blood requests
@@ -26,7 +26,7 @@ The final version of Wasl includes:
 |------------|---------|
 | Connect donors with people in need | Completed |
 | Store donor blood type information | Completed |
-| Search donors by blood type | Completed |
+| Browse and filter blood requests by blood type | Completed |
 | Secure user authentication | Completed |
 | Send notifications to matching donors | Completed |
 | Deploy a working MVP | Completed |

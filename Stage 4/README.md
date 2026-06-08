@@ -101,11 +101,13 @@ During this stage, the team focused on **initial implementation and setup**.
 
 <!-- Important clarification -->
 
-Due to time constraints:
+At the time of Stage 4 reporting, due to time constraints:
 
 - Full implementation was **partially completed**
 - However, **core setup, architecture, and planning were successfully achieved**
 - The MVP is **deployed on Railway** and accessible via public URLs (see Section 8)
+
+Remaining integration work (notifications, UI polish, and deployment) was completed during Stage 5 (see the root README).
 
 ---
 
@@ -275,10 +277,9 @@ The application is deployed to a **public production environment** on [Railway](
 | Backend API | Flask | [API](https://wasl-production-05b9.up.railway.app/api/stats) |
 | Database | MySQL | Railway-managed MySQL |
 
-### Not Fully Completed
+### Not Fully Completed (at Stage 4)
 
 - Advanced automated testing
-- Complete notification integration
 
 ---
 

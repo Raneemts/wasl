@@ -345,8 +345,8 @@ Three main screens were designed for the MVP:
 - **Donor Home** — Case cards with blood type badge, progress bar, urgency tag, distance, and donate button
 - **Patient Family — New Request Form** — Blood type grid selector, bag count, hospital name, contact number, urgency toggle
 - **Hospital Dashboard** — Stats grid (active cases, monthly donations, most-requested type, completion rate) + case list with confirm button
-> Interactive prototype available in `/prototype/wasal_app.html`
- 
+> Interactive mockups are described above; the deployed web app is linked at the top of this README.
+
 ---
  
 *Wasl — Connecting donors with those who need them most.*
@@ -356,18 +356,18 @@ Three main screens were designed for the MVP:
 
 The Wasl system follows a client-server architecture designed for real-time interaction between users (donors, patient families, and hospitals).
 
-The mobile application (front-end) is developed using React Native and serves as the interface for all users. It communicates with the back-end through RESTful API requests.
+> **Implementation note:** Early planning considered a React Native mobile app with Node.js/Express and Firebase push notifications. The delivered MVP uses the stack described in [Technical Justifications](#technical-justifications) below.
 
-The back-end is built using Node.js and Express, which handles business logic such as creating blood requests, matching donors, managing case status, and sending notifications.
+The web application (front-end) is built with **React (Vite)** and serves as the interface for all users. It communicates with the back-end through RESTful API requests.
 
-A centralized database (MySQL) stores all system data, including users, blood requests, and donations.
+The back-end is built using **Python (Flask)**, which handles business logic such as creating blood requests, matching donors, managing case status, and sending notifications.
 
-Firebase Cloud Messaging (FCM) is used as an external service to deliver real-time notifications to donors when a matching case is created and to update patients on request progress.
+A centralized database (**MySQL**) stores all system data, including users, blood requests, and donations.
+
+**In-app notifications** and **email alerts** (via Resend in production, SMTP for local development) notify matching donors when urgent cases are confirmed and keep patients updated on request progress.
 
 Data flows as follows:  
-Users interact with the mobile app → requests are sent to the back-end → data is processed and stored in the database → notifications are triggered via Firebase → updates are reflected back in the app in real time.
-
-The architecture ensures scalability, fast response time, and reliable communication between all system components.
+Users interact with the web app → requests are sent to the back-end → data is processed and stored in the database → in-app and email notifications are triggered → updates are reflected back in the app.
 ---
 
 ## Stage 3 — API Specifications
@@ -691,11 +691,13 @@ During this stage, the team focused on **initial implementation and setup**.
 
 <!-- Important clarification -->
 
-Due to time constraints:
+At the time of Stage 4 reporting, due to time constraints:
 
 - Full implementation was **partially completed**
 - However, **core setup, architecture, and planning were successfully achieved**
 - The MVP is **deployed on Railway** and accessible via public URLs (see Section 8)
+
+Remaining integration work (notifications, UI polish, and deployment) was completed during Stage 5 (see [Stage 5 — Project Closure](#stage-5--project-closure)).
 
 ---
 
@@ -865,10 +867,9 @@ The application is deployed to a **public production environment** on [Railway](
 | Backend API | Flask | [API](https://wasl-production-05b9.up.railway.app/api/stats) |
 | Database | MySQL | Railway-managed MySQL |
 
-### Not Fully Completed
+### Not Fully Completed (at Stage 4)
 
 - Advanced automated testing
-- Complete notification integration
 
 ---
 
@@ -946,7 +947,7 @@ Changes merged to `main` on GitHub are deployed automatically to Railway.
 
 ## 1. Results Summary
 
-During this stage, the team evaluated the final outcome of the project and compared the delivered MVP against the objectives defined in the Project Charter.
+During this stage, the team evaluated the final outcome of the project and compared the delivered MVP against the objectives defined in the Project Charter. Work that remained open at the end of Stage 4 was finished before final delivery.
 
 ### MVP Features Delivered
 
@@ -955,7 +956,7 @@ The final version of Wasl includes:
 - User registration
 - User login and authentication
 - Blood type registration
-- Blood donor search and filtering
+- Browse and filter blood requests by blood type
 - Donation history tracking
 - User profile management
 - Email notifications for urgent blood requests
@@ -970,7 +971,7 @@ The final version of Wasl includes:
 |------------|---------|
 | Connect donors with people in need | Completed |
 | Store donor blood type information | Completed |
-| Search donors by blood type | Completed |
+| Browse and filter blood requests by blood type | Completed |
 | Secure user authentication | Completed |
 | Send notifications to matching donors | Completed |
 | Deploy a working MVP | Completed |
